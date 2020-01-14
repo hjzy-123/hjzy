@@ -1,4 +1,0 @@
-2019-12-17 15:12:30.677 1036 INFO  akka.event.slf4j.Slf4jLogger [appSystem-akka.actor.default-dispatcher-4]  - Slf4jLogger started
-2019-12-17 15:12:30.961 1320 INFO  com.neo.sk.todos2018.Boot$ [appSystem-akka.actor.default-dispatcher-5] Boot$(akka://appSystem) - Starting.
-2019-12-17 15:27:24.705 1262 INFO  akka.event.slf4j.Slf4jLogger [appSystem-akka.actor.default-dispatcher-3]  - Slf4jLogger started
-2019-12-17 15:27:24.885 1442 INFO  com.neo.sk.todos2018.Boot$ [appSystem-akka.actor.default-dispatcher-4] Boot$(akka://appSystem) - Starting.

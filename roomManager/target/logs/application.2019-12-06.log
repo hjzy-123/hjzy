@@ -1,8 +1,0 @@
-2019-12-06 14:07:54.964 909  INFO  akka.event.slf4j.Slf4jLogger [appSystem-akka.actor.default-dispatcher-4]  - Slf4jLogger started
-2019-12-06 14:07:55.143 1088 INFO  com.neo.sk.todos2018.Boot$ [appSystem-akka.actor.default-dispatcher-2] Boot$(akka://appSystem) - Starting.
-2019-12-06 14:12:20.267 1117 INFO  akka.event.slf4j.Slf4jLogger [appSystem-akka.actor.default-dispatcher-3]  - Slf4jLogger started
-2019-12-06 14:12:20.445 1295 INFO  com.neo.sk.todos2018.Boot$ [appSystem-akka.actor.default-dispatcher-3] Boot$(akka://appSystem) - Starting.
-2019-12-06 14:12:39.818 20668 WARN  slick.util.AsyncExecutor [appSystem-akka.actor.default-dispatcher-11]  - Having maxConnection > maxThreads can result in deadlocks if transactions or database locks are used.
-2019-12-06 14:12:40.466 21316 WARN  com.zaxxer.hikari.HikariConfig [AsyncExecutor.default-1]  - HikariPool-1 - idleTimeout has been set but has no effect because the pool is operating as a fixed size pool.
-2019-12-06 14:12:40.466 21316 INFO  com.zaxxer.hikari.HikariDataSource [AsyncExecutor.default-1]  - HikariPool-1 - Starting...
-2019-12-06 14:12:40.956 21806 INFO  com.zaxxer.hikari.HikariDataSource [AsyncExecutor.default-1]  - HikariPool-1 - Start completed.

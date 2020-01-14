@@ -1,7 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0mD:\hjzy\backend\src\main\scala\com\neo\sk\hjzy\utils\DBUtil.scala:5:12: object mysql is not a member of package com[0m
-[0m[[0m[31merror[0m] [0m[0mimport com.mysql.jdbc.jdbc2.optional.MysqlDataSource[0m
-[0m[[0m[31merror[0m] [0m[0m           ^[0m
-[0m[[0m[31merror[0m] [0m[0mD:\hjzy\backend\src\main\scala\com\neo\sk\hjzy\utils\DBUtil.scala:27:23: not found: type MysqlDataSource[0m
-[0m[[0m[31merror[0m] [0m[0m    val mysqlDS = new MysqlDataSource()[0m
-[0m[[0m[31merror[0m] [0m[0m                      ^[0m
-[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m
