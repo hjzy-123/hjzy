@@ -1,0 +1,16 @@
+[0m[[0m[0mdebug[0m] [0m[0mCopy resource mappings: [0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\webClient\target\scala-2.12\sjsout\frontend-fastopt.js,D:\hjzy\roomManager\target\scala-2.12\classes\sjsout\frontend-fastopt.js)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\webClient\target\scala-2.12\sjsout\frontend-fastopt.js.map,D:\hjzy\roomManager\target\scala-2.12\classes\sjsout\frontend-fastopt.js.map)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\webClient\target\scala-2.12\sjsout\frontend-jsdeps.js,D:\hjzy\roomManager\target\scala-2.12\classes\sjsout\frontend-jsdeps.js)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\application.conf,D:\hjzy\roomManager\target\scala-2.12\classes\application.conf)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\css,D:\hjzy\roomManager\target\scala-2.12\classes\css)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\css\login.css,D:\hjzy\roomManager\target\scala-2.12\classes\css\login.css)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\ehcache-default.xml,D:\hjzy\roomManager\target\scala-2.12\classes\ehcache-default.xml)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\html,D:\hjzy\roomManager\target\scala-2.12\classes\html)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\html\index.html,D:\hjzy\roomManager\target\scala-2.12\classes\html\index.html)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\js,D:\hjzy\roomManager\target\scala-2.12\classes\js)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\js\fetch.min.js,D:\hjzy\roomManager\target\scala-2.12\classes\js\fetch.min.js)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\js\jquery-3.1.1.min.js,D:\hjzy\roomManager\target\scala-2.12\classes\js\jquery-3.1.1.min.js)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\logback.xml,D:\hjzy\roomManager\target\scala-2.12\classes\logback.xml)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\sql,D:\hjzy\roomManager\target\scala-2.12\classes\sql)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\hjzy\roomManager\src\main\resources\sql\toDoList.sql,D:\hjzy\roomManager\target\scala-2.12\classes\sql\toDoList.sql)[0m

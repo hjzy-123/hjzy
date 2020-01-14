@@ -29,7 +29,7 @@ lazy val sharedJvm = shared.jvm
 lazy val sharedJs = shared.js
 
 // Scala-Js frontend
-lazy val frontend = (project in file("frontend"))
+lazy val webClient = (project in file("webClient"))
   .enablePlugins(ScalaJSPlugin)
   .settings(name := "frontend")
   .settings(commonSettings: _*)
@@ -66,7 +66,7 @@ lazy val frontend = (project in file("frontend"))
 
 
 // Akka Http based backend
-lazy val backend = (project in file("backend")).enablePlugins(PackPlugin)
+lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
     mainClass in reStart := Some(projectMainClass),
@@ -87,7 +87,7 @@ lazy val backend = (project in file("backend")).enablePlugins(PackPlugin)
   )
   .settings {
     (resourceGenerators in Compile) += Def.task {
-      val fastJsOut = (fastOptJS in Compile in frontend).value.data
+      val fastJsOut = (fastOptJS in Compile in webClient).value.data
       val fastJsSourceMap = fastJsOut.getParentFile / (fastJsOut.getName + ".map")
       Seq(
         fastJsOut,
@@ -106,18 +106,18 @@ lazy val backend = (project in file("backend")).enablePlugins(PackPlugin)
   //    }.taskValue)
   .settings((resourceGenerators in Compile) += Def.task {
   Seq(
-    (packageJSDependencies in Compile in frontend).value
+    (packageJSDependencies in Compile in webClient).value
     //(packageMinifiedJSDependencies in Compile in frontend).value
   )
 }.taskValue)
   .settings(
-    (resourceDirectories in Compile) += (crossTarget in frontend).value,
-    watchSources ++= (watchSources in frontend).value
+    (resourceDirectories in Compile) += (crossTarget in webClient).value,
+    watchSources ++= (watchSources in webClient).value
   )
   .dependsOn(sharedJvm)
 
 lazy val root = (project in file("."))
-  .aggregate(frontend, backend)
+  .aggregate(webClient, roomManager)
   .settings(name := projectName)
 
 
