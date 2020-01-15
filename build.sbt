@@ -62,7 +62,7 @@ lazy val webClient = (project in file("webClient"))
 
 
 
-val pcClientMain = "org.seekloud.theia.pcClient.Boot"
+val pcClientMain = "org.seekloud.hjzy.pcClient.Boot"
 lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
@@ -86,7 +86,7 @@ lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
   )
   .dependsOn(capture, player)
 
-val captureMain = "org.seekloud.theia.capture.Boot"
+val captureMain = "org.seekloud.hjzy.capture.Boot"
 lazy val capture = (project in file("capture")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
@@ -112,7 +112,7 @@ lazy val capture = (project in file("capture")).enablePlugins(PackPlugin)
 
 
 
-val playerMain = "org.seekloud.theia.player.Boot"
+val playerMain = "org.seekloud.hjzy.player.Boot"
 lazy val player = (project in file("player")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
