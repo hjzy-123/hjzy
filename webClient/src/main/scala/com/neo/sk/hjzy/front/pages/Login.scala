@@ -4,7 +4,6 @@ import com.neo.sk.hjzy.front.{Index, Routes}
 import com.neo.sk.hjzy.front.utils.{Http, JsFunc}
 import com.neo.sk.hjzy.shared.ptcl.{CommonRsp, SuccessRsp}
 import com.neo.sk.hjzy.shared.ptcl.LoginProtocol.{UserLoginReq, UserLoginRsp}
-import com.neo.sk.hjzy.shared.ptcl.SignupProtocol.UserSignupReq
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.parser._
