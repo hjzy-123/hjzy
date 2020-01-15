@@ -54,6 +54,7 @@ object Dependencies {
   val ehcache = "net.sf.ehcache" % "ehcache" % "2.10.6"
   val h2Database = "com.h2database" % "h2" % "1.4.196"
   val mysql ="mysql" % "mysql-connector-java" % "5.1.46"
+  val mail = "com.sun.mail" % "javax.mail" % "1.5.6"
 
 
 
@@ -76,7 +77,8 @@ object Dependencies {
       Dependencies.asynchttpclient,
       Dependencies.ehcache,
       Dependencies.h2Database,
-      Dependencies.mysql
+      Dependencies.mysql,
+      Dependencies.mail
     )
 
 

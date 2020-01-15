@@ -29,6 +29,15 @@ object AppSettings {
       else Some(config.getDuration(path, TimeUnit.SECONDS))
   }
 
+  object mailConf {
+    val mailConfig = config.getConfig("mail.conf")
+    val EMAIL_ADDRESS = mailConfig.getString("EMAIL_ADDRESS")
+    val EMAIL_PASSWORD = mailConfig.getString("EMAIL_PASSWORD")
+    val SMTPHOST = mailConfig.getString("SMTPHOST")
+    val SMTPPORT = mailConfig.getString("SMTPPORT")
+    val IMAP_SERVER = mailConfig.getString("IMAP_SERVER")
+    val IMAP_PROTOCOL = mailConfig.getString("IMAP_PROTOCOL")
+  }
 
   val log = LoggerFactory.getLogger(this.getClass)
   val config = ConfigFactory.parseResources("product.conf").withFallback(ConfigFactory.load())
