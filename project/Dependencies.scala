@@ -1,3 +1,4 @@
+import Dependencies.platforms
 import sbt._
 
 /**
@@ -80,7 +81,28 @@ object Dependencies {
       Dependencies.mysql,
       Dependencies.mail
     )
+  
+  val javacppVersion = "1.5"
+
+  // Platform classifier for native library dependencies
+  //val platform = org.bytedeco.javacpp.Loader.getPlatform
+  private val platforms = IndexedSeq("windows-x86_64", "linux-x86_64", "macosx-x86_64")
 
 
+  // Libraries with native dependencies
+  private val bytedecoPresetLibs = Seq(
+    "opencv" -> s"4.0.1-$javacppVersion",
+    "ffmpeg" -> s"4.1.3-$javacppVersion").flatMap {
+    case (lib, ver) => Seq(
+      // Add both: dependency and its native binaries for the current `platform`
+      "org.bytedeco" % lib % ver withSources() withJavadoc(),
+      "org.bytedeco" % lib % ver classifier platforms(1)
+    )
+  }
+
+  val bytedecoLibs: Seq[ModuleID] = Seq(
+    "org.bytedeco"            % "javacpp"         % javacppVersion withSources() withJavadoc(),
+    "org.bytedeco"            % "javacv"          % javacppVersion withSources() withJavadoc()
+  ) ++ bytedecoPresetLibs
 
 }

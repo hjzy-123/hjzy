@@ -16,9 +16,8 @@ def commonSettings = Seq(
   )
 )
 
-
+// shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
-
 
 lazy val shared =
   crossProject(JSPlatform, JVMPlatform)
@@ -62,6 +61,80 @@ lazy val webClient = (project in file("webClient"))
   .dependsOn(sharedJs)
 
 
+
+val pcClientMain = "org.seekloud.theia.pcClient.Boot"
+lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(pcClientMain),
+    javaOptions in reStart += "-Xmx2g"
+  )
+  .settings(name := "pcClient")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("pcClient" -> pcClientMain),
+    packJvmOpts := Map("pcClient" -> Seq("-Xmx4096m", "-Xms128m")),
+    packExtraClasspath := Map("pcClient" -> Seq("."))
+  )
+  .settings(
+    //    libraryDependencies ++= Dependencies.backendDependencies,
+    libraryDependencies ++= Dependencies.bytedecoLibs,
+    libraryDependencies ++= Dependencies4PcClient.pcClientDependencies,
+  )
+  .dependsOn(capture, player)
+
+val captureMain = "org.seekloud.theia.capture.Boot"
+lazy val capture = (project in file("capture")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(captureMain),
+    javaOptions in reStart += "-Xmx2g"
+  )
+  .settings(name := "capture")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("capture" -> pcClientMain),
+    packJvmOpts := Map("capture" -> Seq("-Xmx256m", "-Xms64m")),
+    packExtraClasspath := Map("capture" -> Seq("."))
+  )
+  .settings(
+    //    libraryDependencies ++= Dependencies.backendDependencies,
+    libraryDependencies ++= Dependencies.bytedecoLibs,
+    libraryDependencies ++= Dependencies4Capture.captureDependencies,
+  )
+  .dependsOn(sharedJvm)
+
+
+
+val playerMain = "org.seekloud.theia.player.Boot"
+lazy val player = (project in file("player")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(playerMain),
+    javaOptions in reStart += "-Xmx2g"
+  )
+  .settings(name := "player")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("player" -> playerMain),
+    packJvmOpts := Map("player" -> Seq("-Xmx256m", "-Xms64m")),
+    packExtraClasspath := Map("player" -> Seq("."))
+  )
+  .settings(
+    //    libraryDependencies ++= Dependencies.backendDependencies,
+    libraryDependencies ++= Dependencies.bytedecoLibs,
+    libraryDependencies ++= Dependencies4Player.playerDependencies,
+  )
+  .dependsOn(sharedJvm)
 
 
 
