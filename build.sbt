@@ -31,7 +31,7 @@ lazy val sharedJs = shared.js
 // Scala-Js frontend
 lazy val webClient = (project in file("webClient"))
   .enablePlugins(ScalaJSPlugin)
-  .settings(name := "frontend")
+  .settings(name := "webClient")
   .settings(commonSettings: _*)
   .settings(
     inConfig(Compile)(
@@ -72,7 +72,7 @@ lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin
     mainClass in reStart := Some(projectMainClass),
     javaOptions in reStart += "-Xmx2g"
   )
-  .settings(name := "backend")
+  .settings(name := "roomManager")
   .settings(
     //pack
     // If you need to specify main classes manually, use packSettings and packMain
