@@ -13,7 +13,9 @@ def commonSettings = Seq(
   scalacOptions ++= Seq(
     //"-deprecation",
     "-feature"
-  )
+  ),
+  javacOptions ++= Seq("-encoding", "UTF-8")
+
 )
 
 // shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
@@ -60,31 +62,6 @@ lazy val webClient = (project in file("webClient"))
   )
   .dependsOn(sharedJs)
 
-
-
-val pcClientMain = "org.seekloud.hjzy.pcClient.Boot"
-lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
-  .settings(commonSettings: _*)
-  .settings(
-    mainClass in reStart := Some(pcClientMain),
-    javaOptions in reStart += "-Xmx2g"
-  )
-  .settings(name := "pcClient")
-  .settings(
-    //pack
-    // If you need to specify main classes manually, use packSettings and packMain
-    //packSettings,
-    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
-    packMain := Map("pcClient" -> pcClientMain),
-    packJvmOpts := Map("pcClient" -> Seq("-Xmx4096m", "-Xms128m")),
-    packExtraClasspath := Map("pcClient" -> Seq("."))
-  )
-  .settings(
-    //    libraryDependencies ++= Dependencies.backendDependencies,
-    libraryDependencies ++= Dependencies.bytedecoLibs,
-    libraryDependencies ++= Dependencies4PcClient.pcClientDependencies,
-  )
-  .dependsOn(capture, player)
 
 val captureMain = "org.seekloud.hjzy.capture.Boot"
 lazy val capture = (project in file("capture")).enablePlugins(PackPlugin)
@@ -136,7 +113,29 @@ lazy val player = (project in file("player")).enablePlugins(PackPlugin)
   )
   .dependsOn(sharedJvm)
 
-
+val pcClientMain = "org.seekloud.hjzy.pcClient.Boot"
+lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(pcClientMain),
+    javaOptions in reStart += "-Xmx2g"
+  )
+  .settings(name := "pcClient")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("pcClient" -> pcClientMain),
+    packJvmOpts := Map("pcClient" -> Seq("-Xmx4096m", "-Xms128m")),
+    packExtraClasspath := Map("pcClient" -> Seq("."))
+  )
+  .settings(
+    //    libraryDependencies ++= Dependencies.backendDependencies,
+    libraryDependencies ++= Dependencies.bytedecoLibs,
+    libraryDependencies ++= Dependencies4PcClient.pcClientDependencies,
+  )
+  .dependsOn(capture, player)
 
 // Akka Http based backend
 lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin)

@@ -25,7 +25,7 @@ import scala.concurrent.Await
   * Date: 11/16/2016
   * Time: 1:00 AM
   */
-object Boot extends HttpService{
+object  extends HttpService{
 
 
   import concurrent.duration._
