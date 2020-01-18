@@ -22,6 +22,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object Login extends Index{
 
   override def app: Node =
-
-    <div><h1>hello</h1></div>
+    <div>
+    </div>
 }

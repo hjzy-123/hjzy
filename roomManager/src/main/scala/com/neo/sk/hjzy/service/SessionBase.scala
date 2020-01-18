@@ -1,5 +1,6 @@
 package com.neo.sk.hjzy.service
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.BasicDirectives
@@ -94,7 +95,7 @@ trait SessionBase extends SessionSupport with ServiceUtils{
       case Some(session) =>
         f(session.userInfo)
       case None =>
-        complete(noSessionError())
+        redirect("/hjzy#/login", StatusCodes.SeeOther)
     }
   }
 }
