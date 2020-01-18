@@ -1,5 +1,21 @@
 *{
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+a{
+    text-decoration: none;
+    color: black;
+}
+
+a:hover{
+    color: #00A1D6;
+}
+
+input{
+    outline: none;
+    box-shadow: inset 500px 500px #ffffff;
 }
 
 .login-header{
@@ -33,4 +49,154 @@
     height: 32px;
     line-height: 32px;
     font-size: 14px;
+}
+
+.header-banner{
+    background-color: #00A1D6;
+    height: 86px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login-title{
+    margin-top: 10px;
+    height: 56px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.login-title .line{
+    border-bottom: 1px solid #ccc;
+    width: 980px;
+    height: 1px;
+    margin-top: 28px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.login-title span{
+    position: absolute;
+    display: block;
+    background-color: #fff;
+    width: 130px;
+    height: 56px;
+    line-height: 56px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 38px;
+    text-align: center;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.selectMode{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 19px;
+    margin-bottom: 12px;
+}
+
+.selectMode span{
+    margin-right: 30px;
+    height: 19px;
+    text-align: center;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.account, .verify, .verify input{
+    width: 388px;
+    border: 1px solid #ddd;
+    height: 38px;
+    line-height: 18px;
+    font-size: 14px;
+    border-radius: 2px;
+    padding: 10px;
+    margin-bottom: 32px;
+}
+
+.verify{
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    height: 40px;
+}
+
+.verify input{
+    width: 250px;
+    border: none;
+    margin-bottom: 0;
+}
+
+.verify div{
+    width: 130px;
+    height: 38px;
+    line-height: 38px;
+    text-align: center;
+    font-size: 14px;
+    background-color: #00a1d6;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+
+.loginBtn{
+    background-color: #00a7de;
+    border: 1px solid #0381aa;
+    color: #fff;
+    text-align: center;
+    height: 36px;
+    line-height: 36px;
+    width: 184px;
+    border-radius: 2px;
+    margin-right: 20px;
+}
+
+.registerBtn{
+    color: #555;
+    border-radius: 2px;
+    border: 1px solid #555555;
+    width: 184px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+}
+
+.loginBtn:hover, .registerBtn:hover{
+    cursor: pointer;
+}
+
+.registerForm{
+    width: 420px;
+    margin: 30px auto 5px;
+}
+
+.registerForm > input{
+    height: 40px;
+    width: 420px;
+    line-height: 40px;
+    color: #606266;
+    font-size: 14px;
+    margin-bottom: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-indent: 15px;
+}
+
+.registerBtn1{
+    width: 410px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 4px;
+    color: #fff;
+    background-color: #00a1d6;
+    font-size: 14px;
+    text-align: center;
+}
+
+.registerBtn1:hover{
+    cursor: pointer;
 }

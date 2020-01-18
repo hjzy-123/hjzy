@@ -6,4 +6,8 @@ package com.sk.hjzy.webClient
 object Routes {
   val base = "/hjzy"
 
+  object User{
+    val baseUrl = base + "/user"
+    def genVerifyCode(email: String) = baseUrl + s"/genVerifyCode?email=$email"
+  }
 }

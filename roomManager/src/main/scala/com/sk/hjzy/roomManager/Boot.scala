@@ -8,6 +8,7 @@ import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 import com.sk.hjzy.roomManager.common.AppSettings._
+import com.sk.hjzy.roomManager.core.webClient.EmailManager
 
 import scala.util.{Failure, Success}
 import scala.language.postfixOps
@@ -35,6 +36,8 @@ object Boot extends HttpService{
   override implicit val timeout = Timeout(20 seconds) // for actor asks
 
   override implicit val scheduler = system.scheduler
+
+  val emailManager = system.spawn(EmailManager.create(), "emailManager")
 
   val log: LoggingAdapter = Logging(system, getClass)
 

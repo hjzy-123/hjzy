@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server.{Directive, Directive1, RequestContext}
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.ErrorRsp
 import com.sk.hjzy.roomManager.common.AppSettings
-import com.sk.hjzy.roomManager.ptcl.UserProtocol.UserBaseInfo
 import com.sk.hjzy.roomManager.utils.SessionSupport
 import io.circe.generic.auto._
 import org.slf4j.LoggerFactory
@@ -23,13 +22,15 @@ object SessionBase{
   val SessionTypeKey = "STKey"
 
     object SessionKeys {
-      val sessionType = "todos2018_session"
-      val userType = "todos2018_userType"
+      val sessionType = "hjzy_session"
       val userId = "todos2018_userId"
-      val name = "todos2018_name"
-      val headImg = "head_img"
-      val timestamp = "todos2018_timestamp"
+      val account = "account"
+      val timestamp = "timestamp"
     }
+
+  case class UserBaseInfo(
+    account: String
+  )
 
     case class ToDoListSession(
                                 userInfo:UserBaseInfo,
@@ -38,7 +39,7 @@ object SessionBase{
       def toSessionMap: Map[String, String] = {
         Map(
           SessionTypeKey -> SessionKeys.sessionType,
-          SessionKeys.name -> userInfo.userName,
+          SessionKeys.account -> userInfo.account,
           SessionKeys.timestamp -> time.toString
         )
       }
@@ -60,7 +61,7 @@ trait SessionBase extends SessionSupport with ServiceUtils{
             None
           }else {
             Some(ToDoListSession(
-              UserBaseInfo(sessionMap(SessionKeys.name)),
+              UserBaseInfo(sessionMap(SessionKeys.account)),
               sessionMap(SessionKeys.timestamp).toLong
             ))
           }

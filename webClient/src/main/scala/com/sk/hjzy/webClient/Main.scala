@@ -1,7 +1,7 @@
 package com.sk.hjzy.webClient
 
 import cats.Show
-import com.sk.hjzy.webClient.pages.Login
+import com.sk.hjzy.webClient.pages.{Login, Register}
 import mhtml.mount
 import org.scalajs.dom
 import com.sk.hjzy.webClient.utils.{Http, JsFunc, PageSwitcher}
@@ -17,6 +17,8 @@ object Main extends PageSwitcher {
   val currentPage = currentHashVar.map { ls =>
     println(s"currentPage change to ${ls.mkString(",")}")
     ls match {
+      case "login" :: Nil => Login.app
+      case "register" :: Nil => Register.app
       case _ => Login.app
     }
 
