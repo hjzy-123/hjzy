@@ -205,3 +205,14 @@ exit
 compile
 project webClient
 compile
+reStart
+reload
+reStart
+reload
+reStart
+reStop
+reStart
+reStop
+compile
+reStart
+reStop

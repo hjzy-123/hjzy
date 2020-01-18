@@ -1,0 +1,36 @@
+*{
+    box-sizing: border-box;
+}
+
+.login-header{
+    height: 56px;
+    padding: 10px 60px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.mini-login{
+    height: 32px;
+    width: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-right: 10px;
+}
+
+.mini-login img{
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+    border-radius: 15px;
+    border: 1px solid #cccccc;
+}
+
+.mini-login div, .mini-register{
+    width: 28px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 14px;
+}

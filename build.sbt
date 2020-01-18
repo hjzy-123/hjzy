@@ -5,7 +5,7 @@ val projectVersion = "2019.3.23"
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-val projectMainClass = "com.neo.sk.hjzy.Boot"
+
 
 def commonSettings = Seq(
   version := projectVersion,
@@ -19,13 +19,46 @@ def commonSettings = Seq(
 // shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-lazy val shared =
-  crossProject(JSPlatform, JVMPlatform)
-    .crossType(CrossType.Pure)
-    .settings(commonSettings: _*)
+lazy val protocol = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings: _*)
 
-lazy val sharedJvm = shared.jvm
-lazy val sharedJs = shared.js
+lazy val protocolJvm = protocol.jvm
+lazy val protocolJs = protocol.js
+
+lazy val shared = (project in file("shared"))
+  .settings(name := "shared")
+  .settings(commonSettings: _*)
+
+lazy val rtpClient = (project in file("rtpClient"))
+  .settings(name := "rtpClient")
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Dependencies.akkaSeq,
+    libraryDependencies ++= Dependencies.backendDependencies)
+  .dependsOn(shared)
+
+val rtpServerMain = "com.sk.hjzy.rtpServer.Boot"
+
+lazy val rtpServer = (project in file("rtpServer")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(rtpServerMain),
+    javaOptions in reStart += "-Xmx2g"
+  )
+  .settings(name := "rtpServer")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("rtpServer" -> rtpServerMain),
+    packJvmOpts := Map("rtpServer" -> Seq("-Xmx512m", "-Xms32m")),
+    packExtraClasspath := Map("rtpServer" -> Seq("."))
+  )
+  .settings(
+    libraryDependencies ++= Dependencies.backendDependencies
+  ).dependsOn(protocolJvm, shared, rtpClient)
 
 // Scala-Js frontend
 lazy val webClient = (project in file("webClient"))
@@ -58,7 +91,7 @@ lazy val webClient = (project in file("webClient"))
 
     )
   )
-  .dependsOn(sharedJs)
+  .dependsOn(protocolJs)
 
 
 
@@ -108,7 +141,7 @@ lazy val capture = (project in file("capture")).enablePlugins(PackPlugin)
     libraryDependencies ++= Dependencies.bytedecoLibs,
     libraryDependencies ++= Dependencies4Capture.captureDependencies,
   )
-  .dependsOn(sharedJvm)
+  .dependsOn(protocolJvm)
 
 
 
@@ -134,15 +167,16 @@ lazy val player = (project in file("player")).enablePlugins(PackPlugin)
     libraryDependencies ++= Dependencies.bytedecoLibs,
     libraryDependencies ++= Dependencies4Player.playerDependencies,
   )
-  .dependsOn(sharedJvm)
+  .dependsOn(protocolJvm)
 
 
 
 // Akka Http based backend
+val roomManagerMain = "com.sk.hjzy.roomManager.Boot"
 lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
-    mainClass in reStart := Some(projectMainClass),
+    mainClass in reStart := Some(roomManagerMain),
     javaOptions in reStart += "-Xmx2g"
   )
   .settings(name := "roomManager")
@@ -151,9 +185,9 @@ lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin
     // If you need to specify main classes manually, use packSettings and packMain
     //packSettings,
     // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
-    packMain := Map("hjzy" -> projectMainClass),
-    packJvmOpts := Map("hjzy" -> Seq("-Xmx64m", "-Xms32m")),
-    packExtraClasspath := Map("hjzy" -> Seq("."))
+    packMain := Map("roomManager" -> roomManagerMain),
+    packJvmOpts := Map("roomManager" -> Seq("-Xmx64m", "-Xms32m")),
+    packExtraClasspath := Map("roomManager" -> Seq("."))
   )
   .settings(
     libraryDependencies ++= Dependencies.backendDependencies
@@ -187,10 +221,8 @@ lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin
     (resourceDirectories in Compile) += (crossTarget in webClient).value,
     watchSources ++= (watchSources in webClient).value
   )
-  .dependsOn(sharedJvm)
+  .dependsOn(protocolJvm)
 
-lazy val root = (project in file("."))
-  .aggregate(webClient, roomManager)
-  .settings(name := projectName)
+
 
 
