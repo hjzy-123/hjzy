@@ -10,9 +10,7 @@ import javax.crypto.{Cipher, Mac}
 import javax.xml.bind.DatatypeConverter
 
 import akka.http.scaladsl.model.headers.HttpCookie
-import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{Directive, RequestContext}
-import akka.http.scaladsl.server.Directives.{extractRequestContext, optionalCookie, setCookie}
+import akka.http.scaladsl.server.Directives.{optionalCookie, setCookie}
 import akka.http.scaladsl.server.directives.{BasicDirectives, CookieDirectives}
 
 import scala.util.{Success, Try}

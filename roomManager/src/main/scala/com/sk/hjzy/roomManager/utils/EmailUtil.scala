@@ -2,7 +2,7 @@ package com.sk.hjzy.roomManager.utils
 
 import java.util.{Date, Properties}
 
-import com.sk.hjzy.roomManager.common.AppSettings.mailConf
+import com.sk.hjzy.roomManager.common.AppSettings._
 import javax.mail.Message.RecipientType
 import javax.mail.{Address, Authenticator, PasswordAuthentication, Session, Transport}
 import org.slf4j.LoggerFactory
@@ -16,21 +16,21 @@ object EmailUtil {
 
   def getProperties: Properties = {
     val p = new Properties
-    p.put("mail.smtp.host", mailConf.SMTPHOST)
-    p.put("mail.smtp.port", mailConf.SMTPPORT)
+    p.put("mail.smtp.host", emailHost)
+    p.put("mail.smtp.port", emailPort)
     p.put("mail.transport.protocol", "smtp")
     p.put("mail.smtp.auth", "true")
     p
   }
 
   private val session = Session.getInstance(props,
-    new MyAuthenticator(mailConf.EMAIL_ADDRESS, mailConf.EMAIL_PASSWORD))
+    new MyAuthenticator(emailAddresserEmail, emailAddresserPwd))
 
   def send(subject: String, content: String, to: List[String], cc: List[String] = Nil, bcc: List[String] = Nil, contentType: String = "text/html; charset=utf-8"): Unit = {
     log.debug(s"EmailUtil.sendString subject: $subject, content: $content, to: $to, cc: $cc, bcc: $bcc")
 
     val message = new MimeMessage(session)
-    message.setFrom(new InternetAddress(mailConf.EMAIL_ADDRESS))
+    message.setFrom(new InternetAddress(emailAddresserEmail))
 
     val toAddresses = to.map { email =>
       new InternetAddress(email).asInstanceOf[Address]

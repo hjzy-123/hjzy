@@ -7,56 +7,76 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
-import com.sk.hjzy.roomManager.common.AppSettings._
-import com.sk.hjzy.roomManager.core.webClient.EmailManager
+import com.sk.hjzy.roomManager.common.AppSettings
+import com.sk.hjzy.roomManager.core.{EmailActor, RegisterManager, RoomManager, UserManager}
+import com.sk.hjzy.roomManager.http.HttpService
 
-import scala.util.{Failure, Success}
 import scala.language.postfixOps
-import com.sk.hjzy.roomManager.service.HttpService
-
 import scala.util.{Failure, Success}
 
 /**
-  * User: Taoz
-  * Date: 11/16/2016
-  * Time: 1:00 AM
+  * Author: Tao Zhang
+  * Date: 4/29/2019
+  * Time: 11:28 PM
   */
-object Boot extends HttpService{
-
+object Boot extends HttpService {
 
   import concurrent.duration._
 
-  override implicit val system = ActorSystem("appSystem", config)
-  // the executor should not be the default dispatcher.
-  override implicit val executor: MessageDispatcher =
-    system.dispatchers.lookup("akka.actor.my-blocking-dispatcher")
+  override implicit val system: ActorSystem = ActorSystem("theia", AppSettings.config)
 
-  override implicit val materializer = ActorMaterializer()
-
-  override implicit val timeout = Timeout(20 seconds) // for actor asks
+  override implicit val materializer: Materializer = ActorMaterializer()
 
   override implicit val scheduler = system.scheduler
 
-  val emailManager = system.spawn(EmailManager.create(), "emailManager")
+  override implicit val timeout: Timeout = Timeout(20 seconds)
 
   val log: LoggingAdapter = Logging(system, getClass)
 
+  override implicit val executor: MessageDispatcher = system.dispatchers.lookup("akka.actor.my-blocking-dispatcher")
 
-  def main(args: Array[String]) {
-    log.info("Starting.")
-    val binding = Http().bindAndHandle(routes, httpInterface, httpPort)
-    binding.onComplete {
+//  val userManager = system.spawn(UserManager.create(), "userManager")
+  val userManager = system.spawn(UserManager.create(), "userManager")
+
+//  val roomManager = system.spawn(RoomManager.create(), "roomManager")
+  val roomManager = system.spawn(RoomManager.create(), "roomManager")
+
+//  val registerManager = system.spawn(RegisterManager.create(), "registerManager")
+  val registerManager = system.spawn(RegisterManager.create(), "registerManager")
+
+//  val emailActor = system.spawn(EmailActor.behavior, "emailActor")
+  val emailActor = system.spawn(EmailActor.behavior, "emailActor")
+
+  def main(args: Array[String]): Unit = {
+    //    log.info("Starting.")
+
+    //    val password: Array[Char] = "1qaz@WSX".toCharArray // do not store passwords in code, read them from somewhere safe!
+    //
+    //    val ks: KeyStore = KeyStore.getInstance("PKCS12")
+    //    val keystore = new FileInputStream("./src/main/resources/tomatocc.p12")
+    //    require(keystore != null, "Keystore required!")
+    //    ks.load(keystore, password)
+    //    val keyManagerFactory: KeyManagerFactory = KeyManagerFactory.getInstance("SunX509")
+    //    keyManagerFactory.init(ks, password)
+    //
+    //    val tmf: TrustManagerFactory = TrustManagerFactory.getInstance("SunX509")
+    //    tmf.init(ks)
+    //    val sslContext: SSLContext = SSLContext.getInstance("TLS")
+    //    sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom())
+    //    val https: HttpsConnectionContext = ConnectionContext.https(sslContext)
+
+    //    val httpsBinding = Http().bindAndHandle(Routes, AppSettings.httpInterface, AppSettings.httpPort, connectionContext = https)
+    val httpsBinding = Http().bindAndHandle(Routes, AppSettings.httpInterface, AppSettings.httpPort)
+
+    httpsBinding.onComplete {
       case Success(b) ⇒
         val localAddress = b.localAddress
-        println(s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}")
-//        println(s"Server is listening on http://localhost:${localAddress.getPort}/todos2018/index")
+        println(s"Server is listening on https://${localAddress.getHostName}:${localAddress.getPort}")
       case Failure(e) ⇒
-        println(s"Binding failed with ${e.getMessage}")
+        println(s"httpsBinding failed with ${e.getMessage}")
         system.terminate()
         System.exit(-1)
     }
+
   }
-
-
-
 }

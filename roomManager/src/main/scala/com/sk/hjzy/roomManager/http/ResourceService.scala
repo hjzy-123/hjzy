@@ -1,4 +1,4 @@
-package com.sk.hjzy.roomManager.service
+package com.sk.hjzy.roomManager.http
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
@@ -32,18 +32,29 @@ trait ResourceService {
 
   private val resources = {
     pathPrefix("html") {
-      getFromResourceDirectory("html")
+      extractUnmatchedPath { path =>
+        getFromResourceDirectory("html")
+      }
     } ~ pathPrefix("css") {
-      getFromResourceDirectory("css")
+      extractUnmatchedPath { path =>
+        getFromResourceDirectory("css")
+      }
     } ~
     pathPrefix("js") {
-      getFromResourceDirectory("js")
+      extractUnmatchedPath { path =>
+        getFromResourceDirectory("js")
+      }
     } ~
     pathPrefix("sjsout") {
-      getFromResourceDirectory("sjsout")
+      extractUnmatchedPath { path =>
+        getFromResourceDirectory("sjsout")
+      }
     } ~
     pathPrefix("img") {
       getFromResourceDirectory("img")
+    } ~
+    pathPrefix("music") {
+      getFromResourceDirectory("music")
     }
   }
 

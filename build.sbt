@@ -80,14 +80,13 @@ lazy val webClient = (project in file("webClient"))
     scalaJSUseMainModuleInitializer := true,
     //mainClass := Some("com.neo.sk.virgour.front.Main"),
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.11.1" withSources(),
-      "io.circe" %%% "circe-generic" % "0.11.1",
-      "io.circe" %%% "circe-parser" % "0.11.1",
-      "org.scala-js" %%% "scalajs-dom" % "0.9.7",
-      "io.suzaku" %%% "diode" % "1.1.4",
+      "io.circe" %%% "circe-core" % "0.8.0",
+      "io.circe" %%% "circe-generic" % "0.8.0",
+      "io.circe" %%% "circe-parser" % "0.8.0",
+      "org.scala-js" %%% "scalajs-dom" % "0.9.2",
       "com.lihaoyi" %%% "scalatags" % "0.6.7" withSources(),
-      "com.github.japgolly.scalacss" %%% "core" % "0.5.5" withSources(),
-      "in.nvilla" %%% "monadic-html" % "0.4.0-RC1" withSources(),
+      "org.seekloud" %%% "byteobject" % "0.1.1",
+      "in.nvilla" %%% "monadic-html" % "0.4.0-RC1" withSources()
 
     )
   )
@@ -202,25 +201,23 @@ lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin
       )
     }.taskValue
   }
-  //  .settings(
-  //    (resourceGenerators in Compile) += Def.task {
-  //      val fullJsOut = (fullOptJS in Compile in frontend).value.data
-  //      val fullJsSourceMap = fullJsOut.getParentFile / (fullJsOut.getName + ".map")
-  //      Seq(
-  //        fullJsOut,
-  //        fullJsSourceMap
-  //      )
-  //    }.taskValue)
   .settings((resourceGenerators in Compile) += Def.task {
-  Seq(
-    (packageJSDependencies in Compile in webClient).value
-    //(packageMinifiedJSDependencies in Compile in frontend).value
-  )
-}.taskValue)
+    Seq(
+      (packageJSDependencies in Compile in webClient).value
+      //(packageMinifiedJSDependencies in Compile in frontend).value
+    )
+  }.taskValue)
   .settings(
     (resourceDirectories in Compile) += (crossTarget in webClient).value,
     watchSources ++= (watchSources in webClient).value
   )
+  .settings(scalaJSUseMainModuleInitializer := false)
+  .dependsOn(protocolJvm)
+  .settings(scalaJSUseMainModuleInitializer := false)
+  .dependsOn(protocolJvm)
+
+
+  .settings(scalaJSUseMainModuleInitializer := false)
   .dependsOn(protocolJvm)
 
 

@@ -242,3 +242,7 @@ reStart
 reStop
 reStart
 reStop
+compile
+exit
+reStart
+reStop

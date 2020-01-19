@@ -5,9 +5,9 @@ import java.nio.charset.Charset
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 
-import javax.net.ssl.{ManagerFactoryParameters, TrustManager, X509TrustManager}
-import io.netty.handler.ssl.{SslContext, SslContextBuilder}
+import javax.net.ssl.{ManagerFactoryParameters, TrustManager, TrustManagerFactory, X509TrustManager}
 import io.netty.handler.ssl.util.SimpleTrustManagerFactory
+import io.netty.handler.ssl.{SslContext, SslContextBuilder}
 import org.asynchttpclient._
 import org.asynchttpclient.request.body.multipart.FilePart
 import org.slf4j.LoggerFactory
@@ -27,20 +27,23 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * update by zhangtao 2017-04-04 21:51
   * 1, set request charset in postJsonRequestSend
   *
-  * update by hong 2017-08-09 21:10
-  * 1, add parm addHeader in postJsonRequestSend,getRequestSend
   */
 
 object HttpUtil {
-  val config = {
-    val build = new DefaultAsyncHttpClientConfig.Builder()
+
+  //skip ssl check.
+/*  val config: AsyncHttpClientConfig = {
+    val builder = new DefaultAsyncHttpClientConfig.Builder()
     val sslBuilder = SslContextBuilder.forClient()
-    val tm = new TmFactory()
-    val sslContext = sslBuilder.trustManager(tm).build()
-    build.setSslContext(sslContext).build()
+    sslBuilder.trustManager(new TmFactory())
+    val sslContext = sslBuilder.build()
+    builder.setSslContext(sslContext)
+    builder.build()
   }
 
-  private val ahClientImp: DefaultAsyncHttpClient = new DefaultAsyncHttpClient(config)
+  private val ahClientImp: DefaultAsyncHttpClient = new DefaultAsyncHttpClient(config)*/
+  private val ahClientImp: DefaultAsyncHttpClient = new DefaultAsyncHttpClient()
+
   private val log = LoggerFactory.getLogger(this.getClass)
 
   object Imports extends HttpUtil
@@ -62,6 +65,8 @@ object HttpUtil {
       result.future
     }
   }
+
+
 }
 
 trait HttpUtil {
@@ -75,8 +80,12 @@ trait HttpUtil {
 
   import collection.JavaConverters._
 
-  private def parseResp(response: Response, charset: Charset) = {
+  private def parseResp(response: Response, charset: Charset, needLogRsp:Boolean = true) = {
     val body = new String(response.getResponseBodyAsBytes, charset)
+    if(needLogRsp){
+      log.debug("getRequestSend response headers:" + response.getHeaders)
+      log.debug("getRequestSend response body:" + body)
+    }
 //    log.debug("getRequestSend response headers:" + response.getHeaders)
 //    log.debug("getRequestSend response body:" + body)
     if (response.getStatusCode != 200) {
@@ -91,10 +100,11 @@ trait HttpUtil {
   private def executeRequest(
     methodName: String,
     request: BoundRequestBuilder,
-    charset: Charset
-  )(implicit executor: ExecutionContext) = {
+    charset: Charset,
+    needLogRsp:Boolean = true
+                            )(implicit executor: ExecutionContext) = {
     request.scalaExecute().map { response =>
-      Right(parseResp(response, charset))
+      Right(parseResp(response, charset,needLogRsp))
     }.recover { case e: Throwable => Left(e) }
   }
 
@@ -103,67 +113,26 @@ trait HttpUtil {
     url: String,
     parameters: List[(String, String)],
     jsonStr: String,
-    headers:List[(String,String)] = List(("Content-Type","application/json")),
-    charsetName: String = "UTF-8"
+    charsetName: String = "UTF-8",
+    timeOut:Int = 20 * 1000,
+    needLogRsp:Boolean = true
   )(implicit executor: ExecutionContext): Future[Either[Throwable, String]] = {
-//    log.info("Post Request [" + methodName + "] Processing...")
-//    log.debug(methodName + " url=" + url)
-//    log.debug(methodName + " parameters=" + parameters)
-//    log.debug(methodName + " postData=" + jsonStr)
-    val cs = Charset.forName(charsetName)
-    val request = ahClient.
-      preparePost(url).
-      setFollowRedirect(true).
-      setRequestTimeout(20 * 1000).
-      setCharset(cs).
-      addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava).
-//      addHeader("Content-Type", "application/json").
-      setBody(jsonStr)
-    headers.foreach(h => request.addHeader(h._1,h._2))
-    executeRequest(methodName, request, cs)
-  }
-
-  def getRequestSend(
-    methodName: String,
-    url: String,
-    parameters: List[(String, String)],
-    headers:List[(String,String)] = Nil,
-    responseCharsetName: String = "UTF-8"
-  )(implicit executor: ExecutionContext): Future[Either[Throwable, String]] = {
-    log.info("Get Request [" + methodName + "] Processing...")
-    log.debug(methodName + " url=" + url)
-    log.debug(methodName + " parameters=" + parameters)
-    val request = ahClient.
-      prepareGet(url).
-      setFollowRedirect(true).
-      setRequestTimeout(20 * 1000).
-      addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava)
-    val cs = Charset.forName(responseCharsetName)
-    headers.foreach(h => request.addHeader(h._1,h._2))
-    executeRequest(methodName, request, cs)
-  }
-
-  def postXmlRequestSend(
-                           methodName: String,
-                           url: String,
-                           xmlStr: String,
-                           parameters: List[(String, String)] = Nil,
-                           charsetName: String = "UTF-8"
-                         )(implicit executor: ExecutionContext): Future[Either[Throwable, String]] = {
     log.info("Post Request [" + methodName + "] Processing...")
     log.debug(methodName + " url=" + url)
     log.debug(methodName + " parameters=" + parameters)
-    log.debug(methodName + " postData=" + xmlStr)
+    log.debug(methodName + " postData=" + jsonStr)
     val cs = Charset.forName(charsetName)
+    ahClient.
+      preparePost(url)
     val request = ahClient.
       preparePost(url).
       setFollowRedirect(true).
-      setRequestTimeout(20 * 1000).
+      setRequestTimeout(timeOut).
       setCharset(cs).
       addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava).
-      addHeader("Content-Type", "application/xml").
-      setBody(xmlStr)
-    executeRequest(methodName, request, cs)
+      addHeader("Content-Type", "application/json").
+      setBody(jsonStr)
+    executeRequest(methodName, request, cs, needLogRsp)
   }
 
   def postFileRequestSend(
@@ -182,9 +151,27 @@ trait HttpUtil {
     val request = ahClient.
       preparePost(url).
       setFollowRedirect(true).
-      setRequestTimeout(20 * 1000).
+      setRequestTimeout(60 * 1000).
       addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava).
       addBodyPart(new FilePart("fileUpload", file, null, null, fileName))
+    val cs = Charset.forName(responseCharsetName)
+    executeRequest(methodName, request, cs)
+  }
+
+  def getRequestSend(
+    methodName: String,
+    url: String,
+    parameters: List[(String, String)],
+    responseCharsetName: String = "UTF-8"
+  )(implicit executor: ExecutionContext): Future[Either[Throwable, String]] = {
+    log.info("Get Request [" + methodName + "] Processing...")
+    log.debug(methodName + " url=" + url)
+    log.debug(methodName + " parameters=" + parameters)
+    val request = ahClient.
+      prepareGet(url).
+      setFollowRedirect(true).
+      setRequestTimeout(20 * 1000).
+      addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava)
     val cs = Charset.forName(responseCharsetName)
     executeRequest(methodName, request, cs)
   }
@@ -192,19 +179,23 @@ trait HttpUtil {
 }
 
 
-private class TmFactory extends SimpleTrustManagerFactory{
-  val x509TM = new X509TrustManager {
+
+
+class TmFactory extends SimpleTrustManagerFactory {
+
+  val tm = new X509TrustManager {
+    override def checkServerTrusted(x509Certificates: Array[X509Certificate], s: String): Unit = {}
+
+    override def checkClientTrusted(x509Certificates: Array[X509Certificate], s: String): Unit = {}
+
     override def getAcceptedIssuers: Array[X509Certificate] = null
-
-    override def checkClientTrusted(x509Certificates: Array[X509Certificate], s: String):Unit = {}
-
-    override def checkServerTrusted(x509Certificates: Array[X509Certificate], s: String):Unit = {}
-
   }
 
-  override def engineGetTrustManagers(): Array[TrustManager] = Array[TrustManager](x509TM)
+  override def engineGetTrustManagers(): Array[TrustManager] = Array[TrustManager](tm)
 
   override def engineInit(keyStore: KeyStore): Unit = {}
 
   override def engineInit(managerFactoryParameters: ManagerFactoryParameters): Unit = {}
+
+
 }
