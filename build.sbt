@@ -221,5 +221,28 @@ lazy val roomManager = (project in file("roomManager")).enablePlugins(PackPlugin
   .dependsOn(protocolJvm)
 
 
+val processorMain = "com.sk.hjzy.processor.Boot"
+
+lazy val processor = (project in file("processor")).enablePlugins(PackPlugin)
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in reStart := Some(processorMain),
+    javaOptions in reStart += "-Xmx3g"
+  )
+  .settings(name := "processor")
+  .settings(
+    //pack
+    // If you need to specify main classes manually, use packSettings and packMain
+    //packSettings,
+    // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
+    packMain := Map("processor" -> processorMain),
+    packJvmOpts := Map("processor" -> Seq("-Xmx6g", "-Xms3g")),
+    packExtraClasspath := Map("processor" -> Seq("."))
+  )
+  .settings(
+    libraryDependencies ++= Dependencies.backendDependencies,
+    libraryDependencies ++= Dependencies.bytedecoLibs
+  ).dependsOn(protocolJvm, rtpClient)
+
 
 
