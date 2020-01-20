@@ -1,7 +1,7 @@
 package com.sk.hjzy.roomManager.models.dao
 import com.sk.hjzy.protocol.ptcl.CommonInfo.UserInfo
 import com.sk.hjzy.roomManager.models.SlickTables
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.MySQLProfile.api._
 import com.sk.hjzy.roomManager.Boot.executor
 import com.sk.hjzy.roomManager.utils.DBUtil._
 

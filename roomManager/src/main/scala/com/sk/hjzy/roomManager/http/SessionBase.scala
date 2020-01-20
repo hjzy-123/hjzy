@@ -136,7 +136,7 @@ trait SessionBase extends CirceSupport with SessionSupport {
     case Some(session) =>
       f(session)
     case None =>
-      complete(noSessionError())
+      redirect("/hjzy/webClient#/login", StatusCodes.SeeOther)
   }
 
   protected val optionalAdminSession: Directive1[Option[AdminSession]] = optionalSession.flatMap{

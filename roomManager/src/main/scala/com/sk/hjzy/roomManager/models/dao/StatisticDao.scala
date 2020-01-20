@@ -7,7 +7,7 @@ import com.sk.hjzy.protocol.ptcl.client2Manager.http.StatisticsProtocol.AdminRec
 import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.RecordData
 import com.sk.hjzy.roomManager.utils.DBUtil._
 import com.sk.hjzy.roomManager.models.SlickTables._
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.MySQLProfile.api._
 import com.sk.hjzy.roomManager.Boot.executor
 import com.sk.hjzy.roomManager.models.SlickTables
 

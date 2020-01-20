@@ -7,5 +7,20 @@ package com.sk.hjzy.protocol.ptcl.webClientManager
   */
 object UserProtocol {
 
+  case class RegisterReq(
+    userName: String,
+    password: String,
+    verifyCode: String,
+    email: String
+  )
 
+  case class LoginReq(
+    userName: String,
+    password: String
+  )
+
+  case class LoginByEmailReq(
+    email: String,
+    verifyCode: String
+  )
 }

@@ -8,7 +8,7 @@ import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetRecordLis
 import com.sk.hjzy.protocol.ptcl.distributor2Manager.DistributorProtocol.RecordData
 import com.sk.hjzy.roomManager.utils.DBUtil._
 import com.sk.hjzy.roomManager.models.SlickTables._
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.MySQLProfile.api._
 import com.sk.hjzy.roomManager.Boot.executor
 
 import scala.collection.mutable

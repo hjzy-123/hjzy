@@ -28,6 +28,10 @@ object EmailWorker {
 
   case class Verify4Register(code: String, replyTo: ActorRef[Boolean]) extends Command
 
+  case class GenVerifyCode4Login(replyTo: ActorRef[Boolean]) extends Command
+
+  case class Verify4Login(code: String, replyTo: ActorRef[Boolean]) extends Command
+
   case object StopWork extends Command
 
   case class BusyTimeOut(msg: String) extends Command
@@ -71,7 +75,7 @@ object EmailWorker {
       }
     }
 
-  def work(email: String, registerCode: String = "", changeCode: String = "")
+  def work(email: String, registerCode: String = "", loginCode: String = "", changeCode: String = "")
     (implicit stashBuffer: StashBuffer[Command],
       timer: TimerScheduler[Command]): Behavior[Command] =
     Behaviors.receive[Command]{ (ctx, msg) =>
@@ -84,7 +88,22 @@ object EmailWorker {
           }.onComplete{
             case Success(value) =>
               msg.replyTo ! true
-              ctx.self ! SwitchBehavior("work", work(email, verifyCode, changeCode))
+              ctx.self ! SwitchBehavior("work", work(email, verifyCode, loginCode, changeCode))
+            case Failure(ex) =>
+              msg.replyTo ! false
+              log.info(s"send verify code fail: ${ex.getMessage}")
+          }
+          switchBehavior(ctx, "busy", busy(), InitTime, BusyTimeOut("init time out"))
+
+        case msg: GenVerifyCode4Login =>
+          val loginCode = genVerifyCode
+          log.info(s"code:$loginCode")
+          Future{
+            EmailUtil.send("您的登录验证码", loginCode, List(email))
+          }.onComplete{
+            case Success(value) =>
+              msg.replyTo ! true
+              ctx.self ! SwitchBehavior("work", work(email, registerCode, loginCode, changeCode))
             case Failure(ex) =>
               msg.replyTo ! false
               log.info(s"send verify code fail: ${ex.getMessage}")
@@ -92,9 +111,20 @@ object EmailWorker {
           switchBehavior(ctx, "busy", busy(), InitTime, BusyTimeOut("init time out"))
 
         case msg: Verify4Register =>
+          log.info(s"msg.code:${msg.code}")
+          log.info(s"registerCode:$registerCode")
           if(msg.code == registerCode){
             msg.replyTo ! true
-            work(email, "", changeCode)
+            work(email, "", loginCode, changeCode)
+          }else{
+            msg.replyTo ! false
+            Behaviors.same
+          }
+
+        case msg: Verify4Login =>
+          if(msg.code == loginCode){
+            msg.replyTo ! true
+            work(email, registerCode, "", changeCode)
           }else{
             msg.replyTo ! false
             Behaviors.same

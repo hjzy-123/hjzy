@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.util.Timeout
+import com.sk.hjzy.roomManager.http.webClient.UserService4Web
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -23,7 +24,8 @@ trait HttpService extends ServiceUtils
   with AdminService
   with RecordCommentService
   with StatisticService
-  with ResourceService{
+  with ResourceService
+  with UserService4Web{
 
   implicit val system: ActorSystem
 
@@ -38,7 +40,7 @@ trait HttpService extends ServiceUtils
 
   private val home:Route = pathPrefix("webClient"){
     pathEndOrSingleSlash{
-      getFromResource("html/webClient.html")
+      getFromResource("html/index.html")
     } ~ mobile ~ statistics
   }
 
@@ -62,10 +64,10 @@ trait HttpService extends ServiceUtils
 
   val Routes: Route =
     ignoreTrailingSlash {
-      pathPrefix("theia") {
+      pathPrefix("hjzy") {
         home ~ statistics ~
         pathPrefix("roomManager"){
-          resourceRoutes ~ userRoutes ~ rtpRoutes ~ recordRoutes ~ test ~ file ~ rtmp ~ admin ~ recordComment ~ statistic
+          resourceRoutes ~ userRoutes ~ rtpRoutes ~ recordRoutes ~ test ~ file ~ rtmp ~ admin ~ recordComment ~ statistic ~ webUserRoute
         }
       }
     }

@@ -5,7 +5,7 @@ import com.sk.hjzy.protocol.ptcl.CommonInfo.{RoomInfo, UserDes}
 import com.sk.hjzy.roomManager.common.{AppSettings, Common}
 import com.sk.hjzy.roomManager.models.SlickTables._
 import com.sk.hjzy.roomManager.utils.DBUtil.db
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.MySQLProfile.api._
 import com.sk.hjzy.roomManager.Boot.executor
 import com.sk.hjzy.roomManager.utils.SecureUtil
 
@@ -56,6 +56,9 @@ object UserInfoDao {
     db.run(tUserInfo.filter(_.email === email).result.headOption)
   }
 
+  def checkUser(email: String, name: String) = {
+    db.run(tUserInfo.filter(user => user.email === email && user.userName === name).result.headOption)
+  }
 
   def searchByName(name:String) = {
     db.run(tUserInfo.filter(i => i.userName === name).result.headOption)
