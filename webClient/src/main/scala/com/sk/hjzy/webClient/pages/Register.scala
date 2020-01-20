@@ -44,6 +44,8 @@ object Register extends Index{
           case Right(rst) =>
             if(rst.errCode != 0){
               JsFunc.alert(rst.msg)
+            }else{
+              JsFunc.alert("验证码发送成功")
             }
           case Left(err) =>
             JsFunc.alert("service unavailable")
@@ -53,8 +55,9 @@ object Register extends Index{
       }
 
     }
-
   }
+
+
 
   override def app: Node =
     <div>

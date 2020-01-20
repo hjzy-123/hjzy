@@ -8,6 +8,7 @@ import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 import com.sk.hjzy.roomManager.common.AppSettings
+import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.core.{EmailActor, RegisterManager, RoomManager, UserManager}
 import com.sk.hjzy.roomManager.http.HttpService
 
@@ -46,6 +47,8 @@ object Boot extends HttpService {
 
 //  val emailActor = system.spawn(EmailActor.behavior, "emailActor")
   val emailActor = system.spawn(EmailActor.behavior, "emailActor")
+
+  val emailManager4Web = system.spawn(EmailManager.create(), "emailManager")
 
   def main(args: Array[String]): Unit = {
     //    log.info("Starting.")

@@ -131,11 +131,11 @@ trait StatisticService extends ServiceUtils{
                   AdminRecordInfo(
                     a.id,
                     a.roomid,
-                    a.recordName,
-                    a.recordDes,
+                    a.recordname,
+                    a.recorddes,
                     b.uid,
                     b.userName,
-                    a.startTime,
+                    a.starttime,
                     b.headImg,
                     a.coverImg,
                     a.viewNum,
@@ -175,7 +175,7 @@ trait StatisticService extends ServiceUtils{
             if (v.nonEmpty) {
               val rsp = WatchProfileInfo(p.getOrElse(0l) / 1000, v.filter(!_.temporary).map(_.uid).toSet.size,v.count(!_.temporary),v.count(_.temporary))
               val roomId = q.map(_.roomid).getOrElse(-1l)
-              val startTime = q.map(_.startTime).getOrElse(-1l)
+              val startTime = q.map(_.starttime).getOrElse(-1l)
               val url = s"https://${AppSettings.distributorDomain}/theia/distributor/getRecord/$roomId/$startTime/record.mp4"
               complete(WatchProfileDataByRecordIdRsp(url, Some(rsp)))
             }

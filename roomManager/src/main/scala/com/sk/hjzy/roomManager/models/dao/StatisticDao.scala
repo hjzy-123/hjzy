@@ -66,7 +66,7 @@ object StatisticDao {
       case "view" =>
         (tRecord join tUserInfo on ((a, b) => a.roomid === b.roomid)).sortBy(_._1.viewNum.desc).drop((pageNum - 1) * pageSize).take(pageSize)
       case "time" =>
-        (tRecord join tUserInfo on ((a, b) => a.roomid === b.roomid)).sortBy(_._1.startTime.desc).drop((pageNum - 1) * pageSize).take(pageSize)
+        (tRecord join tUserInfo on ((a, b) => a.roomid === b.roomid)).sortBy(_._1.starttime.desc).drop((pageNum - 1) * pageSize).take(pageSize)
       case _ =>
         (tRecord join tUserInfo on ((a, b) => a.roomid === b.roomid)).sortBy(_._1.likeNum.desc).drop((pageNum - 1) * pageSize).take(pageSize)
     }

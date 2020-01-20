@@ -15,13 +15,13 @@ object MySlickCodeGenerator {
 
   import concurrent.ExecutionContext.Implicits.global
 
-  val slickProfile = "slick.jdbc.PostgresProfile"
-  val jdbcDriver = "org.postgresql.Driver"
-  val url = "jdbc:postgresql://10.1.29.248:5432/theia"
+  val slickProfile = "slick.jdbc.MySQLProfile"
+  val jdbcDriver = "com.mysql.jdbc.Driver"
+  val url = "jdbc:mysql://cdb-8xs0z9la.cd.tencentcdb.com:10007/hjzy?characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
   val outputFolder = "target/gencode/genTablesPsql"
   val pkg = "com.sk.hjzy.roomManager.models"
-  val user = "theia"
-  val password = "1qaz@WSX"//Rm1qaz@WSX
+  val user = "root"
+  val password = "wqf007wqf@"//Rm1qaz@WSX
 
 
   //val dbDriver = MySQLDriver

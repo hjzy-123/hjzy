@@ -27,7 +27,20 @@ object UserInfoDao {
   }
 
   def addUser(email:String, name:String, pw:String, token:String, timeStamp:Long,rtmpToken:String) = {
-    db.run(tUserInfo += rUserInfo(1, name, pw, 1, token, timeStamp,Common.DefaultImg.headImg,Common.DefaultImg.coverImg,email,timeStamp,rtmpToken))
+
+    val action =
+      for(
+        roomIds <- tUserInfo.map(_.roomid).result;
+        t <- {
+          val maxRooId =
+            if(roomIds.nonEmpty) roomIds.max
+            else 0l
+          tUserInfo += rUserInfo(1, name, pw, maxRooId, token, timeStamp,Common.DefaultImg.headImg,Common.DefaultImg.coverImg,email,timeStamp,rtmpToken)
+        }
+      ) yield{
+        t
+      }
+    db.run(action.transactionally)
   }
 
   def modifyImg4User(userId:Long,fileName:String,imgType:Int) = {

@@ -75,14 +75,14 @@ trait RecordCommentService extends ServiceUtils{
                         case Some(uid) =>
                           userInfoLs.find(_.userId == uid) match{
                             case Some(authorUerInfo) =>
-                              CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,userInfo.userName,userInfo.headImgUrl,r.authorUid,Some(authorUerInfo.userName),Some(authorUerInfo.headImgUrl))
+                              CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,userInfo.userName,userInfo.headImgUrl,r.authorUid,Some(authorUerInfo.userName),Some(authorUerInfo.headImgUrl))
 
                             case None =>
-                              CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,userInfo.userName,userInfo.headImgUrl)
+                              CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,userInfo.userName,userInfo.headImgUrl)
 
                           }
                         case None =>
-                          CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,userInfo.userName,userInfo.headImgUrl,r.authorUid)
+                          CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,userInfo.userName,userInfo.headImgUrl,r.authorUid)
 
                       }
                     case None =>
@@ -90,14 +90,14 @@ trait RecordCommentService extends ServiceUtils{
                         case Some(uid) =>
                           userInfoLs.find(_.userId == uid) match{
                             case Some(authorUerInfo) =>
-                              CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,"","",r.authorUid,Some(authorUerInfo.userName),Some(authorUerInfo.headImgUrl))
+                              CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,"","",r.authorUid,Some(authorUerInfo.userName),Some(authorUerInfo.headImgUrl))
 
                             case None =>
-                              CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,"","",r.authorUid)
+                              CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,"","",r.authorUid)
 
                           }
                         case None =>
-                          CommentInfo(r.commentId,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativeTime,r.commentUid,"","",r.authorUid)
+                          CommentInfo(r.commentid,r.roomId,r.recordTime,r.comment,r.commentTime,r.relativetime,r.commentUid,"","",r.authorUid)
                       }
 
                   }

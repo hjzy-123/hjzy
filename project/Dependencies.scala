@@ -46,7 +46,7 @@ object Dependencies {
   val hikariCP = "com.zaxxer" % "HikariCP" % "2.7.9"
   val logback = "ch.qos.logback" % "logback-classic" % "1.2.3"
   val codec = "commons-codec" % "commons-codec" % "1.10"
-  val postgresql = "org.postgresql" % "postgresq·l" % "9.4.1208"
+  val postgresql = "org.postgresql" % "postgresq" % "9.4.1208"
   val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
   val ehcache = "net.sf.ehcache" % "ehcache" % "2.10.6"
   val byteobject = "org.seekloud" %% "byteobject" % "0.1.1"

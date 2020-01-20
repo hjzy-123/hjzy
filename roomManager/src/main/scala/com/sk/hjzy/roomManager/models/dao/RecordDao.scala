@@ -21,7 +21,7 @@ object RecordDao {
   }
 
   def searchRecord(roomId:Long, startTime:Long):Future[Option[RecordInfo]] = {
-    val record = db.run(tRecord.filter(i => i.roomid === roomId && i.startTime === startTime).result.headOption)
+    val record = db.run(tRecord.filter(i => i.roomid === roomId && i.starttime === startTime).result.headOption)
     record.flatMap{resOpt =>
       if (resOpt.isEmpty)
         Future(None)
@@ -29,11 +29,11 @@ object RecordDao {
         val r = resOpt.get
         val res = UserInfoDao.searchByRoomId(r.roomid).map{w =>
           if(w.nonEmpty){
-            Some(RecordInfo(r.id,r.roomid,r.recordName,r.recordDes,w.get.uid,w.get.userName,r.startTime,
+            Some(RecordInfo(r.id,r.roomid,"","",w.get.uid,w.get.userName,r.starttime,
               UserInfoDao.getHeadImg(w.get.headImg),UserInfoDao.getCoverImg(r.coverImg),r.viewNum,r.likeNum,r.duration))
           }else{
             log.debug("获取主播信息失败，主播不存在")
-            Some(RecordInfo(r.id,r.roomid,r.recordName,r.recordDes,-1l,"",r.startTime,
+            Some(RecordInfo(r.id,r.roomid,r.recordname,r.recorddes,-1l,"",r.starttime,
               UserInfoDao.getHeadImg(""),UserInfoDao.getCoverImg(r.coverImg),r.viewNum,r.likeNum,r.duration))
           }
         }
@@ -54,7 +54,7 @@ object RecordDao {
   def searchRecordById(recordIdList:List[Long]) ={
     Future.sequence(recordIdList.map{id =>
       db.run(tRecord.filter(_.id === id).result.headOption)
-    }).map{r => r.filter(_.nonEmpty).map(_.get).map(r => RecordData(r.roomid,r.startTime))}
+    }).map{r => r.filter(_.nonEmpty).map(_.get).map(r => RecordData(r.roomid,r.starttime))}
   }
 
   def deleteRecordById(recordIdList:List[Long]) ={
@@ -67,18 +67,18 @@ object RecordDao {
 
 
   def getRecordAll(sortBy:String,pageNum:Int,pageSize:Int) :Future[List[RecordInfo]]= {
-    val records = if (sortBy == "time") db.run(tRecord.sortBy(_.startTime.reverse).drop((pageNum - 1) * pageSize).take(pageSize).result)
+    val records = if (sortBy == "time") db.run(tRecord.sortBy(_.starttime.reverse).drop((pageNum - 1) * pageSize).take(pageSize).result)
     else if (sortBy == "view") db.run(tRecord.sortBy(_.viewNum.reverse).drop((pageNum - 1) * pageSize).take(pageSize).result)
     else db.run(tRecord.sortBy(_.likeNum.reverse).drop((pageNum - 1) * pageSize).take(pageSize).result)
     records.flatMap{ls =>
       val res = ls.map{r =>
         UserInfoDao.searchByRoomId(r.roomid).map{w =>
           if(w.nonEmpty){
-            RecordInfo(r.id,r.roomid,r.recordName,r.recordDes,w.get.uid,w.get.userName,r.startTime,
+            RecordInfo(r.id,r.roomid,r.recordname,r.recorddes,w.get.uid,w.get.userName,r.starttime,
               UserInfoDao.getHeadImg(w.get.headImg),UserInfoDao.getCoverImg(r.coverImg),r.viewNum,r.likeNum,r.duration)
           }else{
             log.debug("获取主播信息失败，主播不存在")
-            RecordInfo(r.id,r.roomid,r.recordName,r.recordDes,-1l,"",r.startTime,
+            RecordInfo(r.id,r.roomid,r.recordname,r.recorddes,-1l,"",r.starttime,
               UserInfoDao.getHeadImg(""),UserInfoDao.getCoverImg(r.coverImg),r.viewNum,r.likeNum,r.duration)
           }
         }
@@ -93,17 +93,17 @@ object RecordDao {
   }
 
   def updateViewNum(roomId:Long, startTime:Long, num:Int) = {
-    db.run(tRecord.filter(i => i.roomid === roomId && i.startTime === startTime).map(_.viewNum).update(num))
+    db.run(tRecord.filter(i => i.roomid === roomId && i.starttime === startTime).map(_.viewNum).update(num))
 
   }
 
   def getAuthorRecordList(roomId: Long): Future[List[RecordInfo]] = {
     val resList = UserInfoDao.searchByRoomId(roomId).flatMap{
       case Some(author) =>
-        val records = db.run(tRecord.filter(_.roomid === roomId).sortBy(_.startTime.reverse).result)
+        val records = db.run(tRecord.filter(_.roomid === roomId).sortBy(_.starttime.reverse).result)
         records.map{ls =>
           val res = ls.map{r =>
-            RecordInfo(r.id,r.roomid,r.recordName,r.recordDes,author.uid,author.userName,r.startTime,
+            RecordInfo(r.id,r.roomid,r.recordname,r.recorddes,author.uid,author.userName,r.starttime,
               UserInfoDao.getHeadImg(author.headImg),UserInfoDao.getCoverImg(r.coverImg),r.viewNum,r.likeNum,r.duration)
           }.toList
           res

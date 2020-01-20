@@ -11,7 +11,7 @@ import scala.concurrent.Future
   * */
 object RecordCommentDAO {
   def addRecordComment(r:SlickTables.rRecordComment):Future[Long] = {
-    db.run(SlickTables.tRecordComment.returning(SlickTables.tRecordComment.map(_.commentId)) += r)
+    db.run(SlickTables.tRecordComment.returning(SlickTables.tRecordComment.map(_.commentid)) += r)
   }
 
   def getRecordComment(roomId:Long,recordTime:Long): Future[scala.Seq[SlickTables.tRecordComment#TableElementType]] = {
