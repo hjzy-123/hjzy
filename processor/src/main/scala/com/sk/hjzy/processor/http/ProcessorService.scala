@@ -18,13 +18,17 @@ import akka.http.scaladsl.model.headers.HttpOriginRange
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
-import com.sk.hjzy.processor.models.MpdInfoDao
-import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{NewConnect, NewConnectRsp, CloseRoom, CloseRoomRsp, UpdateRoomInfo, UpdateRsp}
+import com.sk.hjzy.processor.common.AppSettings.recordLocation
+import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 
 trait ProcessorService extends ServiceUtils {
+
+  private val settings = CorsSettings.defaultSettings.withAllowedOrigins(
+    HttpOriginMatcher.*
+  )
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
@@ -96,12 +100,23 @@ trait ProcessorService extends ServiceUtils {
     showStreamLog = !showStreamLog
     complete(showStreamLog)
   }
+
+  val getRecord: Route = (path("getRecord" / Segments(3)) & get & pathEndOrSingleSlash & cors(settings)){
+    case roomId :: startTime :: file :: Nil =>
+      println(s"getRecord req for $roomId/$startTime/$file.")
+      val f = new File(s"$recordLocation$roomId/$startTime/$file").getAbsoluteFile
+      getFromFile(f,ContentTypes.`application/octet-stream`)
+
+    case x =>
+      log.error(s"errs in getRecord: $x")
+      complete(fileNotExistError)
+  }
 //
 //  val processorRoute:Route = pathPrefix("processor") {
 //    updateRoomInfo ~ closeRoom ~ getMpd ~ getRtmpUrl ~ getDash ~ getMpd4Record ~ getRecordList ~ upLoadImg ~ streamLog
 //  }
 
   val processorRoute:Route = pathPrefix("processor") {
-   newConnect  ~ closeRoom ~ updateRoomInfo  ~ upLoadImg ~ streamLog
+   newConnect  ~ closeRoom ~ updateRoomInfo  ~ upLoadImg ~ streamLog ~ getRecord
   }
 }

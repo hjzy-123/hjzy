@@ -48,7 +48,8 @@ trait RecordService {
               dealFutureResult {
                 StatisticDao.addObserveEvent(if (req.userIdOpt.nonEmpty) req.userIdOpt.get else 1l, recordInfo.recordId, false, req.userIdOpt.isEmpty, req.inTime).map { r =>
                   RecordDao.updateViewNum(req.roomId, req.startTime, recordInfo.observeNum + 1)
-                  val url = s"https://${AppSettings.distributorDomain}/theia/distributor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
+                  //todo  processorDomain
+                  val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
                   complete(SearchRecordRsp(url, recordInfo))
 
                 }

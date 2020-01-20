@@ -246,3 +246,4 @@ compile
 exit
 reStart
 reStop
+reStart

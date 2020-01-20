@@ -44,7 +44,7 @@ trait HttpService extends
 
 
   val routes =
-    pathPrefix("theia") {
+    pathPrefix("hjzy") {
        resourceRoutes ~ processorRoute
     }
 
