@@ -25,6 +25,10 @@ object EmailManager {
 
   case class Verify4Login(email: String, code: String, replyTo: ActorRef[Boolean]) extends Command
 
+  case class GenVerifyCode4Password(email: String, replyTo: ActorRef[Boolean]) extends Command
+
+  case class Verify4Password(email: String, code: String, replyTo: ActorRef[Boolean]) extends Command
+
   def create(): Behavior[Command] =
     Behaviors.setup[Command]{ ctx  =>
       log.info("email manager actor is starting...")
@@ -56,6 +60,10 @@ object EmailManager {
           getEmailWorker(ctx, msg.email) ! EmailWorker.GenVerifyCode4Login(msg.replyTo)
           Behaviors.same
 
+        case msg: GenVerifyCode4Password =>
+          getEmailWorker(ctx, msg.email) ! EmailWorker.GenVerifyCode4Password(msg.replyTo)
+          Behaviors.same
+
         case msg: Verify4Login =>
           if(ctx.child(s"emailWorker-${msg.email}").isEmpty){
             msg.replyTo ! false
@@ -64,6 +72,17 @@ object EmailManager {
             log.info("true")
             val actor = ctx.child(s"emailWorker-${msg.email}").get.unsafeUpcast[EmailWorker.Command]
             actor ! EmailWorker.Verify4Login(msg.code, msg.replyTo)
+          }
+          Behaviors.same
+
+        case msg: Verify4Password =>
+          if(ctx.child(s"emailWorker-${msg.email}").isEmpty){
+            msg.replyTo ! false
+            log.info("false")
+          }else{
+            log.info("true")
+            val actor = ctx.child(s"emailWorker-${msg.email}").get.unsafeUpcast[EmailWorker.Command]
+            actor ! EmailWorker.Verify4Password(msg.code, msg.replyTo)
           }
           Behaviors.same
       }

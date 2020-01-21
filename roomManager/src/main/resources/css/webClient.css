@@ -200,3 +200,111 @@ input{
 .registerBtn1:hover{
     cursor: pointer;
 }
+
+.forgetPassword .f-header{
+    margin: 0 auto;
+    width: 980px;
+    height: 14px;
+    line-height: 14px;
+    font-size: 14px;
+    color: #606266;
+}
+
+.forgetPassword .f-header a{
+    color: #303133;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.forgetPassword .f-header a:hover{
+    color: #00A1D6;
+}
+
+.forgetPassword .steps{
+    width: 500px;
+    height: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto 60px;
+}
+
+.steps .line{
+    height: 0;
+    border-bottom: 1px solid #e5e9ef;
+    width: 60px;
+}
+
+.steps .step{
+    height: 28px;
+    width: 115px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    cursor: pointer;
+}
+
+.steps .step div:nth-child(1){
+    width: 24px;
+    height: 24px;
+    line-height: 20px;
+    border-radius: 12px;
+    border: 2px solid #ccd0d7;
+    color: #ccd0d7;
+    text-align: center;
+}
+
+.steps .step div:nth-child(2){
+    color: #99a2aa;
+    font-weight: 700;
+    font-size: 18px;
+    height: 24px;
+    line-height: 24px;
+}
+
+.changeStep input{
+    display:block;
+    border-radius:4px;
+    width:350px;
+    height:40px;
+    border:1px solid #dcdfe6;
+    line-height:40px;
+    font-size:14px;
+    text-indent: 20px;
+}
+
+.changeStep .step1Confirm{
+    width:350px;
+    height:40px;
+    line-height: 40px;
+    text-align: center;
+    background-color: #00a1d6;
+    color: #ffffff;
+    font-size: 14px;
+    border-radius: 4px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.changeStep2 > div{
+    width: 440px;
+    margin: 0 auto 30px;
+    height: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.changeStep2 > div > div:nth-child(1){
+    line-height: 40px;
+    height: 40px;
+    text-align: right;
+    width: 80px;
+    font-size: 14px;
+    color: #222;
+    margin-right: 10px;
+}
+
+
+

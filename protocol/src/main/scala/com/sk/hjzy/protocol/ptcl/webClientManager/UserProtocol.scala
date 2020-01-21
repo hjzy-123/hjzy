@@ -23,4 +23,10 @@ object UserProtocol {
     email: String,
     verifyCode: String
   )
+
+  case class ResetPassword(
+    email: String,
+    password: String,
+    verifyCode: String
+  )
 }

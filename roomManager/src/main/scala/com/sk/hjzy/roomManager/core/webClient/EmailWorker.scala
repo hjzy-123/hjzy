@@ -32,6 +32,10 @@ object EmailWorker {
 
   case class Verify4Login(code: String, replyTo: ActorRef[Boolean]) extends Command
 
+  case class GenVerifyCode4Password(replyTo: ActorRef[Boolean]) extends Command
+
+  case class Verify4Password(code: String, replyTo: ActorRef[Boolean]) extends Command
+
   case object StopWork extends Command
 
   case class BusyTimeOut(msg: String) extends Command
@@ -110,6 +114,21 @@ object EmailWorker {
           }
           switchBehavior(ctx, "busy", busy(), InitTime, BusyTimeOut("init time out"))
 
+        case msg: GenVerifyCode4Password =>
+          val passwordCode = genVerifyCode
+          log.info(s"code:$passwordCode")
+          Future{
+            EmailUtil.send("您的重置密码验证码", passwordCode, List(email))
+          }.onComplete{
+            case Success(_) =>
+              msg.replyTo ! true
+              ctx.self ! SwitchBehavior("work", work(email, registerCode, loginCode, passwordCode))
+            case Failure(ex) =>
+              msg.replyTo ! false
+              log.info(s"send verify code fail: ${ex.getMessage}")
+          }
+          switchBehavior(ctx, "busy", busy(), InitTime, BusyTimeOut("init time out"))
+
         case msg: Verify4Register =>
           log.info(s"msg.code:${msg.code}")
           log.info(s"registerCode:$registerCode")
@@ -125,6 +144,17 @@ object EmailWorker {
           if(msg.code == loginCode){
             msg.replyTo ! true
             work(email, registerCode, "", changeCode)
+          }else{
+            msg.replyTo ! false
+            Behaviors.same
+          }
+
+        case msg: Verify4Password =>
+          log.info(s"changeCode:$changeCode")
+          log.info(s"msg.code:${msg.code}")
+          if(msg.code == changeCode){
+            msg.replyTo ! true
+            work(email, registerCode, loginCode, "")
           }else{
             msg.replyTo ! false
             Behaviors.same

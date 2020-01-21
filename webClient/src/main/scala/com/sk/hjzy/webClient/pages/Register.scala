@@ -5,6 +5,7 @@ import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.RegisterReq
 import com.sk.hjzy.webClient.{Index, Routes}
 import com.sk.hjzy.webClient.utils.{Http, JsFunc}
 import com.sk.hjzy.protocol.ptcl.webClientManager._
+import com.sk.hjzy.webClient.component.Header
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.parser._
@@ -100,16 +101,7 @@ object Register extends Index{
 
   override def app: Node =
     <div>
-      <div class="login-header">
-        <a class="mini-login" href="/hjzy/webClient#/login">
-          <img src="/hjzy/roomManager/static/img/akari.jpg"></img>
-          <div>登录</div>
-        </a>
-        <a class="mini-register" href="/hjzy/webClient#/register">注册</a>
-      </div>
-      <div class="header-banner">
-        <img src="/hjzy/roomManager/static/img/header.png"></img>
-      </div>
+      {Header.app}
       <div class="login-title">
         <span>注册</span>
         <div class="line"></div>
@@ -120,7 +112,7 @@ object Register extends Index{
         <input type="text" placeholder="输入常用邮箱" id="email"></input>
         <div class="verify" style="height:42px;width:420px;margin-bottom:30px">
           <input type="text" class="verifyCode" placeholder="请输入邮箱验证码" id="verifyCode" style="width:290px;height:40px"></input>
-          <Button style="height:40px;width:120px" onclick={(e: Event) => {genVerifyCode(e)}}>点击获取</Button>
+          <Button style="height:40px;width:120px;border:none;" onclick={(e: Event) => {genVerifyCode(e)}}>点击获取</Button>
         </div>
         <div class="registerBtn1" id="registerBtn" onclick={() => {register()}}>注册</div>
       </div>

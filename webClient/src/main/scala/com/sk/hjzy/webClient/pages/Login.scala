@@ -5,6 +5,7 @@ import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq,
 import com.sk.hjzy.webClient.{Index, Routes}
 import com.sk.hjzy.webClient.utils.{Http, JsFunc}
 import com.sk.hjzy.protocol.ptcl.webClientManager._
+import com.sk.hjzy.webClient.component.Header
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.parser._
@@ -85,9 +86,10 @@ object Login extends Index{
         <div>
           <div>
             <input type="text" placeholder="你的账号" class="account" id="account"></input>
-            <input type="password" class="account" placeholder="密码" id="password"></input>
+            <input type="password" style="height:40px;" class="account" placeholder="密码" id="password"></input>
           </div>
-          <div style="margin-top:20px;display:flex;align-items:center;justify-content: flex-start;height:40px">
+          <a href="/hjzy/webClient#/findPassword" style="display:block;margin-right:55px;text-align:right;color:#00a1d6;font-size:12px;margin-top:0px;cursor:pointer;">忘记密码？</a>
+          <div style="margin-top:5px;display:flex;align-items:center;justify-content: flex-start;height:40px">
             <div class="loginBtn" onclick={() => {loginByAccount()}}>登录</div>
             <div class="registerBtn" onclick={()=> {dom.window.location.href ="/hjzy/webClient#/register"}}>注册</div>
           </div>
@@ -98,10 +100,11 @@ object Login extends Index{
             <input type="text" placeholder="填写邮箱" class="account" id="email"></input>
             <div class="verify">
               <input type="text" class="verifyCode" placeholder="输入验证码" id="verifyCode"></input>
-              <Button onclick = {(e: Event) => {genVerifyCode(e)}}>获取验证码</Button>
+              <Button style="border:none" onclick = {(e: Event) => {genVerifyCode(e)}}>获取验证码</Button>
             </div>
           </div>
-          <div style="margin-top:50px;display:flex;align-items:center;justify-content: flex-start;height:40px">
+          <a href="/hjzy/webClient#/findPassword" style="cursor:pointer;display:block;margin-right:55px;text-align:right;color:#00a1d6;font-size:12px;margin-top:0px">忘记密码？</a>
+          <div style="margin-top:5px;display:flex;align-items:center;justify-content: flex-start;height:40px">
             <div class="loginBtn" onclick={() => {loginByEmail()}}>登录</div>
             <div class="registerBtn" onclick={()=> {dom.window.location.href ="/hjzy/webClient#/register"}}>注册</div>
           </div>
@@ -111,16 +114,7 @@ object Login extends Index{
 
   override def app: Node =
     <div>
-      <div class="login-header">
-        <a class="mini-login" href="/hjzy/webClient#/login">
-          <img src="/hjzy/roomManager/static/img/akari.jpg"></img>
-          <div>登录</div>
-        </a>
-        <a class="mini-register" href="/hjzy/webClient#/register">注册</a>
-      </div>
-      <div class="header-banner">
-        <img src="/hjzy/roomManager/static/img/header.png"></img>
-      </div>
+      {Header.app}
       <div class="login-title">
         <span>登录</span>
         <div class="line"></div>

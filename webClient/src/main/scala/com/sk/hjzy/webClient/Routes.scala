@@ -13,5 +13,10 @@ object Routes {
     val login = baseUrl + "/login"
     val loginByEmail = baseUrl + "/loginByEmail"
     def genLoginVerifyCode(email: String) = baseUrl + s"/genLoginVerifyCode?email=$email"
+    def checkEmail(email: String) = baseUrl + s"/checkEmail?email=$email"
+    def genPasswordVerifyCode(email: String) = baseUrl + s"/genPasswordVerifyCode?email=$email"
+    val resetPassword = baseUrl + "/resetPassword"
+    val logout = baseUrl + "/logout"
   }
+
 }

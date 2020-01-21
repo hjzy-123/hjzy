@@ -8,10 +8,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.scaladsl.Flow
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ErrorRsp, SuccessRsp}
-import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq, LoginReq, RegisterReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq, LoginReq, RegisterReq, ResetPassword}
 import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
-import com.sk.hjzy.roomManager.http.ServiceUtils
+import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
 import com.sk.hjzy.roomManager.http.SessionBase.UserSession
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.utils.SecureUtil
@@ -27,7 +27,7 @@ import scala.util.{Failure, Success}
   * Date: 2020/1/20
   * Time: 14:54
   */
-trait UserService4Web extends ServiceUtils {
+trait UserService4Web extends ServiceUtils with SessionBase{
 
   private val tokenExistTime = AppSettings.tokenExistTime * 1000L // seconds
 
@@ -54,13 +54,13 @@ trait UserService4Web extends ServiceUtils {
               dealFutureResult{
                 UserInfoDao.checkUser(req.email, req.userName).map{ userOpt =>
                   if(userOpt.isDefined){
-                    complete(ErrorRsp(100003, "用户名已注册"))
+                    complete(ErrorRsp(100003, "用户已注册"))
                   }else{
                     val timestamp = System.currentTimeMillis()
                     val token = SecureUtil.nonceStr(40)
                     dealFutureResult{
                       UserInfoDao.addUser(
-                        req.email, req.userName,SecureUtil.getSecurePassword(req.userName, req.email, timestamp),token,timestamp,SecureUtil.nonceStr(40)
+                        req.email, req.userName,SecureUtil.getSecurePassword(req.password, req.email, timestamp),token,timestamp,SecureUtil.nonceStr(40)
                       ).map{ res =>
                         complete(SuccessRsp(0, "ok"))
                       }
@@ -110,7 +110,7 @@ trait UserService4Web extends ServiceUtils {
     }
   }
 
-  def genLoginVerifyCode = (path("genLoginVerifyCode") & get){
+  private val genLoginVerifyCode = (path("genLoginVerifyCode") & get){
     parameters('email.as[String]){email =>
       dealFutureResult{
         UserInfoDao.checkEmail(email).map{ rst =>
@@ -169,8 +169,84 @@ trait UserService4Web extends ServiceUtils {
     }
   }
 
+  private val checkEmail = (path("checkEmail") & get) {
+    parameters('email.as[String]){ email =>
+      dealFutureResult{
+        UserInfoDao.checkEmail(email).map{ user =>
+          if(user.isDefined) complete(SuccessRsp(0, "ok"))
+          else complete(ErrorRsp(100001, "邮箱未注册"))
+        }
+      }
+    }
+  }
+
+  private val genPasswordVerifyCode = (path("genPasswordVerifyCode") & get){
+    parameters('email.as[String]){ email =>
+      dealFutureResult{
+        UserInfoDao.checkEmail(email).map{ rst =>
+          if(rst.isDefined){
+            val futureRsp: Future[Boolean] = emailManager4Web ? (EmailManager.GenVerifyCode4Password(email, _))
+            dealFutureResult{
+              futureRsp.map{ rst =>
+                if(rst) complete(SuccessRsp(0, "ok"))
+                else complete(ErrorRsp(100007, "获取验证码失败"))
+              }
+            }
+          }else{
+            complete(100006, "该邮箱未注册")
+          }
+        }
+      }
+    }
+  }
+
+  private val resetPassword = (path("resetPassword") & post){
+    entity(as[Either[Error, ResetPassword]]){
+      case Right(req) =>
+        val verifyRsp: Future[Boolean] = emailManager4Web ? (EmailManager.Verify4Password(req.email, req.verifyCode, _))
+        dealFutureResult{
+          verifyRsp.map{ rst =>
+            if(rst){
+              dealFutureResult{
+                UserInfoDao.checkEmail(req.email).map{ rst =>
+                  if(rst.isDefined){
+                    val password = SecureUtil.getSecurePassword(req.password, req.email, rst.get.createTime)
+                    dealFutureResult{
+                      UserInfoDao.updatePsw(rst.get.uid, password).map{ rst =>
+                        complete(SuccessRsp(0, "ok"))
+                      }.recover{
+                        case e: Exception =>
+                          println(s"update password error:${e.getMessage}")
+                          complete(ErrorRsp(100007, "修改密码失败"))
+                      }
+                    }
+                  }else{
+                    complete(ErrorRsp(100006, "邮箱未注册"))
+                  }
+                }
+              }
+            }else{
+              complete(ErrorRsp(100005, "验证码错误"))
+            }
+          }
+        }
+      case Left(err) =>
+        complete(ErrorRsp(100003, "无效参数"))
+    }
+  }
+
+
+  private val logout = (path("logout") & get){
+    authUser{ _ =>
+      invalidateSession{
+        complete(SuccessRsp(0, "ok"))
+      }
+    }
+  }
+
 
   val webUserRoute: Route = pathPrefix("webUser"){
-    genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail
+    genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
+    genPasswordVerifyCode ~ resetPassword ~ logout
   }
 }
