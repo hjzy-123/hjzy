@@ -25,7 +25,7 @@ import scala.util.matching.Regex
   */
 object Register extends Index{
 
-  var pattern: Regex = """@""".r
+  var pattern: Regex = """[\\{}<>"'/&\n\r|$%@‘’“”]|[^\s\u4e00-\u9fa5_a-zA-Z0-9`~!@#$%^&*()_+\[\]\\;',./{}|:"<>?～！¥…（）—【】、；，。「」：《》？]""".r
 
   val emailPattern: Regex = """^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$""".r
 

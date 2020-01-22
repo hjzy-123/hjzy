@@ -17,6 +17,8 @@ object Routes {
     def genPasswordVerifyCode(email: String) = baseUrl + s"/genPasswordVerifyCode?email=$email"
     val resetPassword = baseUrl + "/resetPassword"
     val logout = baseUrl + "/logout"
+    val getUserInfo = baseUrl + "/getUserInfo"
+    def updateInfo(name: String) = baseUrl + s"/updateInfo?name=$name"
   }
 
 }

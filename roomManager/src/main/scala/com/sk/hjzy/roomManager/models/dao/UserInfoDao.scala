@@ -64,6 +64,10 @@ object UserInfoDao {
     db.run(tUserInfo.filter(i => i.userName === name).result.headOption)
   }
 
+  def updateNameAndImg(uid: Long, name: String, img: String) = {
+    db.run(tUserInfo.filter(_.uid === uid).map(user => (user.userName, user.headImg)).update((name, img)))
+  }
+
   def searchById(uid:Long) = {
     db.run(tUserInfo.filter(i => i.uid === uid).result.headOption)
   }

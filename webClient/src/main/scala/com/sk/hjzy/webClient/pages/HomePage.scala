@@ -31,7 +31,7 @@ object HomePage extends Index{
   override def app: Node ={
     <div>
       <div class="login-header">
-        <a class="mini-login" href="/hjzy/webClient#/login" style="display:block;display:flex;width:100px;">
+        <a class="mini-login" href="/hjzy/webClient#/personalSpace" style="display:block;display:flex;width:100px;">
           <img src="/hjzy/roomManager/static/img/akari.jpg"></img>
           <div style="width:60px">个人中心</div>
         </a>

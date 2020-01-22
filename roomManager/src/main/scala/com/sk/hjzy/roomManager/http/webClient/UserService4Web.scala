@@ -1,23 +1,27 @@
 package com.sk.hjzy.roomManager.http.webClient
 
+import java.net.{URLDecoder, URLEncoder}
+
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive1, Route}
 import com.sk.hjzy.roomManager.Boot.{emailManager4Web, executor, roomManager, scheduler, timeout, userManager}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{FileIO, Flow, Source}
+import akka.util.ByteString
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ErrorRsp, SuccessRsp}
-import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq, LoginReq, RegisterReq, ResetPassword}
+import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, LoginByEmailReq, LoginReq, RegisterReq, ResetPassword}
 import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
 import com.sk.hjzy.roomManager.http.SessionBase.UserSession
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
-import com.sk.hjzy.roomManager.utils.SecureUtil
+import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
+import akka.stream.Materializer
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -27,9 +31,11 @@ import scala.util.{Failure, Success}
   * Date: 2020/1/20
   * Time: 14:54
   */
-trait UserService4Web extends ServiceUtils with SessionBase{
+trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
   private val tokenExistTime = AppSettings.tokenExistTime * 1000L // seconds
+
+  implicit val materializer: Materializer
 
   private val genVerifyCode = (path("genVerifyCode") & get){
     parameters('email.as[String]){ email =>
@@ -235,6 +241,62 @@ trait UserService4Web extends ServiceUtils with SessionBase{
     }
   }
 
+  private val getUserInfo = (path("getUserInfo") & get){
+    authUser{ user =>
+      dealFutureResult{
+        UserInfoDao.searchByName(user.playerName).map{rst =>
+          if(rst.isDefined) complete(GetUserInfoRsp(user.playerName, rst.get.headImg, 0, "ok"))
+          else complete(GetUserInfoRsp("", "", 100001, "获取信息失败"))
+        }
+      }
+    }
+  }
+
+  private def storeFile(source: Source[ByteString, Any]): Directive1[java.io.File] = {
+    val dest = java.io.File.createTempFile("hjzy", ".tmp")
+    val file = source.runWith(FileIO.toPath(dest.toPath)).map(_ => dest)
+    onComplete[java.io.File](file).flatMap {
+      case Success(f) =>
+        provide(f)
+      case Failure(e) =>
+        dest.deleteOnExit()
+        failWith(e)
+    }
+  }
+
+  private val updateInfo = (path("updateInfo") & post){
+    authUser{user =>
+      parameters('name.as[String]) {
+        name =>
+          fileUpload("fileUpload") {
+            case (fileInfo, file) =>
+              storeFile(file) { f =>
+                val fileName = user.playerId + "." + fileInfo.fileName.split("\\.").last
+                FileUtil.storeFile1(fileName, f, "data/headImg")
+                f.deleteOnExit()
+                dealFutureResult{
+                  UserInfoDao.searchByName(user.playerName).map{ rst =>
+                    if(rst.isDefined){
+                      val player = rst.get
+                      dealFutureResult{
+                        UserInfoDao.updateNameAndImg(player.uid, name, s"/hjzy/roomManager/static/headImg/$fileName").map{rst2 =>
+                          addSession(Map("playerName" -> name)){
+                            complete(SuccessRsp(0, "ok"))
+                          }
+                        }
+                      }
+                    }else{
+                      complete(ErrorRsp(100008, "无该用户信息"))
+                    }
+                  }
+                }
+
+              }
+          }
+      }
+    }
+  }
+
 
   private val logout = (path("logout") & get){
     authUser{ _ =>
@@ -247,6 +309,6 @@ trait UserService4Web extends ServiceUtils with SessionBase{
 
   val webUserRoute: Route = pathPrefix("webUser"){
     genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
-    genPasswordVerifyCode ~ resetPassword ~ logout
+    genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateInfo
   }
 }

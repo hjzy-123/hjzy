@@ -1,7 +1,7 @@
 package com.sk.hjzy.webClient
 
 import cats.Show
-import com.sk.hjzy.webClient.pages.{FindPassword, HomePage, Login, Register}
+import com.sk.hjzy.webClient.pages.{FindPassword, HomePage, Login, PersonalSpace, Register}
 import mhtml.mount
 import org.scalajs.dom
 import com.sk.hjzy.webClient.utils.{Http, JsFunc, PageSwitcher}
@@ -21,6 +21,7 @@ object Main extends PageSwitcher {
       case "register" :: Nil => Register.app
       case "homePage" :: Nil => HomePage.app
       case "findPassword" :: Nil =>FindPassword.app
+      case "personalSpace" :: Nil => PersonalSpace.app
       case _ => Login.app
     }
 

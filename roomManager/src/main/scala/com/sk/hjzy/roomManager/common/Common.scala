@@ -16,7 +16,7 @@ object Common {
 
   object DefaultImg{
     val coverImg = "http://pic.neoap.com/hestia/files/image/roomManager/1c6af4509f95701ffeae9999059d66d9.png"//默认封面图
-    val headImg =  "http://pic.neoap.com/hestia/files/image/roomManager/b2eab30365a2a81cf1a13d1de6332c8f.png"//默认头像
+    val headImg =  "/hjzy/roomManager/static/img/akari.jpg"//默认头像
     val videoImg = "http://pic.neoap.com/hestia/files/image/roomManager/973c741b77c9607243ada13d4c40b4af.jpg"//默認的視頻封面
   }
 

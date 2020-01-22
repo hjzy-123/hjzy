@@ -45,6 +45,18 @@ object FileUtil {
     if(file.exists()) file.delete()
   }
 
+  def storeFile1(fileInfo: String, file: File, fileDir: String) = {
+    val filePath = fileDir  + "/" + fileInfo
+    log.debug(s"fileDir: $fileDir filePath: $filePath")
+    val dir = new File(fileDir)
+    if(!dir.exists()) dir.mkdirs()
+    val dest = new File(filePath)
+    if(dest.exists()) dest.delete()
+
+    copyFile(dest,file)
+    if(file.exists()) file.delete()
+  }
+
   def storeTmpFile(tmpFileDir:String,tmpFile:File,file:File)={
 //    val fileDir = AppSettings.storeFilePath + "/tmp"
     val dir = new File(tmpFileDir)
