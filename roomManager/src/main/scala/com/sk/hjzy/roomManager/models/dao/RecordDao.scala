@@ -17,7 +17,7 @@ import scala.concurrent.Future
 object RecordDao {
 
   def addRecord(roomId:Long, recordName:String, recordDes:String, startTime:Long, coverImg:String, viewNum:Int, likeNum:Int,duration:String) = {
-    db.run(tRecord += rRecord(1, roomId, startTime, coverImg, recordName, recordDes, viewNum, likeNum,duration))
+    db.run(tRecord += rRecord(1, roomId, startTime, coverImg, recordName, recordDes, viewNum, likeNum,duration, allowUser = ""))
   }
 
   def searchRecord(roomId:Long, startTime:Long):Future[Option[RecordInfo]] = {
@@ -85,6 +85,15 @@ object RecordDao {
       }.toList
       Future.sequence(res)
     }
+  }
+
+  def getRecordByRoomId(roomid: Long, pageNum:Int, pageSize:Int) = {
+    val action =
+      for(
+        total <- tRecord.result;
+        recorders <- tRecord.filter(_.roomid === roomid).drop((pageNum - 1) * pageSize).take(pageSize).result
+      )yield (total.length, recorders)
+    db.run(action)
   }
 
 

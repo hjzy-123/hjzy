@@ -105,7 +105,7 @@ object UserInfoDao {
     ).update(token,timeStamp))
   }
 
-  def updateHeadImg(uid:Long,headImg:String) = {
+  def updateHeadImg(uid:Long,headImg:String): Future[Int] = {
     db.run(tUserInfo.filter(i => i.uid === uid).map(l=> (l.headImg)
     ).update(headImg))
   }

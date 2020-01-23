@@ -18,7 +18,13 @@ object Routes {
     val resetPassword = baseUrl + "/resetPassword"
     val logout = baseUrl + "/logout"
     val getUserInfo = baseUrl + "/getUserInfo"
-    def updateInfo(name: String) = baseUrl + s"/updateInfo?name=$name"
+    val updateName = baseUrl + s"/updateName"
+    val updateHeadImg = baseUrl + s"/updateHeadImg"
+  }
+
+  object Record{
+    val baseUrl = base + "/webRecords"
+    def getRecords(pageNum: Int, pageSize: Int) = baseUrl + s"/getMyRecords?pageNum=$pageNum&pageSize=$pageSize"
   }
 
 }

@@ -84,27 +84,28 @@ trait SlickTables {
   lazy val tObserveEvent = new TableQuery(tag => new tObserveEvent(tag))
 
   /** Entity class storing rows of table tRecord
-   *  @param id Database column id SqlType(BIGINT), AutoInc, PrimaryKey
-   *  @param roomid Database column roomId SqlType(BIGINT), Default(0)
-   *  @param starttime Database column startTime SqlType(BIGINT), Default(0)
-   *  @param coverImg Database column cover_img SqlType(VARCHAR), Length(256,true)
-   *  @param recordname Database column recordName SqlType(VARCHAR), Length(255,true)
-   *  @param recorddes Database column recordDes SqlType(VARCHAR), Length(255,true)
-   *  @param viewNum Database column view_num SqlType(INT), Default(0)
-   *  @param likeNum Database column like_num SqlType(INT), Default(0)
-   *  @param duration Database column duration SqlType(VARCHAR), Length(100,true)
-   *  @param recordAddr Database column record_addr SqlType(VARCHAR), Length(100,true) */
-  case class rRecord(id: Long, roomid: Long = 0L, starttime: Long = 0L, coverImg: String = "", recordname: String = "", recorddes: String = "", viewNum: Int = 0, likeNum: Int = 0, duration: String = "", recordAddr: String = "")
+    *  @param id Database column id SqlType(BIGINT), AutoInc, PrimaryKey
+    *  @param roomid Database column roomId SqlType(BIGINT), Default(0)
+    *  @param starttime Database column startTime SqlType(BIGINT), Default(0)
+    *  @param coverImg Database column cover_img SqlType(VARCHAR), Length(256,true)
+    *  @param recordname Database column recordName SqlType(VARCHAR), Length(255,true)
+    *  @param recorddes Database column recordDes SqlType(VARCHAR), Length(255,true)
+    *  @param viewNum Database column view_num SqlType(INT), Default(0)
+    *  @param likeNum Database column like_num SqlType(INT), Default(0)
+    *  @param duration Database column duration SqlType(VARCHAR), Length(100,true)
+    *  @param recordAddr Database column record_addr SqlType(VARCHAR), Length(100,true)
+    *  @param allowUser Database column allow_user SqlType(TEXT), Length(65535,true) */
+  case class rRecord(id: Long, roomid: Long = 0L, starttime: Long = 0L, coverImg: String = "", recordname: String = "", recorddes: String = "", viewNum: Int = 0, likeNum: Int = 0, duration: String = "", recordAddr: String = "", allowUser: String)
   /** GetResult implicit for fetching rRecord objects using plain SQL queries */
   implicit def GetResultrRecord(implicit e0: GR[Long], e1: GR[String], e2: GR[Int]): GR[rRecord] = GR{
     prs => import prs._
-    rRecord.tupled((<<[Long], <<[Long], <<[Long], <<[String], <<[String], <<[String], <<[Int], <<[Int], <<[String], <<[String]))
+      rRecord.tupled((<<[Long], <<[Long], <<[Long], <<[String], <<[String], <<[String], <<[Int], <<[Int], <<[String], <<[String], <<[String]))
   }
   /** Table description of table record. Objects of this class serve as prototypes for rows in queries. */
   class tRecord(_tableTag: Tag) extends profile.api.Table[rRecord](_tableTag, "record") {
-    def * = (id, roomid, starttime, coverImg, recordname, recorddes, viewNum, likeNum, duration, recordAddr) <> (rRecord.tupled, rRecord.unapply)
+    def * = (id, roomid, starttime, coverImg, recordname, recorddes, viewNum, likeNum, duration, recordAddr, allowUser) <> (rRecord.tupled, rRecord.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), Rep.Some(roomid), Rep.Some(starttime), Rep.Some(coverImg), Rep.Some(recordname), Rep.Some(recorddes), Rep.Some(viewNum), Rep.Some(likeNum), Rep.Some(duration), Rep.Some(recordAddr)).shaped.<>({r=>import r._; _1.map(_=> rRecord.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get, _7.get, _8.get, _9.get, _10.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = ((Rep.Some(id), Rep.Some(roomid), Rep.Some(starttime), Rep.Some(coverImg), Rep.Some(recordname), Rep.Some(recorddes), Rep.Some(viewNum), Rep.Some(likeNum), Rep.Some(duration), Rep.Some(recordAddr), Rep.Some(allowUser))).shaped.<>({r=>import r._; _1.map(_=> rRecord.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get, _7.get, _8.get, _9.get, _10.get, _11.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column id SqlType(BIGINT), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
@@ -126,6 +127,8 @@ trait SlickTables {
     val duration: Rep[String] = column[String]("duration", O.Length(100,varying=true))
     /** Database column record_addr SqlType(VARCHAR), Length(100,true) */
     val recordAddr: Rep[String] = column[String]("record_addr", O.Length(100,varying=true))
+    /** Database column allow_user SqlType(TEXT), Length(65535,true) */
+    val allowUser: Rep[String] = column[String]("allow_user", O.Length(65535,varying=true))
   }
   /** Collection-like TableQuery object for table tRecord */
   lazy val tRecord = new TableQuery(tag => new tRecord(tag))

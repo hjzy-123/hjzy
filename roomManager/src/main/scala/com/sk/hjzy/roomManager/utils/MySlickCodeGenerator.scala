@@ -1,20 +1,29 @@
 package com.sk.hjzy.roomManager.utils
 
 import slick.codegen.SourceCodeGenerator
-import slick.jdbc.{JdbcProfile, PostgresProfile}
+import slick.jdbc.{JdbcProfile, MySQLProfile}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 /**
-  * User: Taoz
-  * Date: 7/15/2015
-  * Time: 9:33 AM
-  */
+ * User: Taoz
+ * Date: 7/15/2015
+ * Time: 9:33 AM
+ */
 object MySlickCodeGenerator {
 
   import concurrent.ExecutionContext.Implicits.global
 
+  val slickDriver = "slick.jdbc.MySQLProfile"
+//  val jdbcDriver = "com.mysql.jdbc.Driver"
+//  val url = "jdbc:mysql://10.1.29.248:6446/guanwang20?characterEncoding=utf-8&rewriteBatchedStatements=true&useSSL=false"
+//  val url = "jdbc:mysql://10.1.62.54:3306/guanwang20?characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
+//  val url = "jdbc:mysql://192.168.0.250:6446/guanwang20?characterEncoding=utf-8&rewriteBatchedStatements=true&useSSL=false"
+//  val outputFolder = "target/gencode/genTablesPsql"
+//  val pkg = "org.seekloud.vilin.models"
+//  val user = "leaf58"
+//  val password = "databasefortest20191105"
   val slickProfile = "slick.jdbc.MySQLProfile"
   val jdbcDriver = "com.mysql.jdbc.Driver"
   val url = "jdbc:mysql://cdb-8xs0z9la.cd.tencentcdb.com:10007/hjzy?characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true"
@@ -26,19 +35,18 @@ object MySlickCodeGenerator {
 
   //val dbDriver = MySQLDriver
 
-
-  def genCustomTables(dbProfile: JdbcProfile) = {
+  def genCustomTables() = {
 
     // fetch data model
-    val profile: JdbcProfile =
-      Class.forName(slickProfile + "$").getField("MODULE$").get(null).asInstanceOf[JdbcProfile]
-    val dbFactory = profile.api.Database
+    val driver: JdbcProfile =
+      Class.forName(slickDriver + "$").getField("MODULE$").get(null).asInstanceOf[JdbcProfile]
+    val dbFactory = driver.api.Database
     val db = dbFactory.forURL(url, driver = jdbcDriver,
       user = user, password = password, keepAliveConnection = true)
 
+
     // fetch data model
-    val modelAction = dbProfile.createModel(Some(dbProfile.defaultTables))
-    // you can filter specific tables here
+    val modelAction = MySQLProfile.createModel(Some(MySQLProfile.defaultTables)) // you can filter specific tables here
     val modelFuture = db.run(modelAction)
 
     // customize code generator
@@ -72,8 +80,9 @@ object MySlickCodeGenerator {
 
     val codeGenerator = Await.result(codeGenFuture, Duration.Inf)
     codeGenerator.writeToFile(
-      slickProfile, outputFolder, pkg, "SlickTables", "SlickTables.scala"
+      slickDriver, outputFolder, pkg, "SlickTables", "SlickTables.scala"
     )
+
 
   }
 
@@ -81,21 +90,21 @@ object MySlickCodeGenerator {
   def genDefaultTables() = {
 
     slick.codegen.SourceCodeGenerator.main(
-      Array(slickProfile, jdbcDriver, url, outputFolder, pkg, user, password)
+      Array(slickDriver, jdbcDriver, url, outputFolder, pkg, user, password)
     )
+
 
   }
 
 
   def main(args: Array[String]) {
     //genDefaultTables()
-    val dbProfile = PostgresProfile
-
-    genCustomTables(dbProfile)
+    genCustomTables()
 
     println(s"Tables.scala generated in $outputFolder")
 
   }
+
 
 }
 

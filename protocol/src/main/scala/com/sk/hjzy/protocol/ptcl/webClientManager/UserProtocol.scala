@@ -38,4 +38,8 @@ object UserProtocol {
     errCode: Int,
     msg: String
   ) extends CommonRsp
+
+  case class UpdateNameReq(
+    name: String
+  )
 }

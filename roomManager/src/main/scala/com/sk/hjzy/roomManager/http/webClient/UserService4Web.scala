@@ -1,6 +1,5 @@
 package com.sk.hjzy.roomManager.http.webClient
 
-import java.net.{URLDecoder, URLEncoder}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
@@ -11,7 +10,7 @@ import akka.http.scaladsl.model.ws.Message
 import akka.stream.scaladsl.{FileIO, Flow, Source}
 import akka.util.ByteString
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ErrorRsp, SuccessRsp}
-import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, LoginByEmailReq, LoginReq, RegisterReq, ResetPassword}
+import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, LoginByEmailReq, LoginReq, RegisterReq, ResetPassword, UpdateNameReq}
 import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
@@ -108,7 +107,7 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
                 }
               }
             case None =>
-              complete(100004, "不存在该用户")
+              complete(ErrorRsp(100004, "不存在该用户"))
           }
         }
       case Left(err) =>
@@ -264,39 +263,55 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
-  private val updateInfo = (path("updateInfo") & post){
+  private val updateHeadImg = (path("updateHeadImg") & post){
     authUser{user =>
-      parameters('name.as[String]) {
-        name =>
-          fileUpload("fileUpload") {
-            case (fileInfo, file) =>
-              storeFile(file) { f =>
-                val fileName = user.playerId + "." + fileInfo.fileName.split("\\.").last
-                FileUtil.storeFile1(fileName, f, "data/headImg")
-                f.deleteOnExit()
-                dealFutureResult{
-                  UserInfoDao.searchByName(user.playerName).map{ rst =>
-                    if(rst.isDefined){
-                      val player = rst.get
-                      dealFutureResult{
-                        UserInfoDao.updateNameAndImg(player.uid, name, s"/hjzy/roomManager/static/headImg/$fileName").map{rst2 =>
-                          addSession(Map("playerName" -> name)){
-                            complete(SuccessRsp(0, "ok"))
-                          }
-                        }
-                      }
-                    }else{
-                      complete(ErrorRsp(100008, "无该用户信息"))
-                    }
-                  }
+      fileUpload("fileUpload") {
+        case (fileInfo, file) =>
+          storeFile(file) { f =>
+            val fileName = user.playerId + "." + fileInfo.fileName.split("\\.").last
+            FileUtil.storeFile1(fileName, f, "data/headImg")
+            f.deleteOnExit()
+            dealFutureResult{
+              UserInfoDao.updateHeadImg(user.playerId.toLong, s"/hjzy/roomManager/static/headImg/$fileName").map{ rst =>
+                if(rst == 1){
+                  complete(SuccessRsp(0, "ok"))
+                }else{
+                  complete(ErrorRsp(100008, "无该用户信息"))
                 }
-
+              }.recover{
+                case ex: Exception =>
+                  println(s"err:${ex.getMessage}")
+                  complete(100007, "插入数据库失败")
               }
+            }
           }
       }
     }
   }
 
+  private val updateName = (path("updateName") & post){
+    authUser{ user =>
+      entity(as[Either[Error, UpdateNameReq]]){
+        case Right(req) =>
+          dealFutureResult{
+            UserInfoDao.updateName(user.playerId.toLong, req.name).map{ rst =>
+              if(rst == 1) {
+                addSession(Map("playerName" -> req.name)){
+                  complete(SuccessRsp(0, "ok"))
+                }
+              }
+              else complete(ErrorRsp(100008, "无用户信息"))
+            }.recover{
+              case ex: Exception =>
+                println(s"err:${ex.getMessage}")
+                complete(100007, "插入数据库失败")
+            }
+          }
+        case Left(err) =>
+          complete(10003, "无效参数")
+      }
+    }
+  }
 
   private val logout = (path("logout") & get){
     authUser{ _ =>
@@ -309,6 +324,6 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
   val webUserRoute: Route = pathPrefix("webUser"){
     genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
-    genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateInfo
+    genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateName ~ updateHeadImg
   }
 }
