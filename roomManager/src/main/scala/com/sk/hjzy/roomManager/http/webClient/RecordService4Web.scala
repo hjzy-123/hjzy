@@ -47,7 +47,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                 dealFutureResult{
                   RecordDao.getRecordByRoomId(roomId, pageNum, pageSize).map{ rst1 =>
                     val total = rst1._1
-                    val rsp = rst1._2.map{ t =>
+                    val rsp = rst1._2.sortBy(_.starttime).map{ t =>
                       Record(
                         t.id,
                         t.coverImg,
@@ -62,6 +62,31 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               }else{
                 complete(ErrorRsp(100001, "不存在该用户"))
               }
+            }
+          }
+        }
+    }
+  }
+
+  private val getOtherRecords = (path("getOtherRecords") & get){
+    parameters('pageNum.as[Int], 'pageSize.as[Int]){
+      (pageNum, pageSize) =>
+        authUser{ user =>
+          dealFutureResult{
+            RecordDao.getAllRecord().map{ rst =>
+              val des = rst.filter(record => record.allowUser.split("@").contains(user.playerName))
+
+              val total = des.length
+              val rsp = des.drop((pageNum - 1) * pageSize).take(pageSize).map{ t =>
+                Record(
+                  t.id,
+                  t.coverImg,
+                  t.recordname,
+                  t.recordAddr,
+                  t.allowUser
+                )
+              }.toList
+              complete(GetRecordsRsp(total, rsp, 0, "ok"))
             }
           }
         }
@@ -86,6 +111,6 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords ~ updateAllowUser
+    getMyRecords ~ updateAllowUser ~ getOtherRecords
   }
 }

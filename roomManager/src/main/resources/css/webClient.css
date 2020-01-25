@@ -635,7 +635,29 @@ input{
 }
 
 .recordHeader .recordTitle{
+    display: flex;
+    align-items: flex-end;
+}
 
+.recordTitle > div:nth-child(1){
+    font-size: 30px;
+    font-weight: 700;
+    margin-right: 30px;
+    width: 150px;
+    height: 40px;
+}
+
+.record-head-refresh{
+    margin-bottom: 2px;
+}
+
+.img-refresh{
+    width: 16px;
+    height: 16px;
+}
+.img-refresh:hover{
+    transform: rotateZ(180deg);
+    transition: transform 0.5s;
 }
 
 

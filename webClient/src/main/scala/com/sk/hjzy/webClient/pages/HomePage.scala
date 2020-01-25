@@ -41,6 +41,7 @@ object HomePage extends Index{
   val otherRecordCurrentPage = Var(1)
   var otherRecordPage = 1
   val myRecordsInfo = Var(Records(0, List.empty[Record]))
+  val otherRecordsInfo = Var(Records(0, List.empty[Record]))
 
 
   def getPersonalInfo(): Unit = {
@@ -92,7 +93,34 @@ object HomePage extends Index{
   }
 
   def getOtherRecord(pageNum: Int = 1): Unit ={
-
+    Http.get(Routes.Record.getOtherRecords(pageNum, pageSize)).map{ s =>
+      decode[SuccessRsp](s) match {
+        case Right(rst1) =>
+          if(rst1.errCode == 0){
+            decode[GetRecordsRsp](s) match {
+              case Right(rst) =>
+                if(rst.errCode == 0){
+                  //                  recordsInfo := Records(rst.total, rst.records)
+                  otherRecordsInfo := Records(rst.total, rst.records)
+                  otherRecordTotalNum := rst.total
+                  otherRecordCurrentPage := pageNum
+                }else {
+                  if(rst1.msg == "no session"){
+                    dom.window.location.href = "/hjzy/webClient#/login"
+                  }else JsFunc.alert(rst.msg)
+                }
+              case Left(err) =>
+                JsFunc.alert("service unavailable")
+            }
+          }else{
+            if(rst1.msg == "no session"){
+              dom.window.location.href = "/hjzy/webClient#/login"
+            }else JsFunc.alert(rst1.msg)
+          }
+        case Left(err) =>
+          JsFunc.alert("service unavailable")
+      }
+    }
   }
 
   def logout(): Unit = {
@@ -134,7 +162,7 @@ object HomePage extends Index{
   {totalNum.zip(currentPage).map{rst =>
     val apps = rst._1
     val currPage = rst._2 //当前页码
-    <div class="page">
+    <div class="page" style="margin-top:0;margin-right:50px">
       {if(apps == 0)
       <div></div>
     else
@@ -271,15 +299,90 @@ object HomePage extends Index{
 
   val myRecord = myRecordsInfo.map{ recordsInfo =>
     val total = recordsInfo.total
-    val records = recordsInfo.recordList
+    val recordList = recordsInfo.recordList
     <div>
       <div class="recordHeader">
-        <div class="recordTitle">我的录像</div>
+        <div class="recordTitle">
+          <div>我的录像</div>
+          <div class="totalRecord">当前共有<span>{total}</span>个录像</div>
+        </div>
+        <div class="record-head-refresh">
+          <img class="img-refresh" src="/hjzy/roomManager/static/img/refresh.png" style="float: right;" onclick={()=> {getVideoInfo(myRecordPage)}}></img>
+        </div>
+      </div>
+      <div style="box-shadow: 0 2px 4px rgba(0,0,0,.14);margin-top:20px;height:400px">
+        {
+          Var(recordList).map{list =>
+            if(list.isEmpty){
+              <div style="height:100%;line-height:400px;font-size:50px;text-align:center;weight:700">暂无内容</div>
+            }else{
+              <div style="height:350px" class="recordsList">
+                {
+                recordList.map{ record =>
+                  <div class="recordContainer" style="margin-top:20px;">
+                    <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/register/${record.id}"}}>
+                      <img style="height:100px;width:100px;" src={record.cover_img}></img>
+                      <div style="width:100px;margin-top:5px;height:15px;line-height:15px;font-size:14px;text-align:center">
+                        {if(record.record_name.length < 10) record.record_name else {record.record_name.substring(0,10)+"..."}}
+                      </div>
+                    </div>
+                  </div>
+                }
+                }
+              </div>
+            }
+          }
+        }
+        {pageMod(myReordTotalNum, myRecordCurrentPage)}
+      </div>
+    </div>
+  }
+
+  val otherRecord = otherRecordsInfo.map{ recordsInfo =>
+    val total = recordsInfo.total
+    val recordList = recordsInfo.recordList
+    <div>
+      <div class="recordHeader">
+        <div class="recordTitle">
+          <div>可观看录像</div>
+          <div class="totalRecord">当前共有<span>{total}</span>个录像</div>
+        </div>
+        <div class="record-head-refresh">
+          <img class="img-refresh" src="/hjzy/roomManager/static/img/refresh.png" style="float: right;" onclick={()=> {getOtherRecord(otherRecordPage)}}></img>
+        </div>
+      </div>
+      <div style="box-shadow: 0 2px 4px rgba(0,0,0,.14);margin-top:20px;height:400px">
+        {
+        Var(recordList).map{ records =>
+          if(records.isEmpty){
+            <div style="height:100%;line-height:400px;font-size:50px;text-align:center;weight:700">暂无内容</div>
+          }else{
+            <div style="height:350px" class="recordsList">
+              {
+              recordList.map{ record =>
+                <div class="recordContainer" style="margin-top:20px;">
+                  <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/register/${record.id}"}}>
+                    <img style="height:100px;width:100px;" src={record.cover_img}></img>
+                    <div style="width:100px;margin-top:5px;height:15px;line-height:15px;font-size:14px;text-align:center">
+                      {if(record.record_name.length < 10) record.record_name else {record.record_name.substring(0,10)+"..."}}
+                    </div>
+                  </div>
+                </div>
+              }
+              }
+            </div>
+          }
+        }
+        }
+        {pageMod(otherRecordTotalNum, otherRecordCurrentPage)}
       </div>
     </div>
   }
 
   override def app: Node ={
+    getPersonalInfo()
+    getVideoInfo()
+    getOtherRecord()
     <div>
       <div class="login-header">
         <a class="mini-login" href="/hjzy/webClient#/personalSpace" style="display:block;display:flex;width:100px;">
@@ -297,6 +400,8 @@ object HomePage extends Index{
       </div>
       <div style="width:980px;margin:20px auto;">
         {myRecord}
+        <div style="height:30px"></div>
+        {otherRecord}
       </div>
     </div>
   }
