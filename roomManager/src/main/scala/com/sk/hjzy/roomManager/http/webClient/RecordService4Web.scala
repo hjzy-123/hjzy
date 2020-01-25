@@ -22,7 +22,7 @@ import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordsRsp, Record}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordsRsp, Record, UpdateAllowUserReq}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -68,8 +68,24 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
+  private val updateAllowUser = (path("updateAllowUser") & post){
+    authUser{ _ =>
+      entity(as[Either[Error, UpdateAllowUserReq]]){
+        case Right(req) =>
+          dealFutureResult{
+            RecordDao.updateAllowUser(req.id, req.allowUser).map{rst =>
+              complete(SuccessRsp(0, "ok"))
+            }
+          }
+        case Left(value) =>
+          complete(ErrorRsp(100001, "无效参数"))
+      }
+
+    }
+  }
+
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords
+    getMyRecords ~ updateAllowUser
   }
 }

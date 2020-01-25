@@ -24,4 +24,9 @@ object RecordProtocol {
     msg: String
   ) extends CommonRsp
 
+  case class UpdateAllowUserReq(
+    id: Long,
+    allowUser: String
+  )
+
 }

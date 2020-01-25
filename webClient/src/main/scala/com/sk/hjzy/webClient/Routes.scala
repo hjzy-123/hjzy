@@ -25,6 +25,7 @@ object Routes {
   object Record{
     val baseUrl = base + "/webRecords"
     def getRecords(pageNum: Int, pageSize: Int) = baseUrl + s"/getMyRecords?pageNum=$pageNum&pageSize=$pageSize"
+    val updateAllowUser = baseUrl + "/updateAllowUser"
   }
 
 }

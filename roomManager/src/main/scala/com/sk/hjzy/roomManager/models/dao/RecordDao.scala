@@ -96,6 +96,10 @@ object RecordDao {
     db.run(action)
   }
 
+  def updateAllowUser(id: Long, allowPeople: String) ={
+    db.run(tRecord.filter(_.id === id).map(_.allowUser).update(allowPeople))
+  }
+
 
   def getTotalNum = {
     db.run(tRecord.length.result)

@@ -628,4 +628,14 @@ input{
     cursor:pointer;
 }
 
+.recordHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.recordHeader .recordTitle{
+
+}
+
 

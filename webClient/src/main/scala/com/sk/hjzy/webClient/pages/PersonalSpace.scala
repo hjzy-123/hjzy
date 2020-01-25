@@ -1,7 +1,7 @@
 package com.sk.hjzy.webClient.pages
 
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.SuccessRsp
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordsRsp, Record}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordsRsp, Record, UpdateAllowUserReq}
 import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, UpdateNameReq}
 import com.sk.hjzy.webClient.{Index, Routes}
 import com.sk.hjzy.webClient.utils.{Http, JsFunc}
@@ -29,6 +29,14 @@ object PersonalSpace extends Index{
   val totalNum = Var(0)
   val currentPage = Var(1)
   var page = 1
+
+  var pattern: Regex = """[\\{}<>"'/&\n\r|$%@‘’“”]|[^\s\u4e00-\u9fa5_a-zA-Z0-9`~!@#$%^&*()_+\[\]\\;',./{}|:"<>?～！¥…（）—【】、；，。「」：《》？]""".r
+
+  def checkWord(input: Input) = {
+    val s = pattern.replaceAllIn(input.value, "")
+    input.value = s
+    input.setSelectionRange(s.length, s.length)
+  }
 
   case class UserInfo(
     userName: String,
@@ -161,12 +169,27 @@ object PersonalSpace extends Index{
     dom.document.body.removeChild(dom.document.getElementById("modledom"))
   }
 
-  def saveRecordChange(): Unit ={
-
+  def saveRecordChange(id: Long, allowStr: Array[String]): Unit ={
+    val newUser = dom.document.getElementById("yaoqin").asInstanceOf[Input].value.trim
+    val content = UpdateAllowUserReq(id, allowStr.mkString("@")+{if(newUser.nonEmpty && allowStr.nonEmpty){"@"+newUser} else newUser.trim}).asJson.noSpaces
+    Http.postJsonAndParse[SuccessRsp](Routes.Record.updateAllowUser, content).map{
+      case Right(rst) =>
+        if(rst.errCode == 0){
+          JsFunc.alert("修改成功")
+          hide()
+          getVideoInfo(page)
+        }else{
+          if(rst.msg == "no session"){
+            dom.window.location.href = "/hjzy/webClient#/login"
+          }else JsFunc.alert(rst.msg)
+        }
+      case Left(err) =>
+        JsFunc.alert("service unavailable")
+    }
   }
 
   def showRecordModel(record: Record): Unit ={
-    val allowPeoples = Var(record.allowUser.split("!=!"))
+    val allowPeoples = Var(if(record.allowUser.trim.isEmpty) Array.empty[String] else record.allowUser.split("@"))
     val elem =
       <div id="modledom" class="model" >
         {
@@ -176,28 +199,29 @@ object PersonalSpace extends Index{
                 <span style="font-size: 16px;color: #1D2341;letter-spacing: 0.19px;line-height:30px;float:left;margin-left:18px;">录像管理</span>
               </div>
               <div style="padding:18px">
-                <div style="height:20px;line-height:20px;font-size:14px;weight:700"><span style="color:color: #00a1d6;">*</span>可观看录像用户：</div>
+                <div style="height:20px;line-height:20px;font-size:14px;weight:700"><span style="color: #00a1d6;">*</span>可观看录像用户：</div>
                 <div style="padding:10px;height:150px;overflow-y:scroll">
                   {
-                  allowPeoples.map{peoples =>
-                    peoples.zipWithIndex.map{peopleAndIndex =>
-                      val people = peopleAndIndex._1
-                      val index = peopleAndIndex._2
-                      <div style="height:30px;display:flex;justify-content: space-between;border-bottom:1px solid #ddd;align-items: center;">
-                        <div style="height:30px;line-height:30px;font-size:14px;width:250px;margin-right:15px;">{people}</div>
-                        <img src="/hjzy/roomManager/static/img/close.png" style="height:13px;width:13px" onclick={() => {
-                          allowPeoples.update{peoples =>
-                            peoples.zipWithIndex.filter(_._2 != index).map(_._1)
-                          }
-                        }}></img>
-                      </div>
-                    }.toList
-                  }
+                    allowPeoples.map{peoples =>
+                      peoples.zipWithIndex.map{peopleAndIndex =>
+                        val people = peopleAndIndex._1
+                        val index = peopleAndIndex._2
+                        <div style="height:30px;display:flex;justify-content: space-between;border-bottom:1px solid #ddd;align-items: center;">
+                          <div style="height:30px;line-height:30px;font-size:14px;width:250px;margin-right:15px;">{people}</div>
+                          <img src="/hjzy/roomManager/static/img/close.png" style="height:13px;width:13px" onclick={() => {
+                            allowPeoples.update{peoples =>
+                              peoples.zipWithIndex.filter(_._2 != index).map(_._1)
+                            }
+                          }}></img>
+                        </div>
+                      }.toList
+                    }
                   }
                 </div>
+                <input placeholder="输入添加的用户名（多人以@隔开）" style="margin-top:20px;margin-left:10px;width:400px" class="nickInput" id="yaoqin"></input>
               </div>
               <div class="modelbottom" style ="text-align: center; position: relative; border-top: 1px solid #D9DFEB;">
-                <button class="modelbutton" style="color: #FFFFFF;border: 0px ;background-color:#4D78FB;" onclick={() => {saveRecordChange()} } ><pre>保存</pre></button>
+                <button class="modelbutton" style="color: #FFFFFF;border: 0px ;background-color:#4D78FB;" onclick={() => {saveRecordChange(record.id, p)} } ><pre>保存</pre></button>
                 <button class="modelbutton"
                         style="color: #4D78FB;border: 1px solid #4D78FB;background-color:#FFFFFF;"
                         onclick={()=>{hide()} }>取 消</button>
@@ -229,7 +253,7 @@ object PersonalSpace extends Index{
         </div>
         <div>
           <div class="main-item">昵称：</div>
-          <input type="text" id="nickName" class="nickInput" placeholder="你的昵称" value={info.userName} ></input>
+          <input type="text" id="nickName" class="nickInput" placeholder="你的昵称" value={info.userName} oninput={(e: Event) => {checkWord(e.target.asInstanceOf[Input])}}></input>
         </div>
         <div class="line"></div>
         <button onclick={(e: Event) => {updateInfo(e)}}>保存</button>
@@ -382,7 +406,11 @@ object PersonalSpace extends Index{
                   currentPage := pageNum
                   dom.document.getElementById("myInfo01").asInstanceOf[HTMLElement].style.display = "none"
                   dom.document.getElementById("myRecords").asInstanceOf[HTMLElement].style.display = "block"
-                }else JsFunc.alert(rst.msg)
+                }else {
+                  if(rst1.msg == "no session"){
+                    dom.window.location.href = "/hjzy/webClient#/login"
+                  }else JsFunc.alert(rst.msg)
+                }
               case Left(err) =>
                 JsFunc.alert("service unavailable")
             }
@@ -402,13 +430,13 @@ object PersonalSpace extends Index{
     getPersonalInfo()
     <div>
       <div class="login-header">
-        <a class="mini-login" href="/hjzy/webClient#/login" style="display:block;display:flex;width:100px;">
+        <a class="mini-login" href="/hjzy/webClient#/homePage" style="display:block;display:flex;width:65px;">
           {
           userInfo.map{info =>
             <img src={info.userImg}></img>
           }
           }
-          <div style="width:60px">个人中心</div>
+          <div style="width:30px">主页</div>
         </a>
         <a class="mini-register" href="/hjzy/webClient#/register" style="width:60px" onclick={() => {logout()}}>退出登录</a>
       </div>
