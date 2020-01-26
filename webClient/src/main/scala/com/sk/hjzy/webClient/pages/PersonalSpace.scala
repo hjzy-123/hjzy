@@ -409,7 +409,7 @@ object PersonalSpace extends Index{
                 }else {
                   if(rst1.msg == "no session"){
                     dom.window.location.href = "/hjzy/webClient#/login"
-                  }else JsFunc.alert(rst.msg)
+                  }else JsFunc.alert(rst1.msg)
                 }
               case Left(err) =>
                 JsFunc.alert("service unavailable")

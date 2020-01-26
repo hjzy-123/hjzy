@@ -22,7 +22,7 @@ import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordsRsp, Record, UpdateAllowUserReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordInfoRsp, GetRecordsRsp, Record, UpdateAllowUserReq}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -118,11 +118,27 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               complete(ErrorRsp(100001, "无录像"))
             }else{
               val record = recordOpt.get
+              val record1 = Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
               dealFutureResult{
                 UserInfoDao.searchById(user.playerId.toLong).map{ userOpt =>
                   val owner =
                     if(userOpt.get.roomid == record.roomid) true
                     else false
+                  dealFutureResult{
+                    RecordDao.getAllRecord().map{ records =>
+                      val otherRecord =
+                        if(owner){
+                          records.filterNot(_.id == recordId).filter(_.roomid == userOpt.get.roomid).map{record =>
+                            Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
+                          }.toList
+                        }else{
+                          records.filterNot(_.id == recordId).filter(record => record.allowUser.split("@").contains(user.playerName)).map{record =>
+                            Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
+                          }.toList
+                        }
+                      complete(GetRecordInfoRsp(owner, record1, otherRecord, 0, "ok"))
+                    }
+                  }
                 }
               }
             }
@@ -134,6 +150,6 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords ~ updateAllowUser ~ getOtherRecords
+    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo
   }
 }

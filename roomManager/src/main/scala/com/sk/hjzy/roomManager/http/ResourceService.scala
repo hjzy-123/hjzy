@@ -56,6 +56,9 @@ trait ResourceService {
     pathPrefix("headImg"){
       getFromDirectory("data/headImg")
     } ~
+    pathPrefix("video"){
+      getFromDirectory("data/video")
+    } ~
     pathPrefix("music") {
       getFromResourceDirectory("music")
     }

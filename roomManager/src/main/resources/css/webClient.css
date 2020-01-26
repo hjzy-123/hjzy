@@ -660,4 +660,7 @@ input{
     transition: transform 0.5s;
 }
 
+.recordTitle:hover{
+    color: #00A1D6;
+}
 

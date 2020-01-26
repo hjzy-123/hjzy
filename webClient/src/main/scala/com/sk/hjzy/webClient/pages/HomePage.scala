@@ -320,7 +320,7 @@ object HomePage extends Index{
                 {
                 recordList.map{ record =>
                   <div class="recordContainer" style="margin-top:20px;">
-                    <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/register/${record.id}"}}>
+                    <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/record/${record.id}"}}>
                       <img style="height:100px;width:100px;" src={record.cover_img}></img>
                       <div style="width:100px;margin-top:5px;height:15px;line-height:15px;font-size:14px;text-align:center">
                         {if(record.record_name.length < 10) record.record_name else {record.record_name.substring(0,10)+"..."}}
@@ -361,7 +361,7 @@ object HomePage extends Index{
               {
               recordList.map{ record =>
                 <div class="recordContainer" style="margin-top:20px;">
-                  <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/register/${record.id}"}}>
+                  <div style="width:25%;margin:0 auto;height:120px;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/record/${record.id}"}}>
                     <img style="height:100px;width:100px;" src={record.cover_img}></img>
                     <div style="width:100px;margin-top:5px;height:15px;line-height:15px;font-size:14px;text-align:center">
                       {if(record.record_name.length < 10) record.record_name else {record.record_name.substring(0,10)+"..."}}
