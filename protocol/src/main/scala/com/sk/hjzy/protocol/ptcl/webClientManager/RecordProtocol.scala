@@ -24,6 +24,14 @@ object RecordProtocol {
     msg: String
   ) extends CommonRsp
 
+  case class GetRecordInfoRsp(
+    owner: Boolean,
+    record: Record,
+    otherRecords: List[Record],
+    errCode: Int,
+    msg: String
+  ) extends CommonRsp
+
   case class UpdateAllowUserReq(
     id: Long,
     allowUser: String

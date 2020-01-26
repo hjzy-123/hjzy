@@ -109,6 +109,29 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
+  private val getRecordInfo = (path("getRecordInfo") & get){
+    parameters('recordId.as[Long]){ recordId =>
+      authUser{ user =>
+        dealFutureResult{
+          RecordDao.searchRecordById(recordId).map{ recordOpt =>
+            if(recordOpt.isEmpty){
+              complete(ErrorRsp(100001, "无录像"))
+            }else{
+              val record = recordOpt.get
+              dealFutureResult{
+                UserInfoDao.searchById(user.playerId.toLong).map{ userOpt =>
+                  val owner =
+                    if(userOpt.get.roomid == record.roomid) true
+                    else false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
 
   val webRecordsRoute = pathPrefix("webRecords"){
     getMyRecords ~ updateAllowUser ~ getOtherRecords

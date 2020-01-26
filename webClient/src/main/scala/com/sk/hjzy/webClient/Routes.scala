@@ -27,6 +27,7 @@ object Routes {
     def getRecords(pageNum: Int, pageSize: Int) = baseUrl + s"/getMyRecords?pageNum=$pageNum&pageSize=$pageSize"
     val updateAllowUser = baseUrl + "/updateAllowUser"
     def getOtherRecords(pageNum: Int, pageSize: Int) = baseUrl + s"/getOtherRecords?pageNum=$pageNum&pageSize=$pageSize"
+    def getRecordInfo(recordId: Long) = baseUrl + s"getRecordInfo?recordId=$recordId"
   }
 
 }
