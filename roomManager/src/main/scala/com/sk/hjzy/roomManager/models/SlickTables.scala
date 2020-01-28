@@ -15,9 +15,55 @@ trait SlickTables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = tLoginEvent.schema ++ tObserveEvent.schema ++ tRecord.schema ++ tRecordComment.schema ++ tUserInfo.schema
+  lazy val schema: profile.SchemaDescription = Array(tComments.schema, tLoginEvent.schema, tObserveEvent.schema, tRecord.schema, tRecordComment.schema, tUserInfo.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
+
+  /** Entity class storing rows of table tComments
+    *  @param id Database column id SqlType(BIGINT), AutoInc, PrimaryKey
+    *  @param content Database column content SqlType(TEXT)
+    *  @param replyto Database column replyTo SqlType(VARCHAR), Length(100,true)
+    *  @param `type` Database column type SqlType(INT)
+    *  @param belongto Database column belongTo SqlType(BIGINT)
+    *  @param recordid Database column recordId SqlType(BIGINT)
+    *  @param createtime Database column createTime SqlType(BIGINT)
+    *  @param author Database column author SqlType(VARCHAR), Length(100,true)
+    *  @param authorImg Database column author_img SqlType(VARCHAR), Length(100,true) */
+  case class rComments(id: Long, content: String, replyto: String, `type`: Int, belongto: Long, recordid: Long, createtime: Long, author: String, authorImg: String)
+  /** GetResult implicit for fetching rComments objects using plain SQL queries */
+  implicit def GetResultrComments(implicit e0: GR[Long], e1: GR[String], e2: GR[Int]): GR[rComments] = GR{
+    prs => import prs._
+      rComments.tupled((<<[Long], <<[String], <<[String], <<[Int], <<[Long], <<[Long], <<[Long], <<[String], <<[String]))
+  }
+  /** Table description of table comments. Objects of this class serve as prototypes for rows in queries.
+    *  NOTE: The following names collided with Scala keywords and were escaped: type */
+  class tComments(_tableTag: Tag) extends profile.api.Table[rComments](_tableTag, Some("hjzy"), "comments") {
+    def * = (id, content, replyto, `type`, belongto, recordid, createtime, author, authorImg) <> (rComments.tupled, rComments.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(replyto), Rep.Some(`type`), Rep.Some(belongto), Rep.Some(recordid), Rep.Some(createtime), Rep.Some(author), Rep.Some(authorImg))).shaped.<>({r=>import r._; _1.map(_=> rComments.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get, _7.get, _8.get, _9.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column id SqlType(BIGINT), AutoInc, PrimaryKey */
+    val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    /** Database column content SqlType(TEXT) */
+    val content: Rep[String] = column[String]("content")
+    /** Database column replyTo SqlType(VARCHAR), Length(100,true) */
+    val replyto: Rep[String] = column[String]("replyTo", O.Length(100,varying=true))
+    /** Database column type SqlType(INT)
+      *  NOTE: The name was escaped because it collided with a Scala keyword. */
+    val `type`: Rep[Int] = column[Int]("type")
+    /** Database column belongTo SqlType(BIGINT) */
+    val belongto: Rep[Long] = column[Long]("belongTo")
+    /** Database column recordId SqlType(BIGINT) */
+    val recordid: Rep[Long] = column[Long]("recordId")
+    /** Database column createTime SqlType(BIGINT) */
+    val createtime: Rep[Long] = column[Long]("createTime")
+    /** Database column author SqlType(VARCHAR), Length(100,true) */
+    val author: Rep[String] = column[String]("author", O.Length(100,varying=true))
+    /** Database column author_img SqlType(VARCHAR), Length(100,true) */
+    val authorImg: Rep[String] = column[String]("author_img", O.Length(100,varying=true))
+  }
+  /** Collection-like TableQuery object for table tComments */
+  lazy val tComments = new TableQuery(tag => new tComments(tag))
 
   /** Entity class storing rows of table tLoginEvent
    *  @param id Database column id SqlType(BIGINT), AutoInc, PrimaryKey

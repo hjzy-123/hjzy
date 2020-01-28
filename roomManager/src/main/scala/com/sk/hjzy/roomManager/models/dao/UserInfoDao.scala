@@ -33,7 +33,7 @@ object UserInfoDao {
         roomIds <- tUserInfo.map(_.roomid).result;
         t <- {
           val maxRooId =
-            if(roomIds.nonEmpty) roomIds.max
+            if(roomIds.nonEmpty) roomIds.max + 1
             else 0l
           tUserInfo += rUserInfo(1, name, pw, maxRooId, token, timeStamp,Common.DefaultImg.headImg,Common.DefaultImg.coverImg,email,timeStamp,rtmpToken)
         }

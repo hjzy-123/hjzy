@@ -16,13 +16,15 @@ import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
 import com.sk.hjzy.roomManager.http.SessionBase.UserSession
-import com.sk.hjzy.roomManager.models.dao.{RecordDao, UserInfoDao}
+import com.sk.hjzy.roomManager.models.dao.{CommentsDao, RecordDao, UserInfoDao}
 import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{GetRecordInfoRsp, GetRecordsRsp, Record, UpdateAllowUserReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{Comment, GetCommentsRsp, GetRecordInfoRsp, GetRecordsRsp, Record, SendCommentReq, UpdateAllowUserReq}
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -148,8 +150,65 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
+  private val getComments = (path("getComments") & get){
+    parameters('recordId.as[Long]){recordId =>
+      authUser{ _ =>
+        dealFutureResult{
+          CommentsDao.getComments(recordId).map{rst =>
+            val comments = rst.sortBy(_.createtime).reverse.map{ comment =>
+              val date = new Date(comment.createtime)
+              val sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
+              val createTime = sdf.format(date)
+              Comment(comment.id, comment.content, comment.replyto,
+                comment.`type`, comment.belongto, comment.recordid, createTime, comment.author, comment.authorImg)
+            }.toList
+            complete(GetCommentsRsp(comments, 0, "ok"))
+          }
+        }
+      }
+    }
+  }
+
+  private val deleteComment = (path("deleteComment") & get){
+    parameters('commentId.as[Long]){commentId =>
+      authUser{ user =>
+        dealFutureResult{
+          CommentsDao.deleteComment(commentId).map{ rst =>
+            complete(SuccessRsp(0, "ok"))
+          }
+        }
+      }
+    }
+  }
+
+  private val sendComment = (path("sendComment") & post){
+    authUser{user =>
+      entity(as[Either[Error, SendCommentReq]]){
+        case Right(req) =>
+          dealFutureResult{
+            UserInfoDao.searchByName(user.playerName).map{rst =>
+              if(rst.isDefined){
+                val authorImg = rst.get.headImg
+                val createTime = System.currentTimeMillis()
+                dealFutureResult{
+                  CommentsDao.addComment(req.content, req.replyTo, req.rType, req.belongTo, req.recordId, createTime, user.playerName, authorImg).map{ rst =>
+                    complete(SuccessRsp(0, "ok"))
+                  }
+                }
+              }else{
+                complete(ErrorRsp(100001, "不存在该用户"))
+              }
+            }
+          }
+        case Left(err) =>
+          complete(ErrorRsp(100001, "无效参数"))
+      }
+    }
+
+  }
+
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo
+    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo ~ getComments ~ sendComment ~ deleteComment
   }
 }

@@ -28,6 +28,9 @@ object Routes {
     val updateAllowUser = baseUrl + "/updateAllowUser"
     def getOtherRecords(pageNum: Int, pageSize: Int) = baseUrl + s"/getOtherRecords?pageNum=$pageNum&pageSize=$pageSize"
     def getRecordInfo(recordId: Long) = baseUrl + s"/getRecordInfo?recordId=$recordId"
+    def getComments(recordId: Long) = baseUrl + s"/getComments?recordId=$recordId"
+    val sendComment = baseUrl + "/sendComment"
+    def deleteComment(commentId: Long) = baseUrl + s"/deleteComment?commentId=$commentId"
   }
 
 }

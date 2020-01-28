@@ -37,4 +37,30 @@ object RecordProtocol {
     allowUser: String
   )
 
+  case class Comment(
+    id: Long,
+    content: String,
+    replyTo: String,
+    rtype: Int,
+    belongTo: Long,
+    recordId: Long,
+    createTime: String,
+    author: String,
+    authorImg: String
+  )
+
+  case class GetCommentsRsp(
+    comments: List[Comment],
+    errCode: Int,
+    msg: String
+  ) extends CommonRsp
+
+  case class SendCommentReq(
+    content: String,
+    replyTo: String,
+    rType: Int,
+    belongTo: Long,
+    recordId: Long
+  )
+
 }

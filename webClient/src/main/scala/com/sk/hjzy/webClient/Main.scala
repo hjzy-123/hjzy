@@ -22,7 +22,8 @@ object Main extends PageSwitcher {
       case "homePage" :: Nil => HomePage.app
       case "findPassword" :: Nil =>FindPassword.app
       case "personalSpace" :: Nil => PersonalSpace.app
-      case "record" :: fId :: Nil => RecordPage.app
+      case "myRecord" :: fId :: Nil => RecordPage.app
+      case "otherRecord" :: fId :: Nil => RecordPage.app
       case _ => Login.app
     }
 

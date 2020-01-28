@@ -90,7 +90,7 @@ object RecordDao {
   def getRecordByRoomId(roomid: Long, pageNum:Int, pageSize:Int) = {
     val action =
       for(
-        total <- tRecord.result;
+        total <- tRecord.filter(_.roomid === roomid).result;
         recorders <- tRecord.filter(_.roomid === roomid).drop((pageNum - 1) * pageSize).take(pageSize).result
       )yield (total.length, recorders)
     db.run(action)
