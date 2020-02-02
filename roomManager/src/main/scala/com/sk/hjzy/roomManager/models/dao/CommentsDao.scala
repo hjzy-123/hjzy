@@ -28,6 +28,13 @@ object CommentsDao {
   }
 
   def deleteComment(id: Long) = {
-    db.run(tComments.filter(_.id === id).delete)
+    val action =
+      for(
+        i <- tComments.filter(_.id === id).delete;
+        j <- tComments.filter(_.belongto === id).delete
+      )yield {
+        (i, j)
+      }
+    db.run(action)
   }
 }
