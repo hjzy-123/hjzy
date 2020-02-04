@@ -53,7 +53,7 @@ class HomeController(
     ): Unit = {
       // 弹出登陆窗口
       val userInfo = loginController.loginDialog()
-      log.debug(s"$userInfo")
+      log.debug(s"用户输入登录信息：$userInfo")
 //      if (userInfo.nonEmpty) {
 //        loginBySelf(userInfo, isToLive, isToWatch)
 //      }
@@ -61,7 +61,8 @@ class HomeController(
 
     override def gotoRegister(): Unit = {
       //弹出注册窗口
-//      val signUpInfo = loginController.registerDialog()
+      val signUpInfo = loginController.registerDialog()
+      log.debug(s"用户输入注册信息：$signUpInfo")
 //      if (signUpInfo.nonEmpty) {
 //        showLoading()
 //        Boot.addToPlatform {

@@ -2,6 +2,7 @@ package org.seekloud.hjzy.pcClient.core
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
 import org.seekloud.hjzy.pcClient.common.{AppSettings, StageContext}
 import org.seekloud.hjzy.pcClient.controller.HomeController
 import org.seekloud.hjzy.pcClient.scene.HomeScene

@@ -167,7 +167,7 @@ lazy val pcClient = (project in file("pcClient")).enablePlugins(PackPlugin)
     libraryDependencies ++= Dependencies.bytedecoLibs,
     libraryDependencies ++= Dependencies4PcClient.pcClientDependencies,
   )
-  .dependsOn(capture, player)
+  .dependsOn(protocolJvm, capture, player)
 
 // Akka Http based backend
 val roomManagerMain = "com.sk.hjzy.roomManager.Boot"
