@@ -53,7 +53,7 @@ class LoginController(
     tb1.setSelected(true)
 
     val toggleGroup = new ToggleGroup
-    tb1.setToggleGroup(toggleGroup) //?
+    tb1.setToggleGroup(toggleGroup)
     tb2.setToggleGroup(toggleGroup)
     val tbBox = new HBox()
     tbBox.setAlignment(Pos.CENTER)
@@ -74,7 +74,7 @@ class LoginController(
     passWordLabel.setFont(Font.font(18))
     val passWordField = new PasswordField()
 
-    val userNameGrid = new GridPane //格子布局
+    val userNameGrid = new GridPane
     userNameGrid.setHgap(20)
     userNameGrid.setVgap(30)
     userNameGrid.add(userNameIcon, 0, 0)
@@ -123,7 +123,7 @@ class LoginController(
 
     tb1.setOnAction(_ => {
       if (!tb2.isSelected) tb1.setSelected(true)
-      bottomBox.getChildren.clear() //先清空，然后加上用户名登陆的
+      bottomBox.getChildren.clear()
       bottomBox.getChildren.addAll(tbBox, userNameGrid)
     }
     )

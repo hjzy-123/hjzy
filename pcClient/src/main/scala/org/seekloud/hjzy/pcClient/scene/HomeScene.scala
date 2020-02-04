@@ -90,9 +90,9 @@ class HomeScene {
 
   /*middleArea*/
   val joinBtn = new Button("参加会议")
-  joinBtn.setOnAction(_ => listener.gotoRoomPage())
+  joinBtn.setOnAction(_ => listener.gotoRoomHall())
   val createBtn = new Button("创建会议")
-  createBtn.setOnAction(_ => listener.liveCheck())
+  createBtn.setOnAction(_ => listener.gotoLive())
   val middleBox = new VBox(30, joinBtn, createBtn)
   middleBox.setPrefSize(width, height*0.6)
   middleBox.setAlignment(Pos.CENTER)
