@@ -4,6 +4,7 @@ import java.io.File
 
 import com.sk.hjzy.protocol.ptcl.{Response, _}
 import com.sk.hjzy.protocol.ptcl.CommonInfo._
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.UserInfo
 import com.sk.hjzy.protocol.ptcl.{Request, Response}
 
 /**

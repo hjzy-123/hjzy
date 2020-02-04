@@ -1,5 +1,6 @@
 package com.sk.hjzy.protocol.ptcl.webClientManager
 
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ComRsp, CommonRsp}
 
 /**
@@ -25,6 +26,13 @@ object UserProtocol {
     email: String,
     verifyCode: String
   )
+
+  case class SignInRsp(
+                        userInfo: Option[UserInfo] = None,
+                        roomInfo: Option[RoomInfo] = None,
+                        errCode: Int = 0,
+                        msg: String = "ok"
+                      ) extends CommonRsp
 
   case class ResetPassword(
     email: String,

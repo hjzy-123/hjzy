@@ -1,6 +1,6 @@
 package com.sk.hjzy.protocol.ptcl.client2Manager.http
 
-import com.sk.hjzy.protocol.ptcl.CommonInfo.UserInfo
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.UserInfo
 
 /**
   * created by benyafang on 2019/9/23 13:37

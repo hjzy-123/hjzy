@@ -1,7 +1,7 @@
 package com.sk.hjzy.webClient.pages
 
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.SuccessRsp
-import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq, LoginReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{LoginByEmailReq, LoginReq, SignInRsp}
 import com.sk.hjzy.webClient.{Index, Routes}
 import com.sk.hjzy.webClient.utils.{Http, JsFunc}
 import com.sk.hjzy.protocol.ptcl.webClientManager._
@@ -30,7 +30,7 @@ object Login extends Index{
       JsFunc.alert("输入信息不完整")
     }else{
       val content = LoginReq(account, password).asJson.noSpaces
-      Http.postJsonAndParse[SuccessRsp](Routes.User.login, content).map{
+      Http.postJsonAndParse[SignInRsp](Routes.User.login, content).map{
         case Right(rst) =>
           if(rst.errCode != 0){
             JsFunc.alert(rst.msg)
@@ -47,7 +47,7 @@ object Login extends Index{
     val email = dom.document.getElementById("email").asInstanceOf[Input].value
     val verifyCode = dom.document.getElementById("verifyCode").asInstanceOf[Input].value
     val content = LoginByEmailReq(email, verifyCode).asJson.noSpaces
-    Http.postJsonAndParse[SuccessRsp](Routes.User.loginByEmail, content).map{
+    Http.postJsonAndParse[SignInRsp](Routes.User.loginByEmail, content).map{
       case Right(rst) =>
         if(rst.errCode != 0){
           JsFunc.alert(rst.msg)
