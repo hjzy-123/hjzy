@@ -8,7 +8,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter.ToMat
 import org.bytedeco.javacv.{FFmpegFrameGrabber, FFmpegFrameRecorder, Frame, Java2DFrameConverter}
 import org.bytedeco.ffmpeg.global.avcodec._
 import org.seekloud.hjzy.pcClient.Boot
-import org.seekloud.hjzy.pcClient.scene.AudienceScene
+//import org.seekloud.hjzy.pcClient.scene.AudienceScene
 
 /**
   * User: Jason

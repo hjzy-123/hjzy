@@ -38,16 +38,16 @@ class LoginController(
     upBox.getChildren.add(welcomeText)
 
     // toggleButton
-    val tb1Icon = new ImageView("img/userName.png")
+    val tb1Icon = new ImageView("img/icon/userName.png")
     tb1Icon.setFitHeight(30)
     tb1Icon.setFitWidth(30)
-    val tb2Icon = new ImageView("img/email.png")
+    val tb2Icon = new ImageView("img/icon/email.png")
     tb2Icon.setFitHeight(30)
     tb2Icon.setFitWidth(30)
-    val tb1 = new ToggleButton("用户名登录", tb1Icon)
+    val tb1 = new ToggleButton("用户名密码登录", tb1Icon)
     tb1.getStyleClass.add("hostScene-leftArea-toggleButton")
     tb1.setPrefWidth(170)
-    val tb2 = new ToggleButton("邮箱登录", tb2Icon)
+    val tb2 = new ToggleButton("邮箱验证码登录", tb2Icon)
     tb2.setPrefWidth(170)
     tb2.getStyleClass.add("hostScene-leftArea-toggleButton")
     tb1.setSelected(true)
@@ -60,14 +60,14 @@ class LoginController(
     tbBox.getChildren.addAll(tb1, tb2)
 
     //userNameGrid
-    val userNameIcon = new ImageView("img/userName.png")
+    val userNameIcon = new ImageView("img/icon/userName.png")
     userNameIcon.setFitHeight(30)
     userNameIcon.setFitWidth(30)
     val userNameLabel = new Label("用户名:")
     userNameLabel.setFont(Font.font(18))
     val userNameField = new TextField("")
 
-    val passwordIcon = new ImageView("img/passWord.png")
+    val passwordIcon = new ImageView("img/icon/passWord.png")
     passwordIcon.setFitHeight(30)
     passwordIcon.setFitWidth(30)
     val passWordLabel = new Label("密码:")
@@ -88,17 +88,19 @@ class LoginController(
 
 
     //emailGrid
-    val emailIcon = new ImageView("img/email.png")
+    val emailIcon = new ImageView("img/icon/email.png")
     emailIcon.setFitHeight(28)
     emailIcon.setFitWidth(28)
     val emailLabel = new Label("邮箱:")
     emailLabel.setFont(Font.font(18))
     val emailField = new TextField("")
+    val getCodeLabel = new Label("点击发送验证码")
+    getCodeLabel.setFont(Font.font(14))
 
-    val emailPasswordIcon = new ImageView("img/passWord.png")
+    val emailPasswordIcon = new ImageView("img/icon/passWord.png")
     emailPasswordIcon.setFitHeight(30)
     emailPasswordIcon.setFitWidth(30)
-    val emailPassWordLabel = new Label("密码:")
+    val emailPassWordLabel = new Label("验证码:")
     emailPassWordLabel.setFont(Font.font(18))
     val emailPassWordField = new PasswordField()
 
@@ -108,6 +110,7 @@ class LoginController(
     emailGrid.add(emailIcon, 0, 0)
     emailGrid.add(emailLabel, 1, 0)
     emailGrid.add(emailField, 2, 0)
+    emailGrid.add(getCodeLabel, 3, 0)
     emailGrid.add(emailPasswordIcon, 0, 1)
     emailGrid.add(emailPassWordLabel, 1, 1)
     emailGrid.add(emailPassWordField, 2, 1)
@@ -116,7 +119,7 @@ class LoginController(
 
     //bottomBox
     val bottomBox = new VBox()
-    bottomBox.getChildren.addAll(tbBox, userNameGrid) //默认
+    bottomBox.getChildren.addAll(tbBox, userNameGrid)
     bottomBox.setAlignment(Pos.CENTER)
     //    bottomBox.setStyle("-fx-background-color:#d4dbe3;-fx-background-radius: 10")
     bottomBox.setPadding(new Insets(10, 100, 50, 100))
@@ -188,28 +191,28 @@ class LoginController(
     upBox.setPadding(new Insets(40, 200, 0, 200))
     upBox.getChildren.add(welcomeText)
 
-    val emailIcon = new ImageView("img/email.png")
+    val emailIcon = new ImageView("img/icon/email.png")
     emailIcon.setFitHeight(28)
     emailIcon.setFitWidth(28)
     val emailLabel = new Label("邮箱:")
     emailLabel.setFont(Font.font(18))
     val emailField = new TextField()
 
-    val userNameIcon = new ImageView("img/userName.png")
+    val userNameIcon = new ImageView("img/icon/userName.png")
     userNameIcon.setFitHeight(30)
     userNameIcon.setFitWidth(30)
     val userNameLabel = new Label("用户名:")
     userNameLabel.setFont(Font.font(18))
     val userNameField = new TextField()
 
-    val passWordIcon = new ImageView("img/passWord.png")
+    val passWordIcon = new ImageView("img/icon/passWord.png")
     passWordIcon.setFitHeight(30)
     passWordIcon.setFitWidth(30)
     val passWordLabel = new Label("密码:")
     passWordLabel.setFont(Font.font(18))
     val passWordField = new PasswordField()
 
-    val passWordIcon1 = new ImageView("img/passWord.png")
+    val passWordIcon1 = new ImageView("img/icon/passWord.png")
     passWordIcon1.setFitHeight(30)
     passWordIcon1.setFitWidth(30)
     val passWordLabel1 = new Label("确认密码:")

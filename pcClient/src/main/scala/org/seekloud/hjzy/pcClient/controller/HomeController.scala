@@ -7,7 +7,7 @@ import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.scene.HomeScene
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
-import org.seekloud.hjzy.pcClient.utils.RMClient
+//import org.seekloud.hjzy.pcClient.utils.RMClient
 import org.slf4j.LoggerFactory
 import org.seekloud.hjzy.pcClient.Boot.executor
 
@@ -30,19 +30,19 @@ class HomeController(
 
   homeScene.setListener(new HomeSceneListener {
     override def gotoLive(): Unit = {
-      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-        rmManager ! RmManager.GoToLive
-      } else {
-        gotoLogin(isToLive = true)
-      }
+//      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
+//        rmManager ! RmManager.GoToLive
+//      } else {
+//        gotoLogin(isToLive = true)
+//      }
     }
 
     override def gotoRoomHall(): Unit = {
-      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-        rmManager ! RmManager.GoToRoomHall
-      } else {
-        gotoLogin(isToWatch = true)
-      }
+//      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
+//        rmManager ! RmManager.GoToRoomHall
+//      } else {
+//        gotoLogin(isToWatch = true)
+//      }
     }
 
     override def gotoLogin(
@@ -53,9 +53,10 @@ class HomeController(
     ): Unit = {
       // 弹出登陆窗口
       val userInfo = loginController.loginDialog()
-      if (userInfo.nonEmpty) {
-        loginBySelf(userInfo, isToLive, isToWatch)
-      }
+      log.debug(s"$userInfo")
+//      if (userInfo.nonEmpty) {
+//        loginBySelf(userInfo, isToLive, isToWatch)
+//      }
     }
 
     override def gotoRegister(): Unit = {
@@ -186,57 +187,57 @@ class HomeController(
     }
   }
 
-  /**
-    * 用户自己输入信息登录
-    */
-  def loginBySelf(
-    userInfo: Option[(String, String, String)],
-    isToLive: Boolean,
-    isToWatch: Boolean
-  ): Future[Unit] = {
-    showLoading()
-    val r =
-      if (userInfo.get._3 == "userName") {
-        RMClient.signIn(userInfo.get._1, userInfo.get._2) //用户名登录
-      } else {
-        RMClient.signInByMail(userInfo.get._1, userInfo.get._2) //邮箱登录
-      }
-    r.map {
-      case Right(rsp) =>
-        if (rsp.errCode == 0) {
-          rmManager ! RmManager.SignInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
-          //          RmManager.userInfo = rsp.userInfo
-          //          RmManager.roomInfo = rsp.roomInfo
-          if (isToLive) {
-            rmManager ! RmManager.GoToLive
-          } else {
-            if (isToWatch) {
-              rmManager ! RmManager.GoToRoomHall
-            } else {
-              Boot.addToPlatform {
-                removeLoading()
-                showScene()
-              }
-            }
-          }
-          deleteLoginTemp()
-          createLoginTemp(userInfo.get._2, rsp.userInfo.get, rsp.roomInfo.get)
-        } else {
-          log.error(s"sign in error: ${rsp.msg}")
-          Boot.addToPlatform {
-            removeLoading()
-            WarningDialog.initWarningDialog(s"${rsp.msg}")
-          }
-        }
-      case Left(e) =>
-        log.error(s"sign in server error: $e")
-        Boot.addToPlatform {
-          removeLoading()
-          WarningDialog.initWarningDialog(s"服务器错误: $e")
-        }
-    }
-
-  }
+//  /**
+//    * 用户自己输入信息登录
+//    */
+//  def loginBySelf(
+//    userInfo: Option[(String, String, String)],
+//    isToLive: Boolean,
+//    isToWatch: Boolean
+//  ): Future[Unit] = {
+//    showLoading()
+//    val r =
+//      if (userInfo.get._3 == "userName") {
+//        RMClient.signIn(userInfo.get._1, userInfo.get._2) //用户名登录
+//      } else {
+//        RMClient.signInByMail(userInfo.get._1, userInfo.get._2) //邮箱登录
+//      }
+//    r.map {
+//      case Right(rsp) =>
+//        if (rsp.errCode == 0) {
+//          rmManager ! RmManager.SignInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
+//          //          RmManager.userInfo = rsp.userInfo
+//          //          RmManager.roomInfo = rsp.roomInfo
+//          if (isToLive) {
+//            rmManager ! RmManager.GoToLive
+//          } else {
+//            if (isToWatch) {
+//              rmManager ! RmManager.GoToRoomHall
+//            } else {
+//              Boot.addToPlatform {
+//                removeLoading()
+//                showScene()
+//              }
+//            }
+//          }
+//          deleteLoginTemp()
+//          createLoginTemp(userInfo.get._2, rsp.userInfo.get, rsp.roomInfo.get)
+//        } else {
+//          log.error(s"sign in error: ${rsp.msg}")
+//          Boot.addToPlatform {
+//            removeLoading()
+//            WarningDialog.initWarningDialog(s"${rsp.msg}")
+//          }
+//        }
+//      case Left(e) =>
+//        log.error(s"sign in server error: $e")
+//        Boot.addToPlatform {
+//          removeLoading()
+//          WarningDialog.initWarningDialog(s"服务器错误: $e")
+//        }
+//    }
+//
+//  }
 
 
 

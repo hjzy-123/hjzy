@@ -10,7 +10,7 @@ import javafx.application.Platform
 import javafx.scene.text.Font
 import javafx.stage.Stage
 import org.seekloud.hjzy.pcClient.common.StageContext
-import org.seekloud.hjzy.pcClient.controller.HomeController
+import org.seekloud.hjzy.pcClient.controller.{HomeController, LoginController}
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.core.RmManager.StopSelf
 import org.seekloud.hjzy.pcClient.scene.HomeScene
@@ -62,11 +62,11 @@ class Boot extends javafx.application.Application {
 
     val rmManager = system.spawn(RmManager.create(context), "rmManager")
 
-//    val loginController = new LoginController(context, rmManager)
+    val loginController = new LoginController(context, rmManager)
 //    val editController = new EditController(context,rmManager,primaryStage)
 
     val homeScene = new HomeScene()
-    val homeSceneController = new HomeController(context, homeScene, rmManager)
+    val homeSceneController = new HomeController(context, homeScene, loginController, rmManager)
     rmManager ! RmManager.GetHomeItems(homeScene, homeSceneController)
     homeSceneController.showScene()
 
