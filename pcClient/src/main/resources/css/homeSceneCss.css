@@ -1,0 +1,30 @@
+.middleBtn{
+    /*-fx-graphic: url("../img/button/joinMeeting.png");*/
+    -fx-effect: dropshadow(three-pass-box, #696969, 5,0,0,0);
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+
+}
+.middleBtn:hover{
+    -fx-effect: dropshadow(three-pass-box, #696969, 15,0,0,0);
+    -fx-cursor: hand;
+}
+
+.leftBtn{
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-effect: dropshadow(three-pass-box, #696969, 5,0,0,0);
+
+}
+.leftBtn:hover{
+    -fx-effect: dropshadow(three-pass-box, #696969, 15,0,0,0);
+    -fx-cursor: hand;
+}
+
+.nameStackPane{
+    -fx-effect: dropshadow(three-pass-box, #696969, 5,0,0,0);
+}
+.nameStackPane:hover{
+    -fx-effect: dropshadow(three-pass-box, #696969, 15,0,0,0);
+    -fx-cursor: hand;
+}

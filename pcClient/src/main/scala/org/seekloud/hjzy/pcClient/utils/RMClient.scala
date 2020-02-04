@@ -1,87 +1,84 @@
-//package org.seekloud.hjzy.pcClient.utils
-//
-//import java.io.File
-//
-//import org.seekloud.hjzy.pcClient.common.Routes
-//import org.seekloud.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol._
-//import org.slf4j.LoggerFactory
-//import org.seekloud.hjzy.pcClient.Boot.executor
-//import io.circe.{Encoder, Json}
-//import io.circe.syntax._
-//import org.seekloud.hjzy.protocol.ptcl.CommonRsp
-//import org.seekloud.hjzy.protocol.ptcl.client2Manager.http.RecordCommentProtocol.{AddRecordCommentReq, GetRecordCommentListReq, GetRecordCommentListRsp}
-//
-//import scala.concurrent.Future
-//import scala.util.{Failure, Success}
-//
-//
-///**
-//  * User: Arrow
-//  * Date: 2019/7/16
-//  * Time: 11:33
-//  */
-//object RMClient extends HttpUtil {
-//
-//  import io.circe.generic.auto._
-//  import io.circe.parser.decode
-//  import io.circe.syntax._
-//
-//
-//  private val log = LoggerFactory.getLogger(this.getClass)
-//
-//  //注册
-//  def signUp(email: String, username: String, pwd: String): Future[Either[Throwable, SignUpRsp]] = {
-//
-//    val methodName = "signUp"
-//    val url = Routes.signUp
-//
-//    val data = SignUp(email, username, pwd, "").asJson.noSpaces
-//
-//    postJsonRequestSend(methodName, url, Nil, data, timeOut = 60 * 1000, needLogRsp = false).map {
-//      case Right(jsonStr) =>
-//        decode[SignUpRsp](jsonStr)
-//      case Left(error) =>
-//        log.debug(s"sign up error: $error")
-//        Left(error)
-//    }
-//  }
-//
-//  //用户名登录
-//  def signIn(userName: String, pwd: String): Future[Either[Throwable, SignInRsp]] = {
-//
-//    val methodName = "signIn"
-//    val url = Routes.signIn
-//
-//    val data = SignIn(userName, pwd).asJson.noSpaces
-//    log.debug(s"signIn by userName post data:$data")
-//    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
-//      case Right(jsonStr) =>
-//        decode[SignInRsp](jsonStr)
-//      case Left(error) =>
-//        log.debug(s"signIn by userName error: $error")
-//        Left(error)
-//    }
-//
-//  }
-//
-//  //邮箱登录
-//  def signInByMail(email: String, pwd: String): Future[Either[Throwable, SignInRsp]] = {
-//
-//    val methodName = "signInByMail"
-//    val url = Routes.signInByMail
-//
-//    val data = SignInByMail(email, pwd).asJson.noSpaces
-//    log.debug(s"signIn by mail post data:$data")
-//    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
-//      case Right(jsonStr) =>
-//        decode[SignInRsp](jsonStr)
-//      case Left(error) =>
-//        log.debug(s"signIn by mail error: $error")
-//        Left(error)
-//    }
-//
-//  }
-//
+package org.seekloud.hjzy.pcClient.utils
+
+import java.io.File
+
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common._
+import org.seekloud.hjzy.pcClient.common.Routes
+import org.slf4j.LoggerFactory
+import org.seekloud.hjzy.pcClient.Boot.executor
+import io.circe.{Encoder, Json}
+import io.circe.syntax._
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
+/**
+  * User: Arrow
+  * Date: 2019/7/16
+  * Time: 11:33
+  */
+object RMClient extends HttpUtil {
+
+  import io.circe.generic.auto._
+  import io.circe.parser.decode
+  import io.circe.syntax._
+
+
+  private val log = LoggerFactory.getLogger(this.getClass)
+
+  //注册
+  def signUp(email: String, username: String, pwd: String): Future[Either[Throwable, SuccessRsp]] = {
+
+    val methodName = "signUp"
+    val url = Routes.signUp
+
+    val data = RegisterReq(email, username, pwd, "").asJson.noSpaces
+
+    postJsonRequestSend(methodName, url, Nil, data, timeOut = 60 * 1000, needLogRsp = false).map {
+      case Right(jsonStr) =>
+        decode[SuccessRsp](jsonStr)
+      case Left(error) =>
+        log.debug(s"sign up error: $error")
+        Left(error)
+    }
+  }
+
+  //用户名密码登录
+  def signIn(userName: String, pwd: String): Future[Either[Throwable, SignInRsp]] = {
+
+    val methodName = "signInByUserName"
+    val url = Routes.signIn
+
+    val data = LoginReq(userName, pwd).asJson.noSpaces
+    log.debug(s"signIn by userName post data:$data")
+    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
+      case Right(jsonStr) =>
+        decode[SignInRsp](jsonStr)
+      case Left(error) =>
+        log.debug(s"signIn by userName error: $error")
+        Left(error)
+    }
+
+  }
+
+  //邮箱验证码登录
+  def signInByMail(email: String, verifyCode: String): Future[Either[Throwable, SignInRsp]] = {
+
+    val methodName = "signInByMail"
+    val url = Routes.signInByMail
+
+    val data = LoginByEmailReq(email, verifyCode).asJson.noSpaces
+    log.debug(s"signIn by mail post data:$data")
+    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
+      case Right(jsonStr) =>
+        decode[SignInRsp](jsonStr)
+      case Left(error) =>
+        log.debug(s"signIn by mail error: $error")
+        Left(error)
+    }
+
+  }
+
 //  def getTemporaryUser: Future[Either[Throwable, GetTemporaryUserRsp]] = {
 //
 //    val methodName = "getTemporaryUser"
@@ -287,6 +284,6 @@
 //        Left(error)
 //    }
 //  }
-//
-//
-//}
+
+
+}
