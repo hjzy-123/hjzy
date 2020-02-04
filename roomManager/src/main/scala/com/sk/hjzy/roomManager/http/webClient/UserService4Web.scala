@@ -322,7 +322,7 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
   }
 
 
-  val webUserRoute: Route = pathPrefix("webUser"){
+  val webUserRoute: Route = pathPrefix("User"){
     genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
     genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateName ~ updateHeadImg
   }
