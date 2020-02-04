@@ -40,14 +40,14 @@ object CommonInfo {
     val coverImg = 1//封面图片
   }
 
-  case class UserInfo(
-    userId: Long,
-    userName: String,
-    headImgUrl:String,
-    token: String,
-    tokenExistTime: Long, //token有效时长
-    seal:Boolean = false
-  )
+//  case class UserInfo(
+//    userId: Long,
+//    userName: String,
+//    headImgUrl:String,
+//    token: String,
+//    tokenExistTime: Long, //token有效时长
+//    seal:Boolean = false
+//  )
 
   case class UserDes(
     userId: Long,

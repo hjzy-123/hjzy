@@ -1,0 +1,25 @@
+package com.sk.hjzy.protocol.ptcl
+
+object CommonProtocol {
+
+  case class RoomInfo(
+                       roomId: Long,
+                       roomName: String,
+                       roomDes: String,
+                       userId: Long,  //房主id
+                       userName:String,
+                       headImgUrl:String,
+                       coverImgUrl:String,
+                       var rtmp: Option[String] = None
+                     )
+
+  case class UserInfo(
+                       userId: Long,
+                       userName: String,
+                       headImgUrl:String,
+                       token: String,
+                       tokenExistTime: Long, //token有效时长
+                       seal:Boolean = false
+                     )
+
+}

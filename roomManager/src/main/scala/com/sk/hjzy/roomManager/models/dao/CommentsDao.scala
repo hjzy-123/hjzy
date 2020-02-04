@@ -1,6 +1,7 @@
 package com.sk.hjzy.roomManager.models.dao
 
-import com.sk.hjzy.protocol.ptcl.CommonInfo.{RecordInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.CommonInfo.{RecordInfo}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{UserInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetRecordListRsp
 //import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.RecordData
 import com.sk.hjzy.protocol.ptcl.distributor2Manager.DistributorProtocol.RecordData

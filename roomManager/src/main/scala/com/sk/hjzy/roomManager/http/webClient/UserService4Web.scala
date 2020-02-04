@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{FileIO, Flow, Source}
 import akka.util.ByteString
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ErrorRsp, SuccessRsp}
 import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, LoginByEmailReq, LoginReq, RegisterReq, ResetPassword, UpdateNameReq}
-import com.sk.hjzy.roomManager.common.AppSettings
+import com.sk.hjzy.roomManager.common.{AppSettings, Common}
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
 import com.sk.hjzy.roomManager.http.SessionBase.UserSession
@@ -21,6 +21,8 @@ import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.SignInRsp
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -96,14 +98,18 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
                 println("update token")
                 val token = SecureUtil.nonceStr(40)
                 UserInfoDao.updateToken(rst.uid, token, System.currentTimeMillis())
+                val userInfo = UserInfo(rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, token, tokenExistTime)
+                val roomInfo = RoomInfo(rst.roomid, "", "", rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, if (rst.coverImg == "") Common.DefaultImg.coverImg else rst.coverImg)
                 val session = UserSession(rst.uid.toString, rst.userName, System.currentTimeMillis().toString).toSessionMap
                 addSession(session) {
-                  complete(SuccessRsp(0, "ok"))
+                  complete(SignInRsp(Some(userInfo), Some(roomInfo)))
                 }
               }else{
+                val userInfo = UserInfo(rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, rst.token, tokenExistTime)
+                val roomInfo = RoomInfo(rst.roomid, "", "", rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, if (rst.coverImg == "") Common.DefaultImg.coverImg else rst.coverImg)
                 val session = UserSession(rst.uid.toString, rst.userName, System.currentTimeMillis().toString).toSessionMap
                 addSession(session) {
-                  complete(SuccessRsp(0, "ok"))
+                  complete(SignInRsp(Some(userInfo), Some(roomInfo)))
                 }
               }
             case None =>
@@ -149,15 +155,20 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
                     if(rst.tokenCreateTime + tokenExistTime < System.currentTimeMillis()){
                       println("update token")
                       val token = SecureUtil.nonceStr(40)
+                      val userInfo = UserInfo(rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, token, tokenExistTime)
+                      val roomInfo = RoomInfo(rst.roomid, "", "", rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, if (rst.coverImg == "") Common.DefaultImg.coverImg else rst.coverImg)
+
                       UserInfoDao.updateToken(rst.uid, token, System.currentTimeMillis())
                       val session = UserSession(rst.uid.toString, rst.userName, System.currentTimeMillis().toString).toSessionMap
                       addSession(session) {
-                        complete(SuccessRsp(0, "ok"))
+                        complete(SignInRsp(Some(userInfo), Some(roomInfo)))
                       }
                     }else{
+                      val userInfo = UserInfo(rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, rst.token, tokenExistTime)
+                      val roomInfo = RoomInfo(rst.roomid, "", "", rst.uid, rst.userName, if (rst.headImg == "") Common.DefaultImg.headImg else rst.headImg, if (rst.coverImg == "") Common.DefaultImg.coverImg else rst.coverImg)
                       val session = UserSession(rst.uid.toString, rst.userName, System.currentTimeMillis().toString).toSessionMap
                       addSession(session) {
-                        complete(SuccessRsp(0, "ok"))
+                        complete(SignInRsp(Some(userInfo), Some(roomInfo)))
                       }
                     }
                   case false =>
@@ -322,7 +333,7 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
   }
 
 
-  val webUserRoute: Route = pathPrefix("webUser"){
+  val webUserRoute: Route = pathPrefix("User"){
     genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
     genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateName ~ updateHeadImg
   }

@@ -5,7 +5,8 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.{ActorContext, StashBuffer, TimerScheduler}
 import akka.stream.scaladsl.Flow
-import com.sk.hjzy.protocol.ptcl.CommonInfo.{LiveInfo, RoomInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.CommonInfo.{LiveInfo, RoomInfo}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{ UserInfo}
 import com.sk.hjzy.protocol.ptcl.CommonRsp
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol._
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol._

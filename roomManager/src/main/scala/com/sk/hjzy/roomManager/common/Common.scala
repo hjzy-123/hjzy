@@ -1,6 +1,5 @@
 package com.sk.hjzy.roomManager.common
 
-import com.sk.hjzy.protocol.ptcl.CommonInfo.UserInfo
 import com.sk.hjzy.roomManager.common.AppSettings._
 
 object Common {
@@ -43,6 +42,5 @@ object Common {
     val TEST_ROOM_ID = 1000029L
   }
 
-//  val testUser = UserInfo
 
 }
