@@ -22,4 +22,19 @@ object CommonProtocol {
                        seal:Boolean = false
                      )
 
+  case class RecordInfo(
+                         recordId:Long,//数据库中的录像id，用于删除录像
+                         roomId:Long,
+                         recordName:String,
+                         recordDes:String,
+                         userId:Long,
+                         userName:String,
+                         startTime:Long,
+                         headImg:String,
+                         coverImg:String,
+                         observeNum:Int, //浏览量
+                         likeNum:Int,
+                         duration:String = ""
+                       )
+
 }

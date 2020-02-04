@@ -9,7 +9,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
-import com.sk.hjzy.roomManager.core.{EmailActor, RegisterManager, RoomManager, UserManager}
+import com.sk.hjzy.roomManager.core.{RoomManager, UserManager}
 import com.sk.hjzy.roomManager.http.HttpService
 
 import scala.language.postfixOps
@@ -36,17 +36,9 @@ object Boot extends HttpService {
 
   override implicit val executor: MessageDispatcher = system.dispatchers.lookup("akka.actor.my-blocking-dispatcher")
 
-//  val userManager = system.spawn(UserManager.create(), "userManager")
   val userManager = system.spawn(UserManager.create(), "userManager")
 
-//  val roomManager = system.spawn(RoomManager.create(), "roomManager")
   val roomManager = system.spawn(RoomManager.create(), "roomManager")
-
-//  val registerManager = system.spawn(RegisterManager.create(), "registerManager")
-  val registerManager = system.spawn(RegisterManager.create(), "registerManager")
-
-//  val emailActor = system.spawn(EmailActor.behavior, "emailActor")
-  val emailActor = system.spawn(EmailActor.behavior, "emailActor")
 
   val emailManager4Web = system.spawn(EmailManager.create(), "emailManager")
 

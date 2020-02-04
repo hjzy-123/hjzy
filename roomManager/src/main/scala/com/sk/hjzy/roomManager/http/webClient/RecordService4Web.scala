@@ -16,15 +16,17 @@ import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.core.webClient.EmailManager
 import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
 import com.sk.hjzy.roomManager.http.SessionBase.UserSession
-import com.sk.hjzy.roomManager.models.dao.{CommentsDao, RecordDao, UserInfoDao}
+import com.sk.hjzy.roomManager.models.dao.{CommentsDao, RecordDao, StatisticDao, UserInfoDao}
 import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{Comment, GetCommentsRsp, GetRecordInfoRsp, GetRecordsRsp, Record, SendCommentReq, UpdateAllowUserReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{Comment, GetCommentsRsp, GetRecordInfoRsp, GetRecordsRsp, Record,SearchRecord, SearchRecordRsp, SendCommentReq, UpdateAllowUserReq}
 import java.text.SimpleDateFormat
 import java.util.Date
+
+import com.sk.hjzy.protocol.ptcl.CommonRsp
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -207,8 +209,30 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
   }
 
+  private val searchRecord = (path("searchRecord") & post) {
+    entity(as[Either[Error, SearchRecord]]) {
+      case Right(req) =>
+        dealFutureResult {
+          RecordDao.searchRecord(req.roomId, req.startTime).map {
+            case Some(recordInfo) =>
+              dealFutureResult {
+                  RecordDao.updateViewNum(req.roomId, req.startTime, recordInfo.observeNum + 1).map{ r =>
+                    //todo  processorDomain
+                    val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
+                    complete(SearchRecordRsp(url, recordInfo))
+                  }
+              }
+            case None =>
+              complete(CommonRsp(100070, s"没有该录像"))
+          }
+        }
+      case Left(e) =>
+        complete(CommonRsp(100070, s"parse error:$e"))
+    }
+  }
+
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo ~ getComments ~ sendComment ~ deleteComment
+    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo ~ getComments ~ sendComment ~ deleteComment ~ searchRecord
   }
 }

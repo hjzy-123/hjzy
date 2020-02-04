@@ -1,5 +1,7 @@
 package com.sk.hjzy.protocol.ptcl.webClientManager
 
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.RecordInfo
+import com.sk.hjzy.protocol.ptcl.{Request, Response}
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ComRsp, CommonRsp}
 
 /**
@@ -62,5 +64,19 @@ object RecordProtocol {
     belongTo: Long,
     recordId: Long
   )
+
+  case class SearchRecord(
+                           roomId: Long,
+                           startTime: Long,
+                           inTime:Long,//用户开始观看视频的时间
+                           userIdOpt:Option[Long] = None
+                         ) extends Request
+
+  case class SearchRecordRsp(
+                              url: String = "",
+                              recordInfo: RecordInfo,
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                            ) extends CommonRsp
 
 }
