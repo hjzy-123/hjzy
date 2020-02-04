@@ -44,9 +44,9 @@ object RMClient extends HttpUtil {
   }
 
   //用户名密码登录
-  def signIn(userName: String, pwd: String): Future[Either[Throwable, SignInRsp]] = {
+  def signInByName(userName: String, pwd: String): Future[Either[Throwable, SignInRsp]] = {
 
-    val methodName = "signInByUserName"
+    val methodName = "signInByName"
     val url = Routes.signIn
 
     val data = LoginReq(userName, pwd).asJson.noSpaces

@@ -1,15 +1,18 @@
 package org.seekloud.hjzy.pcClient.controller
 
+import java.io.{BufferedWriter, File, FileWriter}
+
 import akka.actor.typed.ActorRef
 import javafx.scene.{Group, Scene}
 import org.seekloud.hjzy.pcClient.Boot
-import org.seekloud.hjzy.pcClient.common.StageContext
+import org.seekloud.hjzy.pcClient.common.{Constants, StageContext}
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.scene.HomeScene
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
-//import org.seekloud.hjzy.pcClient.utils.RMClient
+import org.seekloud.hjzy.pcClient.utils.RMClient
 import org.slf4j.LoggerFactory
 import org.seekloud.hjzy.pcClient.Boot.executor
+import org.seekloud.hjzy.pcClient.component.WarningDialog
 
 import scala.concurrent.Future
 
@@ -187,57 +190,99 @@ class HomeController(
       }
     }
   }
+  def removeLoading(): Unit = {
+    Boot.addToPlatform {
+      if (hasWaitingGif) {
+        homeScene.group.getChildren.remove(homeScene.waitingGif)
+        hasWaitingGif = false
+      }
+    }
+  }
 
-//  /**
-//    * 用户自己输入信息登录
-//    */
-//  def loginBySelf(
-//    userInfo: Option[(String, String, String)],
-//    isToLive: Boolean,
-//    isToWatch: Boolean
-//  ): Future[Unit] = {
-//    showLoading()
-//    val r =
-//      if (userInfo.get._3 == "userName") {
-//        RMClient.signIn(userInfo.get._1, userInfo.get._2) //用户名登录
-//      } else {
-//        RMClient.signInByMail(userInfo.get._1, userInfo.get._2) //邮箱登录
-//      }
-//    r.map {
-//      case Right(rsp) =>
-//        if (rsp.errCode == 0) {
-//          rmManager ! RmManager.SignInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
-//          //          RmManager.userInfo = rsp.userInfo
-//          //          RmManager.roomInfo = rsp.roomInfo
-//          if (isToLive) {
-//            rmManager ! RmManager.GoToLive
-//          } else {
-//            if (isToWatch) {
-//              rmManager ! RmManager.GoToRoomHall
-//            } else {
-//              Boot.addToPlatform {
-//                removeLoading()
-//                showScene()
-//              }
-//            }
-//          }
+  /**
+    * 用户自己输入信息登录
+    */
+  def loginBySelf(
+    userInfo: Option[(String, String, String)],
+    isToLive: Boolean,
+    isToWatch: Boolean
+  ): Future[Unit] = {
+    showLoading()
+    val r =
+      if (userInfo.get._3 == "userName") {
+        RMClient.signInByName(userInfo.get._1, userInfo.get._2) //用户名密码登录
+      } else {
+        RMClient.signInByMail(userInfo.get._1, userInfo.get._2) //邮箱验证码登录
+      }
+    r.map {
+      case Right(rsp) =>
+        if (rsp.errCode == 0) {
+          rmManager ! RmManager.SignInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
+          if (isToLive) {
+            rmManager ! RmManager.GoToLive
+          } else {
+            if (isToWatch) {
+              rmManager ! RmManager.GoToRoomHall
+            } else {
+              Boot.addToPlatform {
+                removeLoading()
+                showScene()
+              }
+            }
+          }
 //          deleteLoginTemp()
 //          createLoginTemp(userInfo.get._2, rsp.userInfo.get, rsp.roomInfo.get)
-//        } else {
-//          log.error(s"sign in error: ${rsp.msg}")
-//          Boot.addToPlatform {
-//            removeLoading()
-//            WarningDialog.initWarningDialog(s"${rsp.msg}")
-//          }
-//        }
-//      case Left(e) =>
-//        log.error(s"sign in server error: $e")
-//        Boot.addToPlatform {
-//          removeLoading()
-//          WarningDialog.initWarningDialog(s"服务器错误: $e")
-//        }
-//    }
+        } else {
+          log.error(s"sign in error: ${rsp.msg}")
+          Boot.addToPlatform {
+            removeLoading()
+            WarningDialog.initWarningDialog(s"${rsp.msg}")
+          }
+        }
+      case Left(e) =>
+        log.error(s"sign in server error: $e")
+        Boot.addToPlatform {
+          removeLoading()
+          WarningDialog.initWarningDialog(s"服务器错误: $e")
+        }
+    }
+
+  }
+
+//  /**
+//    * 创建theia登录临时文件
+//    */
+//  def createLoginTemp(password: String, userInfo: UserInfo, roomInfo: RoomInfo): Unit = {
 //
+//    val file = Constants.loginInfoCache
+//    val temp = File.createTempFile("theia", "cacheLogin", file) //为临时文件名称添加前缀和后缀
+//    if (temp.exists() && temp.canWrite) {
+//      val bufferedWriter = new BufferedWriter(new FileWriter(temp))
+//      bufferedWriter.write(s"passWord:${jdkAESEncode(password)}\n")
+//      bufferedWriter.write(s"userId:${userInfo.userId}\n")
+//      bufferedWriter.write(s"userName:${userInfo.userName}\n")
+//      bufferedWriter.write(s"headImgUrl:${userInfo.headImgUrl}\n")
+//      bufferedWriter.write(s"token:${userInfo.token}\n")
+//      bufferedWriter.write(s"tokenExistTime:${userInfo.tokenExistTime}\n")
+//      bufferedWriter.write(s"roomId:${roomInfo.roomId}\n")
+//      bufferedWriter.write(s"roomName:${roomInfo.roomName}\n")
+//      bufferedWriter.write(s"roomDes:${roomInfo.roomDes}\n")
+//      bufferedWriter.write(s"coverImgUrl:${roomInfo.coverImgUrl}\n")
+//      bufferedWriter.write(s"getTokenTime:${System.currentTimeMillis()}\n")
+//      bufferedWriter.close()
+//    }
+//    log.debug(s"create theia temp: $temp")
+//  }
+
+//  /**
+//    * 删除登录临时文件
+//    */
+//  def deleteLoginTemp(): Unit = {
+//    val dir = Constants.loginInfoCache
+//    dir.listFiles().foreach { file =>
+//      if (file.exists()) file.delete()
+//      log.debug(s"delete theia temps: ${file.getName}")
+//    }
 //  }
 
 
