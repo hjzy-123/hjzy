@@ -8,29 +8,28 @@ import sbt._
   */
 object Dependencies {
 
+
   val slickV = "3.3.0"
-  val akkaV = "2.5.21"
-  val akkaHttpV = "10.1.7"
-  val scalaXmlV = "1.1.1"
-  val circeVersion = "0.11.1"
-
-
+  val akkaV = "2.5.23"
+  val akkaHttpV = "10.1.8"
+  val scalaXmlV = "1.1.0"
+  val circeVersion = "0.9.3"
 
   val scalaJsDomV = "0.9.7"
-  val scalaTagsV = "0.6.5"
-  val diodeV = "1.1.4"
 
 
   val akkaSeq = Seq(
-    "com.typesafe.akka" %% "akka-actor" % akkaV withSources (),
-    "com.typesafe.akka" %% "akka-actor-typed" % akkaV withSources (),
+    "com.typesafe.akka" %% "akka-actor" % akkaV withSources(),
+    "com.typesafe.akka" %% "akka-actor-typed" % akkaV withSources(),
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
-    "com.typesafe.akka" %% "akka-stream" % akkaV
+    "com.typesafe.akka" %% "akka-stream" % akkaV,
+    "com.typesafe.akka" %% "akka-stream-typed" % akkaV
   )
 
   val akkaHttpSeq = Seq(
     "com.typesafe.akka" %% "akka-http" % akkaHttpV,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV,
+    "ch.megard" %% "akka-http-cors" % "0.4.0"
   )
 
   val circeSeq = Seq(
@@ -39,25 +38,20 @@ object Dependencies {
     "io.circe" %% "circe-parser" % circeVersion
   )
 
-  val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.1.1"
-  val slick = "com.typesafe.slick" %% "slick" % "3.3.0"
-  val slickCodeGen = "com.typesafe.slick" %% "slick-codegen" % "3.3.0"
-  val scalikejdbc = "org.scalikejdbc" %% "scalikejdbc" % "3.3.3"
-  val scalikejdbcConfig = "org.scalikejdbc" %% "scalikejdbc-config" % "3.3.3"
+  val slick = "com.typesafe.slick" %% "slick" % slickV
+  val slickCodeGen = "com.typesafe.slick" %% "slick-codegen" % slickV
+  val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
 
-  val scalatags = "com.lihaoyi" %% "scalatags" % "0.6.7"
-  val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "2.22.0"
-  val hikariCP = "com.zaxxer" % "HikariCP" % "3.3.1"
+  val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "2.16.0"
+  val hikariCP = "com.zaxxer" % "HikariCP" % "2.7.9"
   val logback = "ch.qos.logback" % "logback-classic" % "1.2.3"
-  val codec = "commons-codec" % "commons-codec" % "1.12"
-  val postgresql = "org.postgresql" % "postgresql" % "42.2.5"
+  val codec = "commons-codec" % "commons-codec" % "1.10"
+  val postgresql = "org.postgresql" % "postgresq" % "9.4.1208"
   val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.8.1"
   val ehcache = "net.sf.ehcache" % "ehcache" % "2.10.6"
-  val h2Database = "com.h2database" % "h2" % "1.4.196"
+  val byteobject = "org.seekloud" %% "byteobject" % "0.1.1"
+  val mail = "com.sun.mail" % "javax.mail" % "1.5.3"
   val mysql ="mysql" % "mysql-connector-java" % "5.1.46"
-  val mail = "com.sun.mail" % "javax.mail" % "1.5.6"
-
-
 
   val backendDependencies =
     Dependencies.akkaSeq ++
@@ -67,27 +61,23 @@ object Dependencies {
       Dependencies.scalaXml,
       Dependencies.slick,
       Dependencies.slickCodeGen,
-      Dependencies.scalikejdbc,
-      Dependencies.scalikejdbcConfig,
-      Dependencies.scalatags,
       Dependencies.nscalaTime,
       Dependencies.hikariCP,
       Dependencies.logback,
       Dependencies.codec,
-      Dependencies.postgresql,
       Dependencies.asynchttpclient,
       Dependencies.ehcache,
-      Dependencies.h2Database,
-      Dependencies.mysql,
-      Dependencies.mail
+      Dependencies.byteobject,
+      Dependencies.mail,
+      Dependencies.mysql
     )
-  
+
+
   val javacppVersion = "1.5"
 
   // Platform classifier for native library dependencies
   //val platform = org.bytedeco.javacpp.Loader.getPlatform
   private val platforms = IndexedSeq("windows-x86_64", "linux-x86_64", "macosx-x86_64")
-
 
   // Libraries with native dependencies
   private val bytedecoPresetLibs = Seq(
@@ -104,5 +94,12 @@ object Dependencies {
     "org.bytedeco"            % "javacpp"         % javacppVersion withSources() withJavadoc(),
     "org.bytedeco"            % "javacv"          % javacppVersion withSources() withJavadoc()
   ) ++ bytedecoPresetLibs
+
+
+  val testLibs = Seq(
+    "com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
+    "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaV % "test",
+    "org.scalatest" %% "scalatest" % "3.0.7" % "test"
+  )
 
 }
