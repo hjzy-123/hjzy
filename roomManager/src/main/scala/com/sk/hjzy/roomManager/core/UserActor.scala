@@ -1,11 +1,12 @@
 package com.sk.hjzy.roomManager.core
 
+import akka.NotUsed
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
 import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.CommonInfo
@@ -24,19 +25,15 @@ import scala.concurrent.duration.{FiniteDuration, _}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-
 /**
-  * created by ltm on
-  * 2019/7/16
+  * actor由UserManager创建
+  * 处理并向客户端分发webSocket消息
   */
 
 object UserActor {
 
-
   import scala.language.implicitConversions
-
   import org.seekloud.byteobject.ByteObject._
-
 
   private val log = LoggerFactory.getLogger(this.getClass)
   private final val InitTime = Some(5.minutes)
@@ -53,9 +50,8 @@ object UserActor {
 
   /**http消息*/
   final case class UserLogin(roomId:Long,userId:Long) extends Command with UserManager.Command//新用户请求mpd的时候处理这个消息，更新roomActor中的列表
-
   case class UserLeft[U](actorRef: ActorRef[U]) extends Command
-  final case class ChildDead[U](userId: Long,temporary:Boolean, childRef: ActorRef[U]) extends Command with UserManager.Command
+  final case class ChildDead[U](userId: Long,childRef: ActorRef[U]) extends Command with UserManager.Command
   final case object ChangeBehaviorToInit extends Command
   final case object SendHeartBeat extends  Command
 
@@ -83,7 +79,7 @@ object UserActor {
     * userId
     * temporary:true--临时用户，false--登陆用户
     * */
-  def create(userId: Long,temporary:Boolean): Behavior[Command] = {
+  def create(userId: Long): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>
       log.info(s"userActor-$userId is starting...")
       ctx.setReceiveTimeout(30.seconds, CompleteMsgClient)
@@ -339,22 +335,8 @@ object UserActor {
       }
     }
 
-//  private def searchUser(uid:Long,actor:ActorRef[UserActor.Command],idleState:IdleState,msg:Command) = {
-//    UserInfoDao.SearchById(uid).onComplete{
-//      case Success(resOpt) =>
-//        if(resOpt.nonEmpty){
-//
-//
-//        }else{
-//
-//        }
-//      case Failure(error) =>
-//        actor ! SwitchBehavior("idle",idle(idleState.userId,idleState.temporary,idleState.clientActor,idleState.liveIdOpt))
-//    }
-//
-//  }
 
-  private def sink(userActor: ActorRef[UserActor.Command]) = ActorSink.actorRef[Command](
+  private def sink(userActor: ActorRef[UserActor.Command]): Sink[Command, NotUsed] = ActorSink.actorRef[Command](
     ref = userActor,
     onCompleteMessage = CompleteMsgClient,
     onFailureMessage = { e =>
@@ -362,7 +344,6 @@ object UserActor {
       FailMsgClient(e)
     }
   )
-
 
   def flow(userActor: ActorRef[UserActor.Command]):Flow[WebSocketMsg,WsMsgManager,Any] = {
     val in = Flow[WebSocketMsg].to(sink(userActor))
