@@ -62,8 +62,7 @@ class HomeController(
       isToCreate: Boolean,
       isToJoin: Boolean
     ): Unit = {
-      // 弹出登陆窗口
-      val userInfo = loginController.loginDialog()
+      val userInfo = loginController.loginDialog() //弹出登陆窗口
       log.debug(s"用户输入登录信息：$userInfo")
       if (userInfo.nonEmpty) {
         loginBySelf(userInfo, isToCreate, isToJoin)
@@ -71,42 +70,17 @@ class HomeController(
     }
 
     override def gotoRegister(): Unit = {
-      //弹出注册窗口
-      val signUpInfo = loginController.registerDialog()
+      val signUpInfo = loginController.registerDialog() //弹出注册窗口
       log.debug(s"用户输入注册信息：$signUpInfo")
-//      if (signUpInfo.nonEmpty) {
-//        showLoading()
-//        Boot.addToPlatform {
-//          WarningDialog.initWarningDialog("邮件已发送到您的邮箱，请查收邮件完成注册！")
-//        }
-//        RMClient.signUp(signUpInfo.get._1.toString, signUpInfo.get._2.toString, signUpInfo.get._3.toString).map {
-//          case Right(signUpRsp) =>
-//            if (signUpRsp.errCode == 0) {
-//              removeLoading()
-//              Boot.addToPlatform {
-//                WarningDialog.initWarningDialog("注册成功！")
-//              }
-//            } else {
-//              log.error(s"sign up error: ${signUpRsp.msg}")
-//              removeLoading()
-//              Boot.addToPlatform {
-//                WarningDialog.initWarningDialog(s"${signUpRsp.msg}")
-//              }
-//            }
-//          case Left(error) =>
-//            log.error(s"sign up server error:$error")
-//            removeLoading()
-//            Boot.addToPlatform {
-//              WarningDialog.initWarningDialog(s"验证超时！")
-//            }
-//        }
-//      }
+      if(signUpInfo.nonEmpty){
+        val info = signUpInfo.get
+        registerBySelf(info._1, info._2, info._3, info._4)
+      }
     }
 
     override def logout(): Unit = {
       rmManager ! RmManager.Logout
 //      deleteLoginTemp()
-
     }
 
     override def editInfo(): Unit = {
@@ -210,11 +184,7 @@ class HomeController(
   /**
     * 用户自己输入信息登录
     */
-  def loginBySelf(
-    userInfo: Option[(String, String, String)],
-    isToCreate: Boolean,
-    isToJoin: Boolean
-  ): Future[Unit] = {
+  def loginBySelf(userInfo: Option[(String, String, String)], isToCreate: Boolean, isToJoin: Boolean): Future[Unit] = {
     showLoading()
     val r =
       if (userInfo.get._3 == "userName") {
@@ -266,19 +236,80 @@ class HomeController(
   }
 
   /**
+    * 注册
+    */
+  def registerBySelf(userName: String, password: String, email: String, verifyCode: String): Future[Unit] = {
+    showLoading()
+    RMClient.register(userName, password, verifyCode, email).map {
+      case Right(rsp) =>
+        if(rsp.errCode == 0){
+          removeLoading()
+        } else {
+          log.error(s"register error: ${rsp.msg}")
+          Boot.addToPlatform {
+            removeLoading()
+            WarningDialog.initWarningDialog(s"${rsp.msg}")
+          }
+        }
+      case Left(error) =>
+        log.error(s"register server error: $error")
+        Boot.addToPlatform {
+          removeLoading()
+          WarningDialog.initWarningDialog(s"服务器错误: $error")
+        }
+    }
+  }
+
+  /**
     * 创建会议
     */
 
-  def createMeeting(roomId:Long, password: String, roomName: String, roomDes: String) ={
-
+  def createMeeting(roomId:Long, password: String, roomName: String, roomDes: String): Future[Unit] ={
+    showLoading()
+    RMClient.createMeeting(roomId, password, roomName, roomDes).map {
+      case Right(rsp) =>
+        if(rsp.errCode == 0){
+          removeLoading()
+        } else {
+          log.error(s"createMeeting error: ${rsp.msg}")
+          Boot.addToPlatform {
+            removeLoading()
+            WarningDialog.initWarningDialog(s"${rsp.msg}")
+          }
+        }
+      case Left(error) =>
+        log.error(s"createMeeting server error: $error")
+        Boot.addToPlatform {
+          removeLoading()
+          WarningDialog.initWarningDialog(s"服务器错误: $error")
+        }
+    }
   }
 
   /**
     * 加入会议
     */
 
-  def joinMeeting(roomId: Long, password: String) ={
-
+  def joinMeeting(roomId: Long, password: String): Future[Unit] ={
+    showLoading()
+    RMClient.joinMeeting(roomId, password).map {
+      case Right(rsp) =>
+        if(rsp.errCode == 0){
+          removeLoading()
+        } else {
+          log.error(s"joinMeeting error: ${rsp.msg}")
+          Boot.addToPlatform {
+            removeLoading()
+            WarningDialog.initWarningDialog(s"${rsp.msg}")
+          }
+        }
+      case Left(error) =>
+        log.error(s"joinMeeting server error: $error")
+        Boot.addToPlatform {
+          removeLoading()
+          WarningDialog.initWarningDialog(s"服务器错误: $error")
+        }
+    }
   }
 
 

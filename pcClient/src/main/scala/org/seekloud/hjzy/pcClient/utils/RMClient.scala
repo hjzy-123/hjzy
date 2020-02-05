@@ -27,16 +27,30 @@ object RMClient extends HttpUtil {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   //注册
-  def signUp(email: String, username: String, pwd: String): Future[Either[Throwable, SuccessRsp]] = {
-    val methodName = "signUp"
+  def register(username: String, pwd: String, verifyCode: String, email: String): Future[Either[Throwable, SuccessRsp]] = {
+    val methodName = "register"
     val url = Routes.signUp
-    val data = RegisterReq(email, username, pwd, "").asJson.noSpaces
+    val data = RegisterReq(username, pwd, verifyCode, email).asJson.noSpaces
 
     postJsonRequestSend(methodName, url, Nil, data, timeOut = 60 * 1000, needLogRsp = false).map {
       case Right(jsonStr) =>
         decode[SuccessRsp](jsonStr)
       case Left(error) =>
         log.debug(s"sign up error: $error")
+        Left(error)
+    }
+  }
+
+  //注册时获取邮箱验证码
+  def genRegisterVerifyCode(email: String): Future[Either[Throwable, SuccessRsp]] = {
+    val methodName = "genRegisterVerifyCode"
+    val url = Routes.genVerifyCode(email)
+
+    getRequestSend(methodName, url, Nil, needLogRsp = false).map{
+      case Right(jsonStr) =>
+        decode[SuccessRsp](jsonStr)
+      case Left(error) =>
+        log.debug(s"genRegisterVerifyCode error: $error")
         Left(error)
     }
   }
@@ -75,15 +89,29 @@ object RMClient extends HttpUtil {
 
   }
 
+  //登录时获取邮箱验证码
+  def genLoginVerifyCode(email: String): Future[Either[Throwable, SuccessRsp]] = {
+    val methodName = "genLoginVerifyCode"
+    val url = Routes.genLoginVerifyCode(email)
+
+    getRequestSend(methodName, url, Nil, needLogRsp = false).map{
+      case Right(jsonStr) =>
+        decode[SuccessRsp](jsonStr)
+      case Left(error) =>
+        log.debug(s"genLoginVerifyCode error: $error")
+        Left(error)
+    }
+  }
+
   //创建会议
   def createMeeting(roomId: Long, password: String, roomName: String, roomDes: String): Future[Either[Throwable, SuccessRsp]] = {
     val methodName = "createMeeting"
-    val url = "" //todo
-    val data = "".asJson.noSpaces //todo
+    val url = Routes.newMeeting
+    val data = NewMeeting(roomId, roomName, roomDes, password).asJson.noSpaces
     log.debug(s"createMeeting post data: $data")
     postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
       case Right(jsonStr) =>
-        decode[SuccessRsp](jsonStr) //todo
+        decode[SuccessRsp](jsonStr)
       case Left(error) =>
         log.debug(s"createMeeting parse error: $error")
         Left(error)
@@ -94,12 +122,12 @@ object RMClient extends HttpUtil {
   //加入会议
   def joinMeeting(roomId: Long, passWord: String): Future[Either[Throwable, SuccessRsp]] = {
     val methodName = "joinMeeting"
-    val url = "" //todo
-    val data = "".asJson.noSpaces //todo
+    val url = Routes.joinMeeting
+    val data = JoinMeeting(roomId, passWord).asJson.noSpaces
     log.debug(s"createMeeting post data: $data")
     postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
       case Right(jsonStr) =>
-        decode[SuccessRsp](jsonStr) //todo
+        decode[SuccessRsp](jsonStr)
       case Left(error) =>
         log.debug(s"joinMeeting parse error: $error")
         Left(error)

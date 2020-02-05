@@ -12,7 +12,10 @@ import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
+import org.seekloud.hjzy.pcClient.utils.RMClient
 import org.slf4j.LoggerFactory
+import org.seekloud.hjzy.pcClient.Boot.executor
+
 
 /**
   * User: Arrow
@@ -97,6 +100,30 @@ class LoginController(
     emailField.setMaxWidth(130)
     val getCodeBtn = new Button("发送验证码")
     getCodeBtn.setFont(Font.font(12))
+    getCodeBtn.setOnAction(_ => {
+      if(emailField.getText().nonEmpty){
+        RMClient.genLoginVerifyCode(emailField.getText()).map{
+          case Right(rsp) =>
+            if(rsp.errCode == 0){
+              Boot.addToPlatform {
+                WarningDialog.initWarningDialog("获取邮箱验证码成功！")
+              }
+            } else {
+              Boot.addToPlatform {
+                WarningDialog.initWarningDialog("获取邮箱验证码失败！")
+              }
+            }
+          case Left(error) =>
+            Boot.addToPlatform {
+              WarningDialog.initWarningDialog(s"获取邮箱验证码失败：$error")
+            }
+        }
+      } else {
+        Boot.addToPlatform {
+          WarningDialog.initWarningDialog("请填写邮箱地址！")
+        }
+      }
+    })
 
     val emailPasswordIcon = new ImageView("img/icon/passWord.png")
     emailPasswordIcon.setFitHeight(30)
@@ -105,7 +132,6 @@ class LoginController(
     emailPassWordLabel.setFont(Font.font(15))
     val emailPassWordField = new TextField()
     emailPassWordField.setMaxWidth(130)
-
 
     val emailGrid = new GridPane
     emailGrid.setHgap(8)
@@ -183,8 +209,8 @@ class LoginController(
   }
 
   //注册弹窗
-  def registerDialog(): Option[(String, String, String)] = {
-    val dialog = new Dialog[(String, String, String)]()
+  def registerDialog(): Option[(String, String, String, String)] = {
+    val dialog = new Dialog[(String, String, String, String)]()
     dialog.setTitle("注册")
 
     val welcomeText = new Text("欢迎注册")
@@ -203,6 +229,30 @@ class LoginController(
 
     val getCodeBtn = new Button("获取验证码")
     getCodeBtn.setFont(Font.font(12))
+    getCodeBtn.setOnAction(_ => {
+      if(emailField.getText().nonEmpty){
+        RMClient.genRegisterVerifyCode(emailField.getText()).map{
+          case Right(rsp) =>
+            if(rsp.errCode == 0){
+              Boot.addToPlatform {
+                WarningDialog.initWarningDialog("获取邮箱验证码成功！")
+              }
+            } else {
+              Boot.addToPlatform {
+                WarningDialog.initWarningDialog("获取邮箱验证码失败！")
+              }
+            }
+          case Left(error) =>
+            Boot.addToPlatform {
+              WarningDialog.initWarningDialog(s"获取邮箱验证码失败：$error")
+            }
+        }
+      } else {
+        Boot.addToPlatform {
+          WarningDialog.initWarningDialog("请填写邮箱地址！")
+        }
+      }
+    })
 
     val emailCodeIcon = new ImageView("img/icon/email.png")
     emailCodeIcon.setFitHeight(28)
@@ -272,10 +322,10 @@ class LoginController(
     dialog.getDialogPane.getButtonTypes.add(confirmButton)
     dialog.getDialogPane.setContent(group)
     dialog.setResultConverter(dialogButton =>
-      if (userNameField.getText().nonEmpty && passWordField.getText().nonEmpty && emailField.getText().nonEmpty) {
+      if (userNameField.getText().nonEmpty && passWordField.getText().nonEmpty && emailField.getText().nonEmpty && emailCodeField.getText.nonEmpty) {
         if (passWordField.getText() == passWordField1.getText()) {
           if (dialogButton == confirmButton)
-             (emailField.getText(), userNameField.getText(),passWordField.getText())
+             (userNameField.getText(),passWordField.getText(), emailField.getText(), emailCodeField.getText)
           else
             null
         } else {
@@ -291,11 +341,11 @@ class LoginController(
         null
       }
     )
-    var registerInfo: Option[(String, String, String)] = None
+    var registerInfo: Option[(String, String, String, String)] = None
     val rst = dialog.showAndWait()
     rst.ifPresent { a =>
-      if (a._1 != null && a._2 != null && a._3 != null && a._1 != "" && a._2 != "" && a._3 != "")
-        registerInfo = Some((a._1, a._2, a._3))
+      if (a._1 != null && a._2 != null && a._3 != null && a._4 != null && a._1 != "" && a._2 != "" && a._3 != "" && a._4 != "")
+        registerInfo = Some((a._1, a._2, a._3, a._4))
       else
         None
     }
