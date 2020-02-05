@@ -32,34 +32,42 @@ class HomeController(
   var hasWaitingGif = false
 
   homeScene.setListener(new HomeSceneListener {
-    override def gotoLive(): Unit = {
-//      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-//        rmManager ! RmManager.GoToLive
-//      } else {
-//        gotoLogin(isToLive = true)
-//      }
+    override def gotoCreateMeeting(): Unit = {
+      if(RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty){
+        val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
+        if(createMeetingInfo.nonEmpty){
+          val info = createMeetingInfo.get
+          createMeeting(RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+        }
+      } else {
+        gotoLogin(isToCreate = true)
+      }
     }
 
-    override def gotoRoomHall(): Unit = {
-//      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-//        rmManager ! RmManager.GoToRoomHall
-//      } else {
-//        gotoLogin(isToWatch = true)
-//      }
+    override def gotoJoinMeeting(): Unit = {
+      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
+        val joinMeetingInfo = loginController.joinMeetingDialog()
+        if(joinMeetingInfo.nonEmpty){
+          val info = joinMeetingInfo.get
+          joinMeeting(info._1.toLong, info._2)
+        }
+      } else {
+        gotoLogin(isToJoin = true)
+      }
     }
 
     override def gotoLogin(
       userName: Option[String] = None,
       pwd: Option[String] = None,
-      isToLive: Boolean,
-      isToWatch: Boolean
+      isToCreate: Boolean,
+      isToJoin: Boolean
     ): Unit = {
       // 弹出登陆窗口
       val userInfo = loginController.loginDialog()
       log.debug(s"用户输入登录信息：$userInfo")
-//      if (userInfo.nonEmpty) {
-//        loginBySelf(userInfo, isToLive, isToWatch)
-//      }
+      if (userInfo.nonEmpty) {
+        loginBySelf(userInfo, isToCreate, isToJoin)
+      }
     }
 
     override def gotoRegister(): Unit = {
@@ -204,8 +212,8 @@ class HomeController(
     */
   def loginBySelf(
     userInfo: Option[(String, String, String)],
-    isToLive: Boolean,
-    isToWatch: Boolean
+    isToCreate: Boolean,
+    isToJoin: Boolean
   ): Future[Unit] = {
     showLoading()
     val r =
@@ -217,16 +225,24 @@ class HomeController(
     r.map {
       case Right(rsp) =>
         if (rsp.errCode == 0) {
-          rmManager ! RmManager.SignInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
-          if (isToLive) {
-            rmManager ! RmManager.GoToLive
+          rmManager ! RmManager.LogInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
+          Boot.addToPlatform {
+            removeLoading()
+            showScene()
+          }
+          if (isToCreate) {
+            val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
+            if(createMeetingInfo.nonEmpty){
+              val info = createMeetingInfo.get
+              createMeeting(RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+            }
+
           } else {
-            if (isToWatch) {
-              rmManager ! RmManager.GoToRoomHall
-            } else {
-              Boot.addToPlatform {
-                removeLoading()
-                showScene()
+            if (isToJoin) {
+              val joinMeetingInfo = loginController.joinMeetingDialog()
+              if(joinMeetingInfo.nonEmpty){
+                val info = joinMeetingInfo.get
+                joinMeeting(info._1.toLong, info._2)
               }
             }
           }
@@ -248,6 +264,25 @@ class HomeController(
     }
 
   }
+
+  /**
+    * 创建会议
+    */
+
+  def createMeeting(roomId:Long, password: String, roomName: String, roomDes: String) ={
+
+  }
+
+  /**
+    * 加入会议
+    */
+
+  def joinMeeting(roomId: Long, password: String) ={
+
+  }
+
+
+
 
 //  /**
 //    * 创建theia登录临时文件

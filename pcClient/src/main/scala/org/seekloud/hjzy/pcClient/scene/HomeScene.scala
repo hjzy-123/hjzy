@@ -6,6 +6,7 @@ import javafx.scene.image.ImageView
 import javafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 import javafx.scene.{Group, Scene}
 import org.seekloud.hjzy.pcClient.common.Constants._
+import org.seekloud.hjzy.pcClient.core.RmManager
 import org.slf4j.LoggerFactory
 
 /**
@@ -18,22 +19,23 @@ object HomeScene{
 
   trait HomeSceneListener{
 
+    //登录
     def gotoLogin(
       userName: Option[String] = None,
       pwd: Option[String] = None,
-      isToLive: Boolean = false,
-      isToWatch: Boolean = false
+      isToCreate: Boolean = false,
+      isToJoin: Boolean = false
     )
 
-    def gotoRegister()
+    def gotoRegister() //注册
 
-    def logout()
+    def logout() //注销
 
-    def gotoRoomHall()
+    def gotoJoinMeeting() //加入会议
 
-    def gotoLive()
+    def gotoCreateMeeting() //创建会议
 
-    def editInfo()
+    def editInfo() //编辑信息
 
   }
 
@@ -55,6 +57,8 @@ class HomeScene {
   )
 
   def getScene: Scene = {
+    group.getChildren.remove(2,4)
+    group.getChildren.addAll(genLeftArea(),genRightArea())
     this.scene
   }
 
@@ -77,47 +81,61 @@ class HomeScene {
   background.setFitWidth(width)
 
   /*leftArea*/
-  val loginPic = new ImageView("img/button/login.png")
-  loginPic.setFitHeight(55)
-  loginPic.setFitWidth(150)
-  val loginBtn = new Button("", loginPic)
-  loginBtn.getStyleClass.add("leftBtn")
-  loginBtn.setOnAction(_ => listener.gotoLogin())
+  def genLeftArea(): VBox = {
+    val leftBox = new VBox(10)
+    leftBox.setAlignment(Pos.CENTER)
+    leftBox.setLayoutX(width*0.3 - 75)
+    leftBox.setLayoutY(height*0.3 - 32)
+    if(RmManager.userInfo.isEmpty){
+      val loginPic = new ImageView("img/button/login.png")
+      loginPic.setFitHeight(55)
+      loginPic.setFitWidth(150)
+      val loginBtn = new Button("", loginPic)
+      loginBtn.getStyleClass.add("leftBtn")
+      loginBtn.setOnAction(_ => listener.gotoLogin())
 
-  val registerPic = new ImageView("img/button/register.png")
-  registerPic.setFitHeight(55)
-  registerPic.setFitWidth(150)
-  val registerBtn = new Button("", registerPic)
-  registerBtn.getStyleClass.add("leftBtn")
-  registerBtn.setOnAction(_ => listener.gotoRegister())
+      val registerPic = new ImageView("img/button/register.png")
+      registerPic.setFitHeight(55)
+      registerPic.setFitWidth(150)
+      val registerBtn = new Button("", registerPic)
+      registerBtn.getStyleClass.add("leftBtn")
+      registerBtn.setOnAction(_ => listener.gotoRegister())
 
-  val leftBox = new VBox(10, loginBtn, registerBtn)
-  leftBox.setAlignment(Pos.CENTER)
-  leftBox.setLayoutX(width*0.3 - 75)
-  leftBox.setLayoutY(height*0.3 - 32)
+      leftBox.getChildren.addAll(loginBtn, registerBtn)
+    }
+
+    leftBox
+  }
+
 
   /*rightArea*/
-  def genRightArea(userName: String): VBox = {
-    val nameLabel = new Label(userName)
-    nameLabel.setStyle("-fx-font: 20 KaiTi;-fx-fill: #141518")
-    val rightStickyPic = new ImageView("img/button/rightSticky.png")
-    rightStickyPic.setFitHeight(50)
-    rightStickyPic.setFitWidth(150)
-    val nameStackPane = new StackPane(rightStickyPic, nameLabel)
-    nameStackPane.setAlignment(Pos.CENTER)
-    nameStackPane.getStyleClass.add("nameStackPane")
-
-    val logoutPic = new ImageView("img/button/logout.png")
-    logoutPic.setFitHeight(50)
-    logoutPic.setFitWidth(150)
-    val logoutBtn = new Button("", logoutPic)
-    logoutBtn.getStyleClass.add("leftBtn")
-    logoutBtn.setOnAction(_ => listener.logout())
-
-    val rightBox = new VBox(10, nameStackPane, logoutBtn)
+  def genRightArea(): VBox = {
+    val rightBox = new VBox(10)
     rightBox.setAlignment(Pos.CENTER)
     rightBox.setLayoutX(width*0.67 - 75)
     rightBox.setLayoutY(height*0.7 - 32)
+
+    if(RmManager.userInfo.nonEmpty){
+      val userName = RmManager.userInfo.get.userName
+      val nameLabel = new Label(userName)
+      nameLabel.setStyle("-fx-font: 20 KaiTi;-fx-fill: #141518")
+      val rightStickyPic = new ImageView("img/button/rightSticky.png")
+      rightStickyPic.setFitHeight(50)
+      rightStickyPic.setFitWidth(150)
+      val nameStackPane = new StackPane(rightStickyPic, nameLabel)
+      nameStackPane.setAlignment(Pos.CENTER)
+      nameStackPane.getStyleClass.add("nameStackPane")
+
+      val logoutPic = new ImageView("img/button/logout.png")
+      logoutPic.setFitHeight(50)
+      logoutPic.setFitWidth(150)
+      val logoutBtn = new Button("", logoutPic)
+      logoutBtn.getStyleClass.add("leftBtn")
+      logoutBtn.setOnAction(_ => listener.logout())
+
+      rightBox.getChildren.addAll(nameStackPane, logoutBtn)
+    }
+
     rightBox
 
   }
@@ -129,21 +147,20 @@ class HomeScene {
   joinMeeting.setFitWidth(180)
   val joinBtn = new Button("", joinMeeting)
   joinBtn.getStyleClass.add("middleBtn")
-  joinBtn.setOnAction(_ => listener.gotoRoomHall())
+  joinBtn.setOnAction(_ => listener.gotoJoinMeeting())
 
   val createMeeting = new ImageView("img/button/createMeeting.png")
   createMeeting.setFitHeight(150)
   createMeeting.setFitWidth(180)
   val createBtn = new Button("", createMeeting)
   createBtn.getStyleClass.add("middleBtn")
-  createBtn.setOnAction(_ => listener.gotoLive())
+  createBtn.setOnAction(_ => listener.gotoCreateMeeting())
 
   val middleBox = new VBox(10, joinBtn, createBtn)
   middleBox.setAlignment(Pos.CENTER)
   middleBox.setLayoutX(width*0.49 - 90)
   middleBox.setLayoutY(height*0.45 - 80)
 
-//  val rightArea = genRightArea("小黑麦")
-  group.getChildren.addAll(background, middleBox, leftBox)
+  group.getChildren.addAll(background, middleBox, genLeftArea(), genRightArea())
 
 }

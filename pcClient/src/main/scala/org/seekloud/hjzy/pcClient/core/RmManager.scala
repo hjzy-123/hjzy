@@ -28,7 +28,7 @@ object RmManager {
 
   final case class GetHomeItems(homeScene: HomeScene, homeController: HomeController) extends RmCommand
 
-  final case class SignInSuccess(userInfo: UserInfo, roomInfo: RoomInfo, getTokenTime: Option[Long] = None) extends RmCommand
+  final case class LogInSuccess(userInfo: UserInfo, roomInfo: RoomInfo, getTokenTime: Option[Long] = None) extends RmCommand
 
   final case object GoToLive extends RmCommand
 
