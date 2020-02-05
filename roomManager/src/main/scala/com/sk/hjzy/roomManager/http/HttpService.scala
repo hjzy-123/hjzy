@@ -63,7 +63,7 @@ trait HttpService extends ServiceUtils
       pathPrefix("hjzy") {
         home ~ statistics ~
         pathPrefix("roomManager"){
-          resourceRoutes ~  rtpRoutes  ~ rtmp ~ webUserRoute ~webRecordsRoute
+          resourceRoutes ~  rtpRoutes  ~ rtmp ~ webUserRoute ~webRecordsRoute ~ meetingRoute
         }
       }
     }

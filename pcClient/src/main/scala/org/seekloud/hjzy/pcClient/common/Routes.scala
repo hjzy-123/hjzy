@@ -21,4 +21,9 @@ object Routes {
   val searchRoom: String = userUrl + "/searchRoom"
   val temporaryUser: String = userUrl + "/temporaryUser"
   val getRoomInfo: String = userUrl + "/getRoomInfo"
+
+  //会议相关
+  val meetingUrl: String =  baseUrl + "/Meeting"
+  val newMeeting: String = meetingUrl + "/newMeeting"
+  val joinMeeting: String = meetingUrl + "/joinMeeting"
 }
