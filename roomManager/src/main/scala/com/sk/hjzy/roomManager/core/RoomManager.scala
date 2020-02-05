@@ -6,7 +6,6 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonInfo.{LiveInfo, RoomInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol._
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
-import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.SeekRecord
 import com.sk.hjzy.roomManager.Boot.{executor, scheduler, timeout}
 import com.sk.hjzy.roomManager.common.AppSettings._
 import com.sk.hjzy.roomManager.common.Common

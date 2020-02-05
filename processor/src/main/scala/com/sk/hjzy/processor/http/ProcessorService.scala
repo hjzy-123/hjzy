@@ -1,6 +1,6 @@
 package com.sk.hjzy.processor.http
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.{BufferedReader, File, FileInputStream, FileOutputStream, InputStreamReader}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -15,11 +15,13 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.headers.HttpOriginRange
+import cats.instances.duration
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
 import com.sk.hjzy.processor.common.AppSettings.recordLocation
-import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
+import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, RecordInfoRsp, SeekRecord, UpdateRoomInfo, UpdateRsp}
+import org.bytedeco.javacpp.Loader
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
@@ -29,6 +31,8 @@ trait ProcessorService extends ServiceUtils {
   private val settings = CorsSettings.defaultSettings.withAllowedOrigins(
     HttpOriginMatcher.*
   )
+
+  case class RecordInfo(fileExist:Boolean,duration:String)
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
@@ -111,12 +115,58 @@ trait ProcessorService extends ServiceUtils {
       log.error(s"errs in getRecord: $x")
       complete(fileNotExistError)
   }
-//
-//  val processorRoute:Route = pathPrefix("processor") {
-//    updateRoomInfo ~ closeRoom ~ getMpd ~ getRtmpUrl ~ getDash ~ getMpd4Record ~ getRecordList ~ upLoadImg ~ streamLog
-//  }
+
+  val seekRecord: Route = (path("seekRecord") & post) {
+    entity(as[Either[Error, SeekRecord]]) {
+      case Right(req) =>
+        log.info("seekRecord.")
+        val file = new File(s"$recordLocation${req.roomId}/${req.roomId}/record.mp4")
+        if(file.exists()){
+          val d = getVideoDuration(req.roomId,req.roomId)
+          log.info(s"duration:$d")
+          complete(RecordInfoRsp(duration = d))
+        }else{
+          log.info(s"no record for roomId:${req.roomId} and startTime:${req.roomId}")
+          complete(RecordInfoRsp(1000100,"record file not exist.",""))
+        }
+
+      case Left(e) =>
+        log.info(s"err in seekRecord. error: ${e.getMessage}")
+        complete(RecordInfoRsp(1000103,"parse json error",""))
+    }
+  }
+
+  private def getVideoDuration(roomId:Long,startTime:Long) ={
+    val ffprobe = Loader.load(classOf[org.bytedeco.ffmpeg.ffprobe])
+    //容器时长（container duration）
+    val pb = new ProcessBuilder(ffprobe,"-v","error","-show_entries","format=duration", "-of","csv=\"p=0\"","-i", s"$recordLocation$roomId/$startTime/record.mp4")
+    val processor = pb.start()
+    val br = new BufferedReader(new InputStreamReader(processor.getInputStream))
+    val s = br.readLine()
+    var duration = 0
+    if(s!= null){
+      duration = (s.toDouble * 1000).toInt
+    }
+    br.close()
+    //    if(processor != null){
+    //      processor.destroyForcibly()
+    //    }
+    millis2HHMMSS(duration)
+  }
+
+  def millis2HHMMSS(sec: Double): String = {
+    val hours = (sec / 3600000).toInt
+    val h =  if (hours >= 10) hours.toString else "0" + hours
+    val minutes = ((sec % 3600000) / 60000).toInt
+    val m = if (minutes >= 10) minutes.toString else "0" + minutes
+    val seconds = ((sec % 60000) / 1000).toInt
+    val s = if (seconds >= 10) seconds.toString else "0" + seconds
+    val dec = ((sec % 1000) / 10).toInt
+    val d = if (dec >= 10) dec.toString else "0" + dec
+    s"$h:$m:$s.$d"
+  }
 
   val processorRoute:Route = pathPrefix("processor") {
-   newConnect  ~ closeRoom ~ updateRoomInfo  ~ upLoadImg ~ streamLog ~ getRecord
+   newConnect  ~ closeRoom ~ updateRoomInfo  ~ upLoadImg ~ streamLog ~ getRecord ~ seekRecord
   }
 }

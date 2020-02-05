@@ -1,10 +1,5 @@
 package com.sk.hjzy.roomManager.models.dao
-import java.util
 
-import com.sk.hjzy.protocol.ptcl.CommonInfo.RecordInfo
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetRecordListRsp
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.StatisticsProtocol.AdminRecordInfo
-import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.RecordData
 import com.sk.hjzy.roomManager.utils.DBUtil._
 import com.sk.hjzy.roomManager.models.SlickTables._
 import slick.jdbc.MySQLProfile.api._
