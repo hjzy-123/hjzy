@@ -28,10 +28,8 @@ object RMClient extends HttpUtil {
 
   //注册
   def signUp(email: String, username: String, pwd: String): Future[Either[Throwable, SuccessRsp]] = {
-
     val methodName = "signUp"
     val url = Routes.signUp
-
     val data = RegisterReq(email, username, pwd, "").asJson.noSpaces
 
     postJsonRequestSend(methodName, url, Nil, data, timeOut = 60 * 1000, needLogRsp = false).map {
@@ -63,12 +61,10 @@ object RMClient extends HttpUtil {
 
   //邮箱验证码登录
   def signInByMail(email: String, verifyCode: String): Future[Either[Throwable, SignInRsp]] = {
-
     val methodName = "signInByMail"
     val url = Routes.signInByMail
-
     val data = LoginByEmailReq(email, verifyCode).asJson.noSpaces
-    log.debug(s"signIn by mail post data:$data")
+    log.debug(s"signIn by mail post data: $data")
     postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
       case Right(jsonStr) =>
         decode[SignInRsp](jsonStr)
@@ -78,6 +74,38 @@ object RMClient extends HttpUtil {
     }
 
   }
+
+  //创建会议
+  def createMeeting(roomId: Long, password: String, roomName: String, roomDes: String): Future[Either[Throwable, SuccessRsp]] = {
+    val methodName = "createMeeting"
+    val url = "" //todo
+    val data = "".asJson.noSpaces //todo
+    log.debug(s"createMeeting post data: $data")
+    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
+      case Right(jsonStr) =>
+        decode[SuccessRsp](jsonStr) //todo
+      case Left(error) =>
+        log.debug(s"createMeeting parse error: $error")
+        Left(error)
+    }
+
+  }
+
+  //加入会议
+  def joinMeeting(roomId: Long, passWord: String): Future[Either[Throwable, SuccessRsp]] = {
+    val methodName = "joinMeeting"
+    val url = "" //todo
+    val data = "".asJson.noSpaces //todo
+    log.debug(s"createMeeting post data: $data")
+    postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
+      case Right(jsonStr) =>
+        decode[SuccessRsp](jsonStr) //todo
+      case Left(error) =>
+        log.debug(s"joinMeeting parse error: $error")
+        Left(error)
+    }
+  }
+
 
 //  def getTemporaryUser: Future[Either[Throwable, GetTemporaryUserRsp]] = {
 //
