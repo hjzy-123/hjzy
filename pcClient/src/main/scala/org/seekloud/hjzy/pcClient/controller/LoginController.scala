@@ -320,8 +320,8 @@ class LoginController(
     roomIdIcon.setFitWidth(28)
     val roomIdLabel = new Label("房间号:")
     roomIdLabel.setFont(Font.font(15))
-    val roomId = new Label(s"$roomId")
-    roomId.setFont(Font.font(15))
+    val roomIdText = new Label(s"$roomId")
+    roomIdText.setFont(Font.font(15))
 
     //会议房间密码
     val passwordIcon = new ImageView("img/icon/email.png")
@@ -352,7 +352,7 @@ class LoginController(
     grid.setVgap(25)
     grid.add(roomIdIcon, 0, 0)
     grid.add(roomIdLabel, 1, 0)
-    grid.add(roomId, 2, 0)
+    grid.add(roomIdText, 2, 0)
     grid.add(passwordIcon, 0, 1)
     grid.add(passwordLabel, 1, 1)
     grid.add(passwordField, 2, 1)
