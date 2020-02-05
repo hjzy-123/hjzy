@@ -50,5 +50,16 @@ object Processor {
                         msg:String = "ok"
                       ) extends CommonRsp
 
+  //录像
+  case class SeekRecord(
+                         roomId:Long,
+                         startTime:Long
+                       )
+
+  case class RecordInfoRsp(
+                            errCode:Int = 0,
+                            msg:String = "ok",
+                            duration:String
+                          ) extends CommonRsp
 
 }

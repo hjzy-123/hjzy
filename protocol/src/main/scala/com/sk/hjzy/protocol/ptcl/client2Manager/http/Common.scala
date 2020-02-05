@@ -55,4 +55,34 @@ object Common {
                         msg: String = "ok"
                       ) extends CommonRsp
 
+  /**
+   * 创建会议 & 加入会议
+   *
+   * POST
+   *
+   **/
+
+  case class NewMeeting(
+                         roomId: Long,
+                         roomName: String,
+                         roomDes: String,
+                         password: String
+                        )
+
+  case class NewMeetingRsp(
+                            errCode: Int = 0,
+                            msg: String = "ok"
+                          )extends CommonRsp
+
+  case class JoinMeeting(
+                         roomId: Long,
+                         password: String
+                       )
+
+  case class JoinMeetingRsp(
+                            errCode: Int = 0,
+                            msg: String = "ok"
+                          )extends CommonRsp
+
+
 }

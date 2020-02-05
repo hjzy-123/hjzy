@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.util.Timeout
-import com.sk.hjzy.roomManager.http.webClient.{RecordService4Web, UserService4Web}
+import com.sk.hjzy.roomManager.http.webClient.{RecordService4Web, UserService}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -18,8 +18,10 @@ trait HttpService extends ServiceUtils
   with RtpService
   with RtmpService
   with ResourceService
-  with UserService4Web
-  with RecordService4Web{
+  with UserService
+  with RecordService4Web
+  with MeetingService
+{
 
   implicit val system: ActorSystem
 

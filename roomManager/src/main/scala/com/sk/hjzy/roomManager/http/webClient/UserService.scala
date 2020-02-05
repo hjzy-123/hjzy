@@ -3,7 +3,7 @@ package com.sk.hjzy.roomManager.http.webClient
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
-import com.sk.hjzy.roomManager.Boot.{emailManager4Web, executor, roomManager, scheduler, timeout, userManager}
+import com.sk.hjzy.roomManager.Boot.{emailManager4Web, executor, log, roomManager, scheduler, timeout, userManager}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.Message
@@ -23,6 +23,7 @@ import io.circe.generic.auto._
 import akka.stream.Materializer
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.SignInRsp
+import com.sk.hjzy.roomManager.core.UserManager.SetupWs
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -32,7 +33,7 @@ import scala.util.{Failure, Success}
   * Date: 2020/1/20
   * Time: 14:54
   */
-trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
+trait UserService extends CirceSupport with ServiceUtils with SessionBase{
 
   private val tokenExistTime = AppSettings.tokenExistTime * 1000L // seconds
 
@@ -332,9 +333,28 @@ trait UserService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
+  private val setupWebSocket = (path("setupWebSocket") & get) {
+    parameter(
+      'userId.as[Long],
+      'token.as[String],
+      'roomId.as[Long]
+    ) { (uid, token, roomId) =>
+      val setWsFutureRsp: Future[Option[Flow[Message, Message, Any]]] = userManager ? (SetupWs(uid, token, roomId, _))
+      dealFutureResult(
+        setWsFutureRsp.map {
+          case Some(rsp) => handleWebSocketMessages(rsp)
+          case None =>
+            log.debug(s"建立websocket失败，userId=$uid,roomId=$roomId,token=$token")
+            complete("setup error")
+        }
+      )
+
+    }
+  }
+
 
   val webUserRoute: Route = pathPrefix("User"){
     genVerifyCode ~ register ~ login ~ genLoginVerifyCode ~ loginByEmail ~ checkEmail ~
-    genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateName ~ updateHeadImg
+    genPasswordVerifyCode ~ resetPassword ~ logout ~ getUserInfo ~ updateName ~ updateHeadImg ~ setupWebSocket
   }
 }

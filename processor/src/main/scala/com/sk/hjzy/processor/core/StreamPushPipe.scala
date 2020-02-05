@@ -1,19 +1,14 @@
 package com.sk.hjzy.processor.core
 
-import java.io.{File, FileInputStream, FileOutputStream, PipedInputStream, PipedOutputStream}
-
+import java.io.{BufferedReader, File, FileInputStream, FileOutputStream, InputStreamReader, PipedInputStream, PipedOutputStream}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import org.slf4j.LoggerFactory
-
 import scala.language.implicitConversions
 import java.nio.ByteBuffer
-import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.Pipe.SourceChannel
-
 import com.sk.hjzy.processor.Boot.streamPushActor
 import com.sk.hjzy.processor.common.AppSettings._
-
 import scala.concurrent.duration._
 import scala.collection.mutable
 
