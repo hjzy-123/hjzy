@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.generic.auto._
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeeting, JoinMeetingRsp, NewMeeting, NewMeetingRsp}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{ErrorRsp, JoinMeeting, JoinMeetingRsp, NewMeeting, NewMeetingRsp, SuccessRsp}
 import com.sk.hjzy.roomManager.core.RoomManager
 
 import scala.concurrent.Future
@@ -17,11 +17,10 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
   private val newMeeting = (path("newMeeting") & post){
     entity(as[Either[Error, NewMeeting]]){
       case Right(req) =>
-        log.info(s"post method $newMeeting")
         roomManager ! RoomManager.NewRoom(req.roomId, req.roomName, req.roomDes, req.password)
-        complete(NewMeetingRsp)
+        complete(SuccessRsp)
       case Left(err) =>
-        complete(NewMeetingRsp(100003, "无效参数"))
+        complete(ErrorRsp(100003, "无效参数"))
     }
   }
 
@@ -32,14 +31,14 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
         dealFutureResult{
           verify.map{ rst =>
             if(rst){
-              complete(JoinMeetingRsp(0, "ok"))
+              complete(SuccessRsp)
             }else{
-              complete(JoinMeetingRsp(100002, "房间号或密码错误"))
+              complete(ErrorRsp(100002, "房间号或密码错误"))
             }
           }
         }
       case Left(err) =>
-        complete(JoinMeetingRsp(100003, "无效参数"))
+        complete(ErrorRsp(100003, "无效参数"))
     }
   }
 

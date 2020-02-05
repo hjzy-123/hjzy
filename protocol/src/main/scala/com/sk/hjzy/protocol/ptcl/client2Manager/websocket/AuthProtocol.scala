@@ -16,18 +16,17 @@ object AuthProtocol {
 
   sealed trait WsMsgClient extends WsMsgFront
 
-  sealed trait WsMsgRm extends WsMsgManager
-
   case object CompleteMsgClient extends WsMsgFront
 
   case class FailMsgClient(ex: Exception) extends WsMsgFront
+
+  sealed trait WsMsgRm extends WsMsgManager
 
   case object CompleteMsgRm extends WsMsgManager
 
   case class FailMsgRm(ex: Exception) extends WsMsgManager
 
   case class Wrap(ws: Array[Byte]) extends WsMsgRm
-
 
   case class TextMsg(msg: String) extends WsMsgRm
 
@@ -41,7 +40,6 @@ object AuthProtocol {
 
   /*client发送*/
   sealed trait WsMsgHost extends WsMsgClient
-
 
   /*roomManager发送*/
   sealed trait WsMsgRm2Host extends WsMsgRm
