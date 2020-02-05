@@ -109,6 +109,7 @@ object UserActor {
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
+            roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.join,roomId,userId,Some(ctx.self))
             init(userId,Some(roomId))
 
           case TimeOut(m) =>

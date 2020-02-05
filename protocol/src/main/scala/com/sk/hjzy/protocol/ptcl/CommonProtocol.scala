@@ -37,4 +37,10 @@ object CommonProtocol {
                          duration:String = ""
                        )
 
+
+  case class LiveInfo(
+                       liveId: String,
+                       liveCode: String
+                     )
+
 }

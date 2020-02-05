@@ -1,7 +1,9 @@
 package com.sk.hjzy.roomManager.protocol
 
 import com.sk.hjzy.protocol.ptcl.CommonInfo
-import com.sk.hjzy.protocol.ptcl.CommonInfo.RoomInfo
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
+
+import scala.collection.mutable
 
 object CommonInfoProtocol {
 
@@ -9,8 +11,7 @@ object CommonInfoProtocol {
   final case class WholeRoomInfo(
                                 var roomInfo:RoomInfo,
                                 //var recordStartTime: Option[Long] = None,
-                                var layout:Int = CommonInfo.ScreenLayout.EQUAL,
-                                var aiMode:Int = 0
+                                liveInfoMap: mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]] //"audience"/"anchor"->Map(userId->LiveInfo)
                                 )
 
 }
