@@ -86,7 +86,7 @@ class LoginController(
     userNameGrid.add(passwordIcon, 0, 1)
     userNameGrid.add(passWordLabel, 1, 1)
     userNameGrid.add(passWordField, 2, 1)
-    userNameGrid.setStyle("-fx-background-color:#d4dbe3;")
+    userNameGrid.setStyle("-fx-background-color:#ddc1ad;")
     userNameGrid.setPadding(new Insets(60, 20, 60, 20))
 
 
@@ -143,7 +143,7 @@ class LoginController(
     emailGrid.add(emailPasswordIcon, 0, 1)
     emailGrid.add(emailPassWordLabel, 1, 1)
     emailGrid.add(emailPassWordField, 2, 1)
-    emailGrid.setStyle("-fx-background-color:#d4dbe3")
+    emailGrid.setStyle("-fx-background-color:#ddc1ad")
     emailGrid.setPadding(new Insets(60, 15, 60, 15))
 
     //bottomBox
@@ -170,7 +170,7 @@ class LoginController(
     box.getChildren.addAll(upBox, bottomBox)
     box.setAlignment(Pos.CENTER)
     box.setSpacing(30)
-    box.setStyle("-fx-background-color:#f2f5fb")
+    box.setStyle("-fx-background-color:#e6d9d1")
 
     val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
 
@@ -301,7 +301,7 @@ class LoginController(
     grid.add(passWordIcon1, 0, 4)
     grid.add(passWordLabel1, 1, 4)
     grid.add(passWordField1, 2, 4)
-    grid.setStyle("-fx-background-color:#d4dbe3;-fx-background-radius: 10")
+    grid.setStyle("-fx-background-color:#ddc1ad;-fx-background-radius: 10")
     grid.setPadding(new Insets(60, 20, 60, 20))
 
     val bottomBox = new HBox()
@@ -313,7 +313,7 @@ class LoginController(
     box.getChildren.addAll(upBox, bottomBox)
     box.setAlignment(Pos.CENTER)
     box.setSpacing(30)
-    box.setStyle("-fx-background-color:#f2f5fb")
+    box.setStyle("-fx-background-color:#e6d9d1")
 
     val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
 
@@ -412,7 +412,7 @@ class LoginController(
     grid.add(describeIcon, 0, 3)
     grid.add(describeLabel, 1, 3)
     grid.add(describeField, 2, 3)
-    grid.setStyle("-fx-background-color:#d4dbe3;-fx-background-radius: 10")
+    grid.setStyle("-fx-background-color:#ddc1ad;-fx-background-radius: 10")
     grid.setPadding(new Insets(60, 20, 60, 20))
 
     val bottomBox = new HBox()
@@ -424,7 +424,7 @@ class LoginController(
     box.getChildren.addAll(upBox, bottomBox)
     box.setAlignment(Pos.CENTER)
     box.setSpacing(30)
-    box.setStyle("-fx-background-color:#f2f5fb")
+    box.setStyle("-fx-background-color:#e6d9d1")
 
     val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
 
@@ -494,7 +494,7 @@ class LoginController(
     grid.add(passwordLabel, 1, 1)
     grid.add(passwordField, 2, 1)
 
-    grid.setStyle("-fx-background-color:#d4dbe3;-fx-background-radius: 10")
+    grid.setStyle("-fx-background-color:#ddc1ad;-fx-background-radius: 10")
     grid.setPadding(new Insets(60, 20, 60, 20))
 
     val bottomBox = new HBox()
@@ -506,7 +506,7 @@ class LoginController(
     box.getChildren.addAll(upBox, bottomBox)
     box.setAlignment(Pos.CENTER)
     box.setSpacing(30)
-    box.setStyle("-fx-background-color:#f2f5fb")
+    box.setStyle("-fx-background-color:#e6d9d1")
 
     val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
 
