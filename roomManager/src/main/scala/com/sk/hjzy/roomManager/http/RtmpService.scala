@@ -7,7 +7,7 @@ import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetLiveInfoR
 import scala.concurrent.Future
 import com.sk.hjzy.roomManager.Boot.{executor, timeout, roomManager, scheduler}
 import com.sk.hjzy.protocol.ptcl.rtmp2Manager.RtmpProtocol
-import com.sk.hjzy.roomManager.core.RoomManager.GetRtmpLiveInfo
+//import com.sk.hjzy.roomManager.core.RoomManager.GetRtmpLiveInfo
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.protocol.ptcl.Response
 import com.sk.hjzy.roomManager.utils.RtpClient
@@ -79,35 +79,35 @@ trait RtmpService extends ServiceUtils{
 
   }
 
-  private val getLiveInfo = (path("getLiveInfo") & post){
-
-      entity(as[Either[Error, RtmpProtocol.GetLiveInfoReq]]) {
-        case Right(req) =>
-          dealFutureResult {
-            UserInfoDao.checkRtmpToken(req.userId, req.token).map { r =>
-              if (r.nonEmpty) {
-                val FutureLiveInfo: Future[GetLiveInfoRsp4RM] = roomManager ? (GetRtmpLiveInfo(r.get.roomid, _))
-                dealFutureResult(
-                  FutureLiveInfo.map(rsp => complete(rsp))
-                )
-              } else {
-                log.debug(s"获取live info失败,用户不存在或者token错误")
-                complete(CommonRsp(1000043, s"获取live info失败,用户不存在或者token错误"))
-              }
-
-            }.recover {
-              case e: Exception =>
-                log.debug(s"获取live info 请求失败，recover error:$e")
-                complete(CommonRsp(100042, s"获取live info 请求失败，recover error:$e"))
-            }
-          }
-
-        case Left(error) =>
-          log.debug(s"获取live info 请求失败，decode error:$error")
-          complete(CommonRsp(1000044, s"获取live info 请求失败，decode error:$error"))
-      }
-
-  }
+//  private val getLiveInfo = (path("getLiveInfo") & post){
+//
+//      entity(as[Either[Error, RtmpProtocol.GetLiveInfoReq]]) {
+//        case Right(req) =>
+//          dealFutureResult {
+//            UserInfoDao.checkRtmpToken(req.userId, req.token).map { r =>
+//              if (r.nonEmpty) {
+//                val FutureLiveInfo: Future[GetLiveInfoRsp4RM] = roomManager ? (GetRtmpLiveInfo(r.get.roomid, _))
+//                dealFutureResult(
+//                  FutureLiveInfo.map(rsp => complete(rsp))
+//                )
+//              } else {
+//                log.debug(s"获取live info失败,用户不存在或者token错误")
+//                complete(CommonRsp(1000043, s"获取live info失败,用户不存在或者token错误"))
+//              }
+//
+//            }.recover {
+//              case e: Exception =>
+//                log.debug(s"获取live info 请求失败，recover error:$e")
+//                complete(CommonRsp(100042, s"获取live info 请求失败，recover error:$e"))
+//            }
+//          }
+//
+//        case Left(error) =>
+//          log.debug(s"获取live info 请求失败，decode error:$error")
+//          complete(CommonRsp(1000044, s"获取live info 请求失败，decode error:$error"))
+//      }
+//
+//  }
 
   private val updateToken = (path("updateToken") & post){
     authUser { _ =>
@@ -136,7 +136,7 @@ trait RtmpService extends ServiceUtils{
   }
 
   val rtmp = pathPrefix("rtmp"){
-    getToken ~ getLiveInfo ~ updateToken
+    getToken ~ updateToken
   }
 
 

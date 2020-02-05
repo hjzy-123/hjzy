@@ -104,12 +104,11 @@ object UserActor {
           case UserClientActor(clientActor) =>
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
-            switchBehavior(ctx, "audience", audience(userId,clientActor,roomIdOpt.get))
-
+//            switchBehavior(ctx, "audience", audience(userId,clientActor,roomIdOpt.get))
+            Behavior.same
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
-            roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.join,roomId,userId,Some(ctx.self))
             init(userId,Some(roomId))
 
           case TimeOut(m) =>

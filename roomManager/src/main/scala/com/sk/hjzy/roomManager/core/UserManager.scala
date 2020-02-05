@@ -40,7 +40,6 @@ object UserManager {
         implicit val stashBuffer = StashBuffer[Command](Int.MaxValue)
         Behaviors.withTimers[Command]{
           implicit timer =>
-            roomManager ! ActorProtocol.AddUserActor4Test(Common.TestConfig.TEST_USER_ID,Common.TestConfig.TEST_ROOM_ID,getUserActor(Common.TestConfig.TEST_USER_ID,ctx))
             idle()
         }
     }
