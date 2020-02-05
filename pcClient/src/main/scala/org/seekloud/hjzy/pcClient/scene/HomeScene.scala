@@ -19,22 +19,23 @@ object HomeScene{
 
   trait HomeSceneListener{
 
+    //登录
     def gotoLogin(
       userName: Option[String] = None,
       pwd: Option[String] = None,
-      isToLive: Boolean = false,
-      isToWatch: Boolean = false
+      isToCreate: Boolean = false,
+      isToJoin: Boolean = false
     )
 
-    def gotoRegister()
+    def gotoRegister() //注册
 
-    def logout()
+    def logout() //注销
 
-    def gotoRoomHall()
+    def gotoJoinMeeting() //加入会议
 
-    def gotoLive()
+    def gotoCreateMeeting() //创建会议
 
-    def editInfo()
+    def editInfo() //编辑信息
 
   }
 
@@ -146,14 +147,14 @@ class HomeScene {
   joinMeeting.setFitWidth(180)
   val joinBtn = new Button("", joinMeeting)
   joinBtn.getStyleClass.add("middleBtn")
-  joinBtn.setOnAction(_ => listener.gotoRoomHall())
+  joinBtn.setOnAction(_ => listener.gotoJoinMeeting())
 
   val createMeeting = new ImageView("img/button/createMeeting.png")
   createMeeting.setFitHeight(150)
   createMeeting.setFitWidth(180)
   val createBtn = new Button("", createMeeting)
   createBtn.getStyleClass.add("middleBtn")
-  createBtn.setOnAction(_ => listener.gotoLive())
+  createBtn.setOnAction(_ => listener.gotoCreateMeeting())
 
   val middleBox = new VBox(10, joinBtn, createBtn)
   middleBox.setAlignment(Pos.CENTER)
