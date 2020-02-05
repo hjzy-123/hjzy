@@ -3,7 +3,9 @@ package com.sk.hjzy.roomManager.core
 import akka.actor
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
+import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetLiveInfoRsp
 import com.sk.hjzy.roomManager.protocol.ActorProtocol.NewRoom
 import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
@@ -13,13 +15,14 @@ import com.sk.hjzy.roomManager.common.Common.Role
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
-import com.sk.hjzy.roomManager.utils.{DistributorClient, RtpClient}
+import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.concurrent.duration.{FiniteDuration, _}
 import org.seekloud.byteobject.ByteObject._
 
+import scala.concurrent.Future
 import scala.language.implicitConversions
 
 
@@ -107,6 +110,40 @@ object RoomActor {
           //仅用户测试使用空房间
           idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
 
+        case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
+//          log.debug(s"${ctx.self.path} 接受连线者请求，roomId=$roomId")
+//          val userIdList = subscribers.keys.toList
+//          val liveInfoMap = mutable.HashMap[Long, CommonInfo.LiveInfo]()
+//          var liveInfo4mix = CommonInfo.LiveInfo("","")
+//
+//          userIdList.foreach{ id =>
+//            for{
+//              userInfoOpt <- UserInfoDao.searchById(id)
+//              userLiveInfo <- RtpClient.getLiveInfoFunc()
+//            } yield {
+//              userLiveInfo match {
+//                case Right(GetLiveInfoRsp(liveInfo, 0, _)) =>
+//                 if(userInfoOpt.nonEmpty)
+//                   liveInfoMap.put(id, liveInfo)
+//                case _ =>
+//
+//              }
+//            }
+//          }
+//
+//          for{
+//            mixLiveInfo <- RtpClient.getLiveInfoFunc()
+//          } yield {
+//            mixLiveInfo match {
+//              case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
+//                liveInfo4mix = liveInfo4mix
+//              case _ =>
+//            }
+//          }
+//
+//          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
+//
+        Behaviors.same
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in init state...")
