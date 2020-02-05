@@ -7,7 +7,7 @@ object Routes {
   val base = "/hjzy/roomManager"
 
   object User{
-    val baseUrl: String = base + "/User"
+    val baseUrl: String = "/hjzy/roomManager" + "/User"
     def genVerifyCode(email: String): String = baseUrl + s"/genVerifyCode?email=$email"
     val register: String = baseUrl + "/register"
     val login: String = baseUrl + "/login"

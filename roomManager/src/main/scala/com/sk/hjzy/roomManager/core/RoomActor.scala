@@ -12,10 +12,7 @@ import com.sk.hjzy.roomManager.Boot.{executor, roomManager}
 import com.sk.hjzy.roomManager.common.AppSettings.{distributorIp, distributorPort}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.common.Common.{Like, Role}
-import com.sk.hjzy.roomManager.core.RoomManager.GetRtmpLiveInfo
 import com.sk.hjzy.roomManager.models.dao.{RecordDao, StatisticDao, UserInfoDao}
-import com.sk.hjzy.roomManager.protocol.ActorProtocol
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.BanOnAnchor
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
 import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
 import org.slf4j.LoggerFactory
@@ -88,67 +85,9 @@ object RoomActor {
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case ActorProtocol.StartRoom4Anchor(userId, `roomId`, actor) =>
-          log.debug(s"${ctx.self.path} 用户id=$userId 开启了的新的直播间id=$roomId")
-          subscribers.put((userId, false), actor)
-          for {
-            data <- RtpClient.getLiveInfoFunc()
-            userTableOpt <- UserInfoDao.searchById(userId)
-          } yield {
-            data match {
-              case Right(rsp) =>
-                if (userTableOpt.nonEmpty) {
-
-                  val roomInfo = RoomInfo(roomId, s"${userTableOpt.get.userName}的直播间", "", userTableOpt.get.uid, userTableOpt.get.userName,
-                    UserInfoDao.getHeadImg(userTableOpt.get.headImg),
-                    UserInfoDao.getHeadImg(userTableOpt.get.coverImg), 0, 0, None,
-                    Some(rsp.liveInfo.liveId)
-                  )
-
-                  //todo 改为ProcessorClient(开始会议后通知Processor开始录像)
-                  DistributorClient.startPull(roomId, rsp.liveInfo.liveId).map {
-                    case Right(r) =>
-                      log.info(s"distributor startPull succeed, get live address: ${r.liveAdd}")
-                      dispatchTo(subscribers)(List((userId, false)), StartLiveRsp(Some(rsp.liveInfo)))
-                      roomInfo.mpd = Some(r.liveAdd)
-                      val startTime = r.startTime
-                        ctx.self ! SwitchBehavior("idle", idle(WholeRoomInfo(roomInfo), mutable.HashMap(Role.host -> mutable.HashMap(userId -> rsp.liveInfo)), subscribers, mutable.Set[Long](), startTime, 0))
-
-                    case Left(e) =>
-                      log.error(s"distributor startPull error: $e")
-                      dispatchTo(subscribers)(List((userId, false)), StartLiveRefused4LiveInfoError)
-                      ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
-                  }
-
-                } else {
-                  log.debug(s"${ctx.self.path} 开始直播被拒绝，数据库中没有该用户的数据，userId=$userId")
-                  dispatchTo(subscribers)(List((userId, false)), StartLiveRefused)
-                  ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
-                }
-              case Left(error) =>
-                log.debug(s"${ctx.self.path} 开始直播被拒绝，请求rtp server解析失败，error:$error")
-                dispatchTo(subscribers)(List((userId, false)), StartLiveRefused)
-                ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
-            }
-          }
-          switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
-
-        case GetRoomInfo(replyTo) =>
-          if (roomInfoOpt.nonEmpty) {
-            replyTo ! roomInfoOpt.get
-          }else {
-            log.debug("房间信息未更新")
-            replyTo ! RoomInfo(-1, "", "", -1l, "", "", "", -1, -1)
-          }
-          Behaviors.same
-
         case TestRoom(roomInfo) =>
           //仅用户测试使用空房间
           idle(WholeRoomInfo(roomInfo), mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]](), subscribers, mutable.Set[Long](), System.currentTimeMillis(), 0)
-
-        case ActorProtocol.AddUserActor4Test(userId, roomId, userActor) =>
-          subscribers.put((userId, false), userActor)
-          Behaviors.same
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in init state...")
@@ -172,12 +111,6 @@ object RoomActor {
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case ActorProtocol.AddUserActor4Test(userId, roomId, userActor) =>
-          subscribe.put((userId, false), userActor)
-          Behaviors.same
-
-        case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(wholeRoomInfo, subscribe, liveInfoMap, liker, startTime, totalView, isJoinOpen, dispatch(subscribe), dispatchTo(subscribe))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg $x")

@@ -23,23 +23,16 @@ import scala.util.{Failure, Success}
 
 /**
  * 由Boot创建
- * 处理并向客户端分发webSocket消息
+ * 管理房间列表, （创建会议，加入会议鉴权）
  */
 object RoomManager {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   trait Command
 
-  case class ExistRoom(roomId:Long,replyTo:ActorRef[Boolean]) extends Command
+  case class NewRoom(roomId: Long, roomName: String, roomDes: String, password: String) extends Command
 
-  case class DelaySeekRecord(wholeRoomInfo:WholeRoomInfo, totalView:Int, roomId:Long, startTime:Long, liveId: String) extends Command
-  case class OnSeekRecord(wholeRoomInfo:WholeRoomInfo, totalView:Int, roomId:Long, startTime:Long, liveId: String) extends Command
-
-  case class GetRtmpLiveInfo(roomId:Long, replyTo:ActorRef[GetLiveInfoRsp4RM]) extends Command with RoomActor.Command
-
-  private final case object DelaySeekRecordKey
-
-  private final case object FinishPullKey
+  case class JoinRoom(roomId: Long, password: String,replyTo: ActorRef[Boolean]) extends Command
 
   def create():Behavior[Command] = {
     Behaviors.setup[Command]{ctx =>
@@ -53,74 +46,30 @@ object RoomManager {
         )
         log.debug(s"${ctx.self.path} ---===== ${roomInfo.rtmp}")
         getRoomActor(Common.TestConfig.TEST_ROOM_ID,ctx) ! TestRoom(roomInfo)
-        idle()
+        idle(mutable.Map[Long,String]())
       }
     }
   }
 
-  private def idle() //roomId -> (roomInfo, liveInfo)
+  private def idle(roomPassMap: mutable.Map[Long, String])
                   (implicit stashBuffer: StashBuffer[Command],timer:TimerScheduler[Command]):Behavior[Command] = {
 
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
-        case r@ActorProtocol.AddUserActor4Test(userId,roomId,userActor) =>
-          getRoomActorOpt(roomId,ctx) match {
-            case Some(actor) =>actor ! r
-            case None =>
-          }
+
+        case NewRoom(roomId, roomName: String, roomDes: String, password: String) =>
+          //todo          val roomActor = getRoomActor(roomId, ctx)
+          roomPassMap.put(roomId, password)
           Behaviors.same
 
-        case r@ActorProtocol.WebSocketMsgWithActor(userId,roomId,req) =>
-          getRoomActorOpt(roomId,ctx) match{
-            case Some(actor) => actor ! r
-            case None => log.debug(s"${ctx.self.path}请求错误，该房间还不存在，房间id=$roomId，用户id=$userId")
-          }
-          Behaviors.same
-
-        case r@ActorProtocol.StartLiveAgain(roomId) =>
-          getRoomActorOpt(roomId,ctx) match{
-            case Some(actor) => actor ! r
-            case None => log.debug(s"${ctx.self.path}重新直播请求错误，该房间已经关闭，房间id=$roomId")
-          }
-          Behaviors.same
-
-        case r@ActorProtocol.StartRoom4Anchor(userId,roomId,actor) =>
-          getRoomActor(roomId,ctx) ! r
-          Behaviors.same
-
-        case r@GetRtmpLiveInfo(roomId, replyTo)=>
-          getRoomActorOpt(roomId,ctx) match{
-            case Some(actor) =>actor ! r
-            case None =>
-              log.debug(s"${ctx.self.path}房间未建立")
-              replyTo ! GetLiveInfoRsp4RM(None,100041,s"获取live info 请求失败:房间不存在")
-          }
-          Behaviors.same
-
-        //延时请求获取录像（计时器）
-        case DelaySeekRecord(wholeRoomInfo, totalView, roomId, startTime, liveId) =>
-          log.info("---- wait seconds to seek record ----")
-          timer.startSingleTimer(DelaySeekRecordKey + roomId.toString + startTime, OnSeekRecord(wholeRoomInfo, totalView, roomId, startTime, liveId), 5.seconds)
-          Behaviors.same
-
-        //延时请求获取录像
-        case OnSeekRecord(wholeRoomInfo, totalView, roomId, startTime, liveId) =>
-          timer.cancel(DelaySeekRecordKey + roomId.toString + startTime)
-          DistributorClient.seekRecord(roomId,startTime).onComplete{
-            case Success(v) =>
-              v match{
-                case Right(rsp) =>
-                  log.debug(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
-                  RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
-                    wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
-                    UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0,wholeRoomInfo.roomInfo.like,rsp.duration)
-                  //timer.startSingleTimer(FinishPullKey + roomId.toString + startTime, FinishPull(roomId, startTime, liveId), 5.seconds)
-                case Left(err) =>
-                  log.debug(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
-              }
-
-            case Failure(error) =>
-              log.debug(s"${ctx.self.path} 查询录像文件失败,error:$error")
+        case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[Boolean]) =>
+          if(roomPassMap.get(roomId).nonEmpty){
+            if(roomPassMap(roomId) == password)
+              replyTo ! true
+            else
+              replyTo ! false
+          }else{
+            replyTo ! false
           }
           Behaviors.same
 
@@ -134,7 +83,6 @@ object RoomManager {
       }
     }
   }
-
 
   private def getRoomActor(roomId:Long, ctx: ActorContext[Command]) = {
     val childrenName = s"roomActor-${roomId}"
