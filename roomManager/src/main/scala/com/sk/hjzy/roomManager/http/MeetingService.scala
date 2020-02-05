@@ -19,7 +19,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
     entity(as[Either[Error, NewMeeting]]){
       case Right(req) =>
         roomManager ! NewRoom(req.roomId, req.roomName, req.roomDes, req.password)
-        complete(SuccessRsp)
+        complete(SuccessRsp())
       case Left(err) =>
         complete(ErrorRsp(100003, "无效参数"))
     }
@@ -32,7 +32,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
         dealFutureResult{
           verify.map{ rst =>
             if(rst){
-              complete(SuccessRsp)
+              complete(SuccessRsp())
             }else{
               complete(ErrorRsp(100002, "房间号或密码错误"))
             }

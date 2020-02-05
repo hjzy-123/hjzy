@@ -103,10 +103,10 @@ object RoomActor {
 
           Behaviors.same
 
-
         case TestRoom(roomInfo) =>
           //仅用户测试使用空房间
           idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
+
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in init state...")
