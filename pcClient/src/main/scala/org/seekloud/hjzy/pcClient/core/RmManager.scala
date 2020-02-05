@@ -30,11 +30,11 @@ object RmManager {
 
   final case class LogInSuccess(userInfo: UserInfo, roomInfo: RoomInfo, getTokenTime: Option[Long] = None) extends RmCommand
 
-  final case object GoToLive extends RmCommand
-
-  final case object GoToRoomHall extends RmCommand
-
   final case object Logout extends RmCommand
+
+  final case class CreateMeetingSuccess() extends RmCommand
+
+  final case class JoinMeetingSuccess() extends  RmCommand
 
   final case object StopSelf extends RmCommand
 
