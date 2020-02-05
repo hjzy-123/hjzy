@@ -56,6 +56,13 @@ object AuthProtocol {
 
   case object NoAuthor extends WsMsgRm
 
+  //todo 开始会议
+  case class StartMeetingReq(
+                              userId: Long,
+                              token: String,
+                              clientType: Int
+                            ) extends WsMsgHost
+
   //fixme url
   case class UpdateAudienceInfo(AudienceList: List[UserDes]) extends WsMsgRm   //当前房间内所有观众的id和昵称,新加入--join--true
 
@@ -87,6 +94,7 @@ object AuthProtocol {
   val StartLiveRefused = StartLiveRsp(errCode = 200001, msg = "start live refused.")
   val StartLiveRefused4Seal = StartLiveRsp(errCode = 200001, msg = "start live refused.account has been sealed")
   val StartLiveRefused4LiveInfoError = StartLiveRsp(errCode = 200001, msg = "start live refused because of getting live info from distributor error.")
+
 
 
   /*修改房间信息*/

@@ -9,15 +9,19 @@ import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
+import com.sk.hjzy.roomManager.common.Common.Role
+import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
+import com.sk.hjzy.roomManager.utils.{DistributorClient, RtpClient}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.concurrent.duration.{FiniteDuration, _}
 import org.seekloud.byteobject.ByteObject._
 
-import scala.util.{Failure, Success}
+import scala.language.implicitConversions
+
 
 /**
  * actor由RoomManager创建
@@ -25,7 +29,6 @@ import scala.util.{Failure, Success}
  */
 object RoomActor {
 
-  import scala.language.implicitConversions
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
@@ -95,8 +98,11 @@ object RoomActor {
           if (join == Common.Subscriber.join) {
               log.debug(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
-            }
+            }else if(join == Common.Subscriber.left)
+            subscribers.remove(userId)
+
           Behaviors.same
+
 
         case TestRoom(roomInfo) =>
           //仅用户测试使用空房间
@@ -121,6 +127,9 @@ object RoomActor {
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
+
+        case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
+          handleWebSocketMsg(wholeRoomInfo, subscribe, startTime, totalView,  dispatch(subscribe), dispatchTo(subscribe))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg $x")
@@ -163,11 +172,11 @@ object RoomActor {
     //todo webSocket消息
   private def handleWebSocketMsg(
     wholeRoomInfo: WholeRoomInfo,
-    subscribers: mutable.HashMap[(Long, Boolean), ActorRef[UserActor.Command]], //包括主播在内的所有用户
+    subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]], //包括主播在内的所有用户
     startTime: Long,
     totalView: Int,
     dispatch: WsMsgRm => Unit,
-    dispatchTo: (List[(Long, Boolean)], WsMsgRm) => Unit
+    dispatchTo: (List[Long], WsMsgRm) => Unit
   )
     (ctx: ActorContext[Command], userId: Long, roomId: Long, msg: WsMsgClient)
     (
@@ -186,7 +195,7 @@ object RoomActor {
     }
   }
 
-  private def dispatch(subscribers: mutable.HashMap[(Long, Boolean), ActorRef[UserActor.Command]])(msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
+  private def dispatch(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
     log.debug(s"${subscribers}分发消息：$msg")
     subscribers.values.foreach(_ ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[AuthProtocol.HostCloseRoom]))
   }
@@ -196,7 +205,7 @@ object RoomActor {
     * targetUserIdList：要发送的目标用户
     * msg：发送的消息
     **/
-  private def dispatchTo(subscribers: mutable.HashMap[(Long, Boolean), ActorRef[UserActor.Command]])(targetUserIdList: List[(Long, Boolean)], msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
+  private def dispatchTo(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(targetUserIdList: List[Long], msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
     log.debug(s"${subscribers}定向分发消息：$msg")
     targetUserIdList.foreach { k =>
       subscribers.get(k).foreach(r => r ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[AuthProtocol.HostCloseRoom]))

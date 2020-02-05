@@ -70,6 +70,10 @@ object RoomManager {
           }
           Behaviors.same
 
+        case r@ActorProtocol.StartMeeting(userId,roomId,actor) =>
+          getRoomActor(roomId,ctx) ! r
+          Behaviors.same
+
         case ChildDead(name,childRef) =>
           log.debug(s"${ctx.self.path} the child = ${ctx.children}")
           Behaviors.same
