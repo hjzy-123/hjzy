@@ -7,8 +7,9 @@ import akka.actor.typed.scaladsl.AskPattern._
 import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.generic.auto._
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{ErrorRsp, JoinMeeting,  NewMeeting,  SuccessRsp}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{ErrorRsp, JoinMeeting, NewMeeting, SuccessRsp}
 import com.sk.hjzy.roomManager.core.RoomManager
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.NewRoom
 
 import scala.concurrent.Future
 
@@ -17,7 +18,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
   private val newMeeting = (path("newMeeting") & post){
     entity(as[Either[Error, NewMeeting]]){
       case Right(req) =>
-        roomManager ! RoomManager.NewRoom(req.roomId, req.roomName, req.roomDes, req.password)
+        roomManager ! NewRoom(req.roomId, req.roomName, req.roomDes, req.password)
         complete(SuccessRsp)
       case Left(err) =>
         complete(ErrorRsp(100003, "无效参数"))
