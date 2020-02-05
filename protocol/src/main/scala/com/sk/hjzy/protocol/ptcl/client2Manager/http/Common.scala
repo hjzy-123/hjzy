@@ -69,20 +69,20 @@ object Common {
                          password: String
                         )
 
-  case class NewMeetingRsp(
-                            errCode: Int = 0,
-                            msg: String = "ok"
-                          )extends CommonRsp
+//  case class NewMeetingRsp(
+//                            errCode: Int = 0,
+//                            msg: String = "ok"
+//                          )extends CommonRsp
 
   case class JoinMeeting(
                          roomId: Long,
                          password: String
                        )
 
-  case class JoinMeetingRsp(
-                            errCode: Int = 0,
-                            msg: String = "ok"
-                          )extends CommonRsp
+//  case class JoinMeetingRsp(
+//                            errCode: Int = 0,
+//                            msg: String = "ok"
+//                          )extends CommonRsp
 
 
 }

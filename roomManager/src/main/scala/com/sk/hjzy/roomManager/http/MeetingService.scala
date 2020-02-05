@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import com.sk.hjzy.roomManager.utils.{CirceSupport, FileUtil, SecureUtil}
 import io.circe._
 import io.circe.generic.auto._
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{ErrorRsp, JoinMeeting, JoinMeetingRsp, NewMeeting, NewMeetingRsp, SuccessRsp}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{ErrorRsp, JoinMeeting,  NewMeeting,  SuccessRsp}
 import com.sk.hjzy.roomManager.core.RoomManager
 
 import scala.concurrent.Future
