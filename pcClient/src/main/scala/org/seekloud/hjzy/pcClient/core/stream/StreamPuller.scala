@@ -7,15 +7,15 @@ import java.nio.channels.{Channels, Pipe}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import org.seekloud.hjzy.pcClient.Boot
-import org.seekloud.hjzy.pcClient.common.Constants.AudienceStatus
-import org.seekloud.hjzy.pcClient.common.Ids
+//import org.seekloud.hjzy.pcClient.common.Constants.AudienceStatus
+//import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.stream.LiveManager.{JoinInfo, WatchInfo}
 import org.seekloud.hjzy.player.sdk.MediaPlayer
 import com.sk.hjzy.rtpClient.Protocol._
 import com.sk.hjzy.rtpClient.{Protocol, PullStreamClient}
 import org.seekloud.hjzy.pcClient.core.player.VideoPlayer
-import org.seekloud.hjzy.pcClient.scene.{AudienceScene, HostScene}
+import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.slf4j.LoggerFactory
 
 import concurrent.duration._
@@ -79,14 +79,15 @@ object StreamPuller {
     mediaPlayer: MediaPlayer,
     joinInfo: Option[JoinInfo],
     watchInfo: Option[WatchInfo],
-    audienceScene: Option[AudienceScene],
-    hostScene: Option[HostScene]
+    meetingScene: Option[MeetingScene],
+//    audienceScene: Option[AudienceScene],
+//    hostScene: Option[HostScene]
   ): Behavior[PullCommand] =
     Behaviors.setup[PullCommand] { ctx =>
       log.info(s"StreamPuller-$liveId is starting.")
       implicit val stashBuffer: StashBuffer[PullCommand] = StashBuffer[PullCommand](Int.MaxValue)
       Behaviors.withTimers[PullCommand] { implicit timer =>
-        init(liveId, parent, mediaPlayer, joinInfo, watchInfo, audienceScene, hostScene, None)
+        init(liveId, parent, mediaPlayer, joinInfo, watchInfo, meetingScene, None)
       }
 
     }
@@ -97,8 +98,9 @@ object StreamPuller {
     mediaPlayer: MediaPlayer,
     joinInfo: Option[JoinInfo],
     watchInfo: Option[WatchInfo],
-    audienceScene: Option[AudienceScene],
-    hostScene: Option[HostScene],
+    meetingScene: Option[MeetingScene],
+//    audienceScene: Option[AudienceScene],
+//    hostScene: Option[HostScene],
     pullClient: Option[PullStreamClient]
   )(
     implicit timer: TimerScheduler[PullCommand],
@@ -110,9 +112,9 @@ object StreamPuller {
           log.info(s"StreamPuller-$liveId init rtpClient.")
           msg.pullClient.pullStreamStart()
           timer.startSingleTimer(PullStartTimeOut, PullStartTimeOut, 5.seconds)
-          audienceScene.foreach(_.startPackageLoss())
-          hostScene.foreach(_.startPackageLoss())
-          init(liveId, parent, mediaPlayer, joinInfo, watchInfo, audienceScene, hostScene, Some(msg.pullClient))
+          //todo
+//          meetingScene.foreach(_.startPackageLoss())
+          init(liveId, parent, mediaPlayer, joinInfo, watchInfo, meetingScene, Some(msg.pullClient))
 
         case PullStreamReady =>
           log.info(s"StreamPuller-$liveId ready for pull.")
@@ -143,27 +145,27 @@ object StreamPuller {
           val sink = mediaPipe.sink()
           val source = mediaPipe.source()
           sink.configureBlocking(false)
-          //          source.configureBlocking(false)
-          //          val inputStream = new ChannelInputStream(source)
+
           val inputStream = Channels.newInputStream(source)
-          if (joinInfo.nonEmpty) {
-            audienceScene.foreach(_.autoReset())
-            hostScene.foreach(_.resetBack())
-            val playId = Ids.getPlayId(AudienceStatus.CONNECT, roomId = Some(joinInfo.get.roomId), audienceId = Some(joinInfo.get.audienceId))
-            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
-            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, audienceScene, None, None), s"videoPlayer$playId")
-            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(joinInfo.get.gc), None)
-          }
-
-          if (watchInfo.nonEmpty) {
-            audienceScene.foreach(_.autoReset())
-            val playId = Ids.getPlayId(AudienceStatus.LIVE, roomId = Some(watchInfo.get.roomId))
-            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
-            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, audienceScene, None, None), s"videoPlayer$playId")
-            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
-
-          }
-          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, sink, audienceScene, hostScene))
+          //todo
+//          if (joinInfo.nonEmpty) {
+//            audienceScene.foreach(_.autoReset())
+//            hostScene.foreach(_.resetBack())
+//            val playId = Ids.getPlayId(AudienceStatus.CONNECT, roomId = Some(joinInfo.get.roomId), audienceId = Some(joinInfo.get.audienceId))
+//            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
+//            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
+//            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(joinInfo.get.gc), None)
+//          }
+//
+//          if (watchInfo.nonEmpty) {
+//            audienceScene.foreach(_.autoReset())
+//            val playId = Ids.getPlayId(AudienceStatus.LIVE, roomId = Some(watchInfo.get.roomId))
+//            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
+//            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
+//            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
+//
+//          }
+          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, sink, meetingScene))
 
         case GetLossAndBand =>
           pullClient.foreach{ p =>
@@ -172,8 +174,8 @@ object StreamPuller {
             }
 
             val bandInfo = p.getBandWidth().map(i => i._1 -> BandWidthInfo(i._2.bandWidth60s, i._2.bandWidth10s, i._2.bandWidth2s))
-            audienceScene.foreach(_.drawPackageLoss(info, bandInfo))
-            hostScene.foreach(_.drawPackageLoss(info, bandInfo))
+            //todo
+//            meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
           }
           Behaviors.same
 
@@ -215,8 +217,9 @@ object StreamPuller {
     mediaPlayer: MediaPlayer,
     //    joinInfo: Option[JoinInfo],
     mediaSink: Pipe.SinkChannel,
-    audienceScene: Option[AudienceScene],
-    hostScene: Option[HostScene]
+    meetingScene: Option[MeetingScene],
+//    audienceScene: Option[AudienceScene],
+//    hostScene: Option[HostScene]
   )(
     implicit timer: TimerScheduler[PullCommand],
     stashBuffer: StashBuffer[PullCommand]
@@ -230,7 +233,7 @@ object StreamPuller {
 //              outStream.write(msg.data)
               mediaSink.write(ByteBuffer.wrap(msg.data))
               //              log.debug(s"StreamPuller-$liveId  write success.")
-              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, audienceScene, hostScene))
+              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
             } catch {
               case ex: Exception =>
                 log.warn(s"sink write pulled data error: $ex. Stop StreamPuller-$liveId")
@@ -238,15 +241,16 @@ object StreamPuller {
             }
           } else {
             log.debug(s"StreamPuller-$liveId pull null.")
-            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, audienceScene, hostScene))
+            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
           }
           busy(liveId, parent, pullClient)
 
         case GetLossAndBand =>
           val info = pullClient.getPackageLoss().map(i => i._1 -> PackageLossInfo(i._2.lossScale60, i._2.lossScale10, i._2.lossScale2))
           val bandInfo = pullClient.getBandWidth().map(i => i._1 -> BandWidthInfo(i._2.bandWidth60s, i._2.bandWidth10s, i._2.bandWidth2s))
-          audienceScene.foreach(_.drawPackageLoss(info, bandInfo))
-          hostScene.foreach(_.drawPackageLoss(info, bandInfo))
+
+          //todo
+//          meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
           Behaviors.same
 
         case StopPull =>
@@ -272,8 +276,9 @@ object StreamPuller {
           parent ! LiveManager.PullerStopped
           Boot.addToPlatform {
             WarningDialog.initWarningDialog("播放中的流已被关闭!")
-            hostScene.foreach(_.listener.shutJoin())
-            audienceScene.foreach(a => a.listener.quitJoin(a.getRoomInfo.roomId))
+            //todo
+//            hostScene.foreach(_.listener.shutJoin())
+//            audienceScene.foreach(a => a.listener.quitJoin(a.getRoomInfo.roomId))
           }
           Behaviors.stopped
 

@@ -41,6 +41,7 @@ object RmManager {
 
   var userInfo: Option[UserInfo] = None
   var roomInfo: Option[RoomInfo] = None
+  var meetingRoomInfo: Option[RoomInfo] = None
 
   /*消息定义*/
   sealed trait RmCommand
@@ -51,9 +52,9 @@ object RmManager {
 
   final case object Logout extends RmCommand
 
-  final case object CreateMeetingSuccess extends RmCommand
+  final case class CreateMeetingSuccess(roomInfo: Option[RoomInfo]) extends RmCommand
 
-  final case object JoinMeetingSuccess extends  RmCommand
+  final case class JoinMeetingSuccess(roomInfo: Option[RoomInfo]) extends  RmCommand
 
   final case class GetSender(sender: ActorRef[WsMsgFront]) extends RmCommand
 
@@ -61,6 +62,8 @@ object RmManager {
 
   /*主播*/
   final case object HostWsEstablish extends RmCommand
+
+  final case object PullerStopped extends RmCommand
 
 
 
@@ -108,13 +111,14 @@ object RmManager {
         homeController.get.showScene()
         Behaviors.same
 
-      case CreateMeetingSuccess =>
+      case CreateMeetingSuccess(roomInfo) =>
         log.debug(s"create meeting success.")
+        this.meetingRoomInfo = roomInfo
         val meetingScene = new MeetingScene(stageCtx.getStage)
         val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
-        liveManager ! LiveManager.DevicesOn(meetingScene.gc, callBackFunc = Some(callBack))
+        liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))
 
         ctx.self ! HostWsEstablish
         Boot.addToPlatform{
@@ -123,8 +127,9 @@ object RmManager {
         }
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
-      case JoinMeetingSuccess =>
+      case JoinMeetingSuccess(roomInfo) =>
         log.debug(s"join meeting success.")
+        this.meetingRoomInfo = roomInfo
         Behaviors.same
 
 //      case GoToRoomHall =>
@@ -184,7 +189,7 @@ object RmManager {
         def failureFunc(): Unit = {
           //            liveManager ! LiveManager.DeviceOff
           Boot.addToPlatform {
-            WarningDialog.initWarningDialog("连接失败！")
+            WarningDialog.initWarningDialog("webSocket连接失败！")
           }
         }
 

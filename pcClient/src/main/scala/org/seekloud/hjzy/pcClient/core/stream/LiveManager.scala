@@ -12,7 +12,7 @@ import org.seekloud.hjzy.pcClient.core.collector.CaptureActor
 import org.seekloud.hjzy.pcClient.core.rtp._
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.core.stream.StreamPuller.{PackageLossInfo, PullCommand}
-import org.seekloud.hjzy.pcClient.scene.{AudienceScene, HostScene}
+import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.utils.{GetAllPixel, NetUtil, RtpUtil}
 import com.sk.hjzy.rtpClient.{PullStreamClient, PushStreamClient}
 import org.seekloud.hjzy.pcClient.utils.RtpUtil.{clientHost, clientHostQueue}
@@ -71,7 +71,7 @@ object LiveManager {
 
   final case class Ask4State(reply: ActorRef[Boolean]) extends LiveCommand
 
-  final case class PullStream(liveId: String, joinInfo: Option[JoinInfo] = None, watchInfo: Option[WatchInfo] = None, audienceScene: Option[AudienceScene] = None, hostScene: Option[HostScene] = None) extends LiveCommand
+  final case class PullStream(liveId: String, joinInfo: Option[JoinInfo] = None, watchInfo: Option[WatchInfo] = None, meetingScene: Option[MeetingScene] = None) extends LiveCommand
 
   final case object StopPull extends LiveCommand
 
@@ -194,7 +194,7 @@ object LiveManager {
         case msg: PullStream =>
           if (streamPuller.isEmpty) {
             val pullChannel = new PullChannel
-            val puller = getStreamPuller(ctx, msg.liveId, mediaPlayer, msg.joinInfo, msg.watchInfo, msg.audienceScene, msg.hostScene)
+            val puller = getStreamPuller(ctx, msg.liveId, mediaPlayer, msg.joinInfo, msg.watchInfo, msg.meetingScene)
             val rtpClient = new PullStreamClient(AppSettings.host, NetUtil.getFreePort, pullChannel.serverPullAddr, puller, AppSettings.rtpServerDst)
             puller ! StreamPuller.InitRtpClient(rtpClient)
             idle(parent, mediaPlayer, captureActor, streamPusher, Some((msg.liveId, puller)), mediaCapture, isStart = true, isRegular = isRegular)
@@ -280,12 +280,13 @@ object LiveManager {
     mediaPlayer: MediaPlayer,
     joinInfo: Option[JoinInfo],
     watchInfo: Option[WatchInfo],
-    audienceScene : Option[AudienceScene],
-    hostScene: Option[HostScene]
+    meetingScene: Option[MeetingScene],
+//    audienceScene : Option[AudienceScene],
+//    hostScene: Option[HostScene]
   ) = {
     val childName = s"streamPuller-$liveId"
     ctx.child(childName).getOrElse {
-      val actor = ctx.spawn(StreamPuller.create(liveId, ctx.self, mediaPlayer, joinInfo, watchInfo, audienceScene, hostScene), childName)
+      val actor = ctx.spawn(StreamPuller.create(liveId, ctx.self, mediaPlayer, joinInfo, watchInfo, meetingScene), childName)
       ctx.watchWith(actor, ChildDead(childName, actor))
       actor
     }.unsafeUpcast[StreamPuller.PullCommand]

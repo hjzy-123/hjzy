@@ -17,5 +17,10 @@ object Constants {
     val LIVE = 1
   }
 
+  object DefaultPlayer {
+    val width = 512
+    val height = 288
+  }
+
 
 }

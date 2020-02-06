@@ -3,7 +3,7 @@ package org.seekloud.hjzy.pcClient.core.player
 import akka.actor.typed.scaladsl.{Behaviors, StashBuffer, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.seekloud.hjzy.pcClient.component.WarningDialog
-import org.seekloud.hjzy.pcClient.scene.AudienceScene
+import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.player.core.PlayerGrabber
 import org.seekloud.hjzy.player.protocol.Messages
 import org.seekloud.hjzy.player.protocol.Messages._
@@ -44,7 +44,7 @@ object VideoPlayer {
 
   def create(
     id: String,
-    audienceScene: Option[AudienceScene] = None,
+    meetingScene: Option[MeetingScene] = None,
     imageQueue: Option[immutable.Queue[AddPicture]] = None,
     samplesQueue: Option[immutable.Queue[Array[Byte]]] = None
   ): Behavior[PlayCommand] =
@@ -52,14 +52,14 @@ object VideoPlayer {
       log.info(s"VideoPlayer is starting......")
       implicit val stashBuffer: StashBuffer[PlayCommand] = StashBuffer[PlayCommand](Int.MaxValue)
       Behaviors.withTimers[PlayCommand] { implicit timer =>
-        idle(id, audienceScene, imageQueue, samplesQueue)
+        idle(id, meetingScene, imageQueue, samplesQueue)
       }
     }
 
 
   private def idle(
     id: String,
-    audienceScene: Option[AudienceScene],
+    meetingScene: Option[MeetingScene],
     imageQueue: Option[immutable.Queue[AddPicture]] = None,
     samplesQueue: Option[immutable.Queue[Array[Byte]]] = None
   ): Behavior[PlayCommand] =
@@ -73,7 +73,6 @@ object VideoPlayer {
           needImage = msg.mediaSettings.needImage
           needSound = msg.mediaSettings.needSound
           val grabActor = msg.playerGrabber
-
           if (msg.gc.isEmpty) {
             ctx.self ! StartTimers(grabActor)
           } else {
@@ -103,7 +102,7 @@ object VideoPlayer {
               )
               sF = false
             }
-            working(id, grabActor, imageQueue, samplesQueue, pF, sF, audienceScene)
+            working(id, grabActor, imageQueue, samplesQueue, pF, sF, meetingScene)
 
           }
 
@@ -141,7 +140,7 @@ object VideoPlayer {
     samplesQueue: Option[immutable.Queue[Array[Byte]]],
     pictureFinish: Boolean = true,
     soundFinish: Boolean = true,
-    audienceScene: Option[AudienceScene],
+    meetingScene: Option[MeetingScene],
   )(
     implicit timer: TimerScheduler[PlayCommand]
   ): Behavior[PlayCommand] = Behaviors.receive { (ctx, msg) =>
@@ -160,25 +159,25 @@ object VideoPlayer {
       case msg: AddPicture =>
         log.debug(s"VideoPlayer-$id got AddPicture.")
         val newImageQueue = imageQueue.map(_.enqueue(msg))
-        working(id, grabActor, newImageQueue, samplesQueue, pictureFinish, soundFinish, audienceScene)
+        working(id, grabActor, newImageQueue, samplesQueue, pictureFinish, soundFinish, meetingScene)
         Behaviors.same
 
       case AddSamples(samples, ts) =>
         log.debug(s"VideoPlayer-$id got AddSample.")
         val newSamplesQueue = samplesQueue.map(_.enqueue(samples))
-        working(id, grabActor, imageQueue, newSamplesQueue, pictureFinish, soundFinish, audienceScene)
+        working(id, grabActor, imageQueue, newSamplesQueue, pictureFinish, soundFinish, meetingScene)
         Behaviors.same
 
       case msg: PictureFinish =>
         log.debug(s"VideoPlayer-$id got PictureFinish.")
-//        msg.resetFunc.foreach(f => f())
         timer.cancel(IMAGE_TIMER_KEY)
-        audienceScene.foreach(_.autoReset())
+        //todo
+//        meetingScene.foreach(_.autoReset())
         log.info(s"VideoPlayer-$id cancel ImageTimer.")
         if (soundFinish) {
           Behaviors.stopped
         } else {
-          working(id, grabActor, imageQueue, samplesQueue, pictureFinish = true, soundFinish = soundFinish, audienceScene)
+          working(id, grabActor, imageQueue, samplesQueue, pictureFinish = true, soundFinish = soundFinish, meetingScene)
         }
 
 
@@ -189,7 +188,7 @@ object VideoPlayer {
         if (pictureFinish) {
           Behaviors.stopped
         } else {
-          working(id, grabActor, imageQueue, samplesQueue, pictureFinish, soundFinish = true, audienceScene)
+          working(id, grabActor, imageQueue, samplesQueue, pictureFinish, soundFinish = true, meetingScene)
         }
 
       case PauseAsk =>

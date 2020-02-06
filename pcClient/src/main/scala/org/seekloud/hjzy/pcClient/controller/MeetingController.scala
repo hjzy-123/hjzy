@@ -24,6 +24,13 @@ class MeetingController(
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
   meetingScene.setListener(new MeetingSceneListener {
+    override def startLive(): Unit = {
+
+    }
+
+    override def stopLive(): Unit = {
+
+    }
 
 
   })

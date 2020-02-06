@@ -38,7 +38,7 @@ class HomeController(
         val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
         if(createMeetingInfo.nonEmpty){
           val info = createMeetingInfo.get
-          createMeeting(RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+          createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
         }
       } else {
         gotoLogin(isToCreate = true)
@@ -204,7 +204,7 @@ class HomeController(
             val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
             if(createMeetingInfo.nonEmpty){
               val info = createMeetingInfo.get
-              createMeeting(RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+              createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
             }
 
           } else {
@@ -264,12 +264,12 @@ class HomeController(
     * 创建会议
     */
 
-  def createMeeting(roomId:Long, password: String, roomName: String, roomDes: String): Future[Unit] ={
+  def createMeeting(userId: Long, roomId:Long, password: String, roomName: String, roomDes: String): Future[Unit] ={
     showLoading()
-    RMClient.createMeeting(roomId, password, roomName, roomDes).map {
+    RMClient.createMeeting(userId, roomId, password, roomName, roomDes).map {
       case Right(rsp) =>
         if(rsp.errCode == 0){
-          rmManager ! CreateMeetingSuccess
+          rmManager ! CreateMeetingSuccess(rsp.roomInfo)
         } else {
           log.error(s"createMeeting error: ${rsp.msg}")
           Boot.addToPlatform {
@@ -295,7 +295,7 @@ class HomeController(
     RMClient.joinMeeting(roomId, password).map {
       case Right(rsp) =>
         if(rsp.errCode == 0){
-          rmManager ! JoinMeetingSuccess
+          rmManager ! JoinMeetingSuccess(rsp.roomInfo)
           removeLoading()
         } else {
           log.error(s"joinMeeting error: ${rsp.msg}")
