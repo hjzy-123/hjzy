@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.stream.{ActorAttributes, Supervision}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.{Wrap, WsMsgClient}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{Wrap, WsMsgClient}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.core.UserActor.ChildDead
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao

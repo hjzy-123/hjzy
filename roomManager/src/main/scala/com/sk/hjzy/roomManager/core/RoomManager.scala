@@ -1,6 +1,5 @@
 package com.sk.hjzy.roomManager.core
 
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
@@ -12,22 +11,19 @@ import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
-
 /**
  * 由Boot创建
  * 管理房间列表, （创建会议，加入会议鉴权）
+ * 通知roomActor webSocket消息
  */
 object RoomManager {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   trait Command
 
-
-
   def create():Behavior[Command] = {
     Behaviors.setup[Command]{ctx =>
-      implicit val stashBuffer = StashBuffer[Command](Int.MaxValue)
+      implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
       log.info(s"${ctx.self.path} setup")
       Behaviors.withTimers[Command]{implicit timer =>
         val roomInfo = RoomInfo(Common.TestConfig.TEST_ROOM_ID,"test_room","测试房间",Common.TestConfig.TEST_USER_ID, "tldq",

@@ -5,12 +5,11 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeetingRsp, NewMeetingRsp}
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetLiveInfoRsp
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{GetLiveInfoRsp, JoinMeetingRsp, NewMeetingRsp}
 import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
 import org.seekloud.byteobject.MiddleBufferInJvm
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.{HostCloseRoom, _}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.{ WsProtocol}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.common.Common.Role
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
@@ -139,21 +138,18 @@ object RoomActor {
           idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
 
         case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
-          log.debug(s"${ctx.self.path} 接受连线者请求，roomId=$roomId")
+          log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
           val userIdList = subscribers.keys.toList
-          val liveInfoMap = mutable.HashMap[Long, CommonInfo.LiveInfo]()
+          val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
           var liveInfo4mix = CommonInfo.LiveInfo("","")
 
           userIdList.foreach{ id =>
-            for{
-              userLiveInfo <- RtpClient.getLiveInfoFunc()
-            } yield {
-              userLiveInfo match {
-                case Right(GetLiveInfoRsp(liveInfo, 0, _)) =>
-                   liveInfoMap.put(id, liveInfo)
-                case _ =>
+              RtpClient.getLiveInfoFunc().map {
+                case Right(rsp: GetLiveInfoRsp) =>
+                  liveInfoMap.put(id, rsp.liveInfo)
+                case Left(error) =>
+                  log.debug(s"${ctx.self.path} 开始直播被拒绝，请求rtp server解析失败，error:$error")
               }
-            }
           }
 
           for{
@@ -228,8 +224,6 @@ object RoomActor {
     * roomActor
     * subscribers:map(userId,userActor)
     *
-    *
-    *
     **/
     //todo webSocket消息
   private def handleWebSocketMsg(
@@ -259,7 +253,7 @@ object RoomActor {
 
   private def dispatch(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
     log.debug(s"${subscribers}分发消息：$msg")
-    subscribers.values.foreach(_ ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[AuthProtocol.HostCloseRoom]))
+    subscribers.values.foreach(_ ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[WsProtocol.HostCloseRoom]))
   }
 
   /**
@@ -270,7 +264,7 @@ object RoomActor {
   private def dispatchTo(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(targetUserIdList: List[Long], msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
     log.debug(s"${subscribers}定向分发消息：$msg")
     targetUserIdList.foreach { k =>
-      subscribers.get(k).foreach(r => r ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[AuthProtocol.HostCloseRoom]))
+      subscribers.get(k).foreach(r => r ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[WsProtocol.HostCloseRoom]))
     }
   }
 

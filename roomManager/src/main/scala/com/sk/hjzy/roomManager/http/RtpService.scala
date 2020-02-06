@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.sk.hjzy.roomManager.Boot.{executor, scheduler}
 import com.sk.hjzy.protocol.ptcl.CommonRsp
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.{GetLiveInfoRsp, GetLiveInfoRsp4RM}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{GetLiveInfoRsp, GetLiveInfoRsp4RM}
 import com.sk.hjzy.roomManager.http.SessionBase._
 import com.sk.hjzy.protocol.ptcl.server2Manager.CommonProtocol.{Verify, VerifyError, VerifyRsp}
 import com.sk.hjzy.roomManager.core.RoomManager
