@@ -1,7 +1,7 @@
 package org.seekloud.hjzy.pcClient.core.rtp
 
 import java.net.InetSocketAddress
-
+import org.seekloud.hjzy.pcClient.utils.RtpUtil.{rtpServerHost, rtpServerPushPort}
 import org.slf4j.LoggerFactory
 
 /**

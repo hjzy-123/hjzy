@@ -1,7 +1,10 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.WsMsgRm
+import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
+import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
@@ -24,6 +27,26 @@ class MeetingController(
 
 
   })
+
+  def showScene(): Unit = {
+    Boot.addToPlatform(
+      if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
+        context.switchScene(meetingScene.getScene, title = s"${RmManager.userInfo.get.userName}的直播间-${RmManager.roomInfo.get.roomName}")
+      } else {
+        WarningDialog.initWarningDialog(s"无房间信息！")
+      }
+    )
+  }
+
+  def wsMessageHandle(data: WsMsgRm): Unit = {
+    data match {
+
+      case x =>
+        log.warn(s"host recv unknown msg from rm: $x")
+    }
+
+  }
+
 
 
 

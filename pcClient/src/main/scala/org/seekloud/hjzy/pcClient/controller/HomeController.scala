@@ -270,7 +270,6 @@ class HomeController(
       case Right(rsp) =>
         if(rsp.errCode == 0){
           rmManager ! CreateMeetingSuccess
-          removeLoading()
         } else {
           log.error(s"createMeeting error: ${rsp.msg}")
           Boot.addToPlatform {

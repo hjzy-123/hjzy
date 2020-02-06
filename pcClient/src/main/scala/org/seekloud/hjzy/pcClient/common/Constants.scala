@@ -12,5 +12,10 @@ object Constants {
     val height = 864
   }
 
+  object HostStatus {
+    val UNLIVE = 0
+    val LIVE = 1
+  }
+
 
 }

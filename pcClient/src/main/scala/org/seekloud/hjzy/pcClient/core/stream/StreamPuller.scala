@@ -12,8 +12,8 @@ import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.stream.LiveManager.{JoinInfo, WatchInfo}
 import org.seekloud.hjzy.player.sdk.MediaPlayer
-import org.seekloud.hjzy.rtpClient.Protocol._
-import org.seekloud.hjzy.rtpClient.{Protocol, PullStreamClient}
+import com.sk.hjzy.rtpClient.Protocol._
+import com.sk.hjzy.rtpClient.{Protocol, PullStreamClient}
 import org.seekloud.hjzy.pcClient.core.player.VideoPlayer
 import org.seekloud.hjzy.pcClient.scene.{AudienceScene, HostScene}
 import org.slf4j.LoggerFactory

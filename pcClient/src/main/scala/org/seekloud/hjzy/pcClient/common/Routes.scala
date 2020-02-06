@@ -34,4 +34,9 @@ object Routes {
   val meetingUrl: String =  baseUrl + "/Meeting"
   val newMeeting: String = meetingUrl + "/newMeeting"  //创建会议
   val joinMeeting: String = meetingUrl + "/joinMeeting" //加入会议
+
+
+  val wsBase: String = rmWsProtocol + "://" + rmHostName + ":" + rmPort + "/" + rmUrl + "/user"
+  def linkRoomManager(userId: Long, token: String, roomId: Long): String = wsBase + "/setupWebSocket" + s"?userId=$userId&token=$token&roomId=$roomId"
+
 }

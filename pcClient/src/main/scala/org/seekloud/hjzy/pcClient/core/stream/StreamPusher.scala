@@ -11,8 +11,8 @@ import org.seekloud.hjzy.pcClient.common.Constants
 import org.seekloud.hjzy.pcClient.core.collector.CaptureActor
 import org.seekloud.hjzy.pcClient.core.rtp.TsPacket
 import org.seekloud.hjzy.pcClient.utils.TimeUtil
-import org.seekloud.hjzy.rtpClient.Protocol._
-import org.seekloud.hjzy.rtpClient.{Protocol, PushStreamClient}
+import com.sk.hjzy.rtpClient.Protocol._
+import com.sk.hjzy.rtpClient.{Protocol, PushStreamClient}
 import org.slf4j.LoggerFactory
 
 import concurrent.duration._

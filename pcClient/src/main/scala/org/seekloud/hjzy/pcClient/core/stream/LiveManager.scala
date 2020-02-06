@@ -14,7 +14,7 @@ import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.core.stream.StreamPuller.{PackageLossInfo, PullCommand}
 import org.seekloud.hjzy.pcClient.scene.{AudienceScene, HostScene}
 import org.seekloud.hjzy.pcClient.utils.{GetAllPixel, NetUtil, RtpUtil}
-import org.seekloud.hjzy.rtpClient.{PullStreamClient, PushStreamClient}
+import com.sk.hjzy.rtpClient.{PullStreamClient, PushStreamClient}
 import org.seekloud.hjzy.pcClient.utils.RtpUtil.{clientHost, clientHostQueue}
 import org.seekloud.hjzy.player.sdk.MediaPlayer
 import org.slf4j.LoggerFactory
