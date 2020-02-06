@@ -60,6 +60,9 @@ object RmManager {
 
   final case object StopSelf extends RmCommand
 
+  /*参会者均可*/
+  final case object PullerStopped extends RmCommand
+
   /*主播*/
   final case object HostWsEstablish extends RmCommand
 
@@ -67,7 +70,7 @@ object RmManager {
   final case object AudienceWsEstablish extends RmCommand
 
 
-  final case object PullerStopped extends RmCommand
+
 
 
 
