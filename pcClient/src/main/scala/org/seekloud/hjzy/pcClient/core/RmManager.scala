@@ -63,6 +63,10 @@ object RmManager {
   /*主播*/
   final case object HostWsEstablish extends RmCommand
 
+  /*观众*/
+  final case object AudienceWsEstablish extends RmCommand
+
+
   final case object PullerStopped extends RmCommand
 
 
@@ -130,7 +134,19 @@ object RmManager {
       case JoinMeetingSuccess(roomInfo) =>
         log.debug(s"join meeting success.")
         this.meetingRoomInfo = roomInfo
-        Behaviors.same
+        val meetingScene = new MeetingScene(stageCtx.getStage)
+        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
+
+        def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
+        liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))
+
+        ctx.self ! AudienceWsEstablish
+        Boot.addToPlatform{
+          if (homeController != null) homeController.get.removeLoading()
+          meetingController.showScene()
+        }
+        switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
+
 
 //      case GoToRoomHall =>
 //        val roomScene = new RoomScene()
@@ -194,6 +210,56 @@ object RmManager {
         }
 
         val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, roomInfo.map(_.roomId).get)
+        buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
+        Behaviors.same
+
+
+
+
+
+      case x =>
+        log.warn(s"unknown msg in hostBehavior: $x")
+        stashBuffer.stash(x)
+        Behaviors.same
+    }
+
+  }
+
+
+  private def audienceBehavior(
+    stageCtx: StageContext,
+    homeController: Option[HomeController] = None,
+    meetingScene: MeetingScene,
+    meetingController: MeetingController,
+    liveManager: ActorRef[LiveManager.LiveCommand],
+    mediaPlayer: MediaPlayer,
+    sender: Option[ActorRef[WsMsgFront]] = None,
+    hostStatus: Int = HostStatus.LIVE, //0-会议未开始，1-会议进行中
+    joinAudience: Option[AudienceInfo] = None
+  )(
+    implicit stashBuffer: StashBuffer[RmCommand],
+    timer: TimerScheduler[RmCommand]
+  ): Behavior[RmCommand] = Behaviors.receive[RmCommand]{ (ctx, msg) =>
+    msg match{
+      case AudienceWsEstablish =>
+        //与roomManager建立ws
+        assert(userInfo.nonEmpty && roomInfo.nonEmpty)
+
+        def successFunc(): Unit = {
+          //            hostScene.allowConnect()
+          //            Boot.addToPlatform {
+          //              hostController.showScene()
+          //            }
+        }
+
+        def failureFunc(): Unit = {
+          //            liveManager ! LiveManager.DeviceOff
+          Boot.addToPlatform {
+            WarningDialog.initWarningDialog("webSocket连接失败！")
+          }
+        }
+
+        val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, meetingRoomInfo.map(_.roomId).get)
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 

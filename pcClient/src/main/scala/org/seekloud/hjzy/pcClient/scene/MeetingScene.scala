@@ -207,8 +207,16 @@ class MeetingScene(stage: Stage){
   val othersCanvasBox = new VBox(box1, box2)
   val canvasBox = new VBox(5, selfLivePane, othersCanvasBox)
 
-  val middleBox = new VBox(10, liveToggleButton, canvasBox)
-  middleBox.setAlignment(Pos.TOP_CENTER)
+  def genMiddleBox(): VBox = {
+    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
+    val middleBox = if(isHost){
+      new VBox(10, liveToggleButton, canvasBox)
+    } else {
+      new VBox(10, canvasBox)
+    }
+    middleBox.setAlignment(Pos.TOP_CENTER)
+    middleBox
+  }
 
 
 
@@ -239,7 +247,7 @@ class MeetingScene(stage: Stage){
     **/
   val borderPane = new BorderPane()
   borderPane.setLeft(genMeetingInfoBox)
-  borderPane.setCenter(middleBox)
+  borderPane.setCenter(genMiddleBox())
 
 
 
