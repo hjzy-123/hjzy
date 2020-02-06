@@ -1,6 +1,6 @@
 package com.sk.hjzy.protocol.ptcl.client2Manager.http
 
-import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo, UserInfo}
 import com.sk.hjzy.protocol.ptcl.Response
 
 object Common {
@@ -86,6 +86,21 @@ object Common {
                              errCode: Int = 0,
                              msg: String = "ok"
                           )extends CommonRsp
+
+  /**
+   * 获取liveinfo
+   **/
+  case class GetLiveInfoRsp(
+                             liveInfo: LiveInfo,
+                             errCode: Int = 0,
+                             msg: String = "ok"
+                           ) extends Response
+
+  case class GetLiveInfoRsp4RM(
+                                liveInfo: Option[LiveInfo],
+                                errCode: Int = 0,
+                                msg: String = "ok"
+                              ) extends Response
 
 
 }

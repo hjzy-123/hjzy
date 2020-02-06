@@ -1,6 +1,6 @@
 package com.sk.hjzy.roomManager.utils
 
-import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetLiveInfoRsp
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.GetLiveInfoRsp
 import SecureUtil.genPostEnvelope
 import org.slf4j.LoggerFactory
 import com.sk.hjzy.roomManager.Boot.{executor, scheduler, system, timeout}

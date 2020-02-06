@@ -7,13 +7,14 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
 import org.seekloud.byteobject.MiddleBufferInJvm
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol._
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import com.sk.hjzy.roomManager.Boot.{executor, roomManager}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import org.slf4j.LoggerFactory
+
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.language.postfixOps
 
@@ -157,7 +158,7 @@ object UserActor {
                   case Some(v) =>
                     if(v.`sealed`){
                       log.debug(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
-                      clientActor !Wrap(AuthProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
+                      clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                       ctx.self ! CompleteMsgClient
                       ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
                     }else{
@@ -174,7 +175,7 @@ object UserActor {
                     }
                   case None =>
                     log.debug(s"${ctx.self.path} 该用户不存在，无法开始会议")
-                    clientActor !Wrap(AuthProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
+                    clientActor !Wrap(WsProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                     ctx.self ! CompleteMsgClient
                     ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
                 }
@@ -259,7 +260,7 @@ object UserActor {
                     case Some(v) =>
                       if(v.`sealed`){
                         log.debug(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
-                        clientActor !Wrap(AuthProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
+                        clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                         ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
                       }else{
                         req match{
@@ -274,7 +275,7 @@ object UserActor {
                       }
                     case None =>
                       log.debug(s"${ctx.self.path} 该用户不存在，无法参与会议")
-                      clientActor !Wrap(AuthProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
+                      clientActor !Wrap(WsProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                       ctx.self ! CompleteMsgClient
                       ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
                   }
