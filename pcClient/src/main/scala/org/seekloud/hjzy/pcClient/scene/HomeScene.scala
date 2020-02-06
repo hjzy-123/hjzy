@@ -57,6 +57,7 @@ class HomeScene {
   )
 
   def getScene: Scene = {
+    log.debug(s"homeScene getScene !!!")
     group.getChildren.remove(2,4)
     group.getChildren.addAll(genLeftArea(),genRightArea())
     this.scene

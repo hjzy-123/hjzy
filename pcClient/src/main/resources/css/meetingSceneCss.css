@@ -1,0 +1,41 @@
+.liveBtn {
+    -fx-graphic: url("../img/button/liveOffBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+
+}
+
+.liveBtn:selected {
+    -fx-graphic: url("../img/button/liveOnBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+}
+.soundBtn {
+    -fx-graphic: url("../img/button/soundOffBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+}
+
+.soundBtn:selected {
+    -fx-graphic: url("../img/button/soundOnBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+}
+
+.imageBtn {
+    -fx-graphic: url("../img/button/imageOffBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+}
+.imageBtn:selected {
+    -fx-graphic: url("../img/button/imageOnBtn.png");
+    -fx-background-color: 	#00000000;
+    -fx-border-color: 	#00000000;
+    -fx-cursor: hand;
+}
+

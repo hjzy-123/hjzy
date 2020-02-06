@@ -377,7 +377,7 @@ class LoginController(
     val passwordIcon = new ImageView("img/icon/email.png")
     passwordIcon.setFitHeight(28)
     passwordIcon.setFitWidth(28)
-    val passwordLabel = new Label("验证码:")
+    val passwordLabel = new Label("房间密码:")
     passwordLabel.setFont(Font.font(15))
     val passwordField = new TextField()
 

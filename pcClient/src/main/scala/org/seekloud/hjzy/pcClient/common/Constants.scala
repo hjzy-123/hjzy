@@ -12,5 +12,15 @@ object Constants {
     val height = 864
   }
 
+  object HostStatus {
+    val UNLIVE = 0
+    val LIVE = 1
+  }
+
+  object DefaultPlayer {
+    val width = 512
+    val height = 288
+  }
+
 
 }
