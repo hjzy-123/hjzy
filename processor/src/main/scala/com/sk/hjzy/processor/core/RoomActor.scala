@@ -30,9 +30,9 @@ object RoomActor {
 
   sealed trait Command
 
-  case class NewRoom(roomId: Long, host: String, client: String, pushLiveId: String, pushLiveCode: String, layout: Int) extends Command
+  case class NewRoom(roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String, startTime:Long) extends Command
 
-  case class UpdateRoomInfo(roomId: Long, layout: Int) extends Command
+  case class UpdateRoomInfo(roomId: Long, liveIdList: List[String], num: Int, speaker: String) extends Command
 
   case class Recorder(roomId: Long, recorderRef: ActorRef[RecorderActor.Command]) extends Command
 
@@ -54,23 +54,24 @@ object RoomActor {
 
   case class Timer4PipeClose(liveId: String)
 
-  val pipeMap = mutable.Map[String, PipeStream]()
+  val pipeMap: mutable.Map[String, PipeStream] = mutable.Map[String, PipeStream]()
 
-  val pullPipeMap = mutable.Map[String, ActorRef[StreamPullPipe.Command]]()
-  val pushPipeMap = mutable.Map[String, ActorRef[StreamPushPipe.Command]]()
+  val pullPipeMap: mutable.Map[String, ActorRef[StreamPullPipe.Command]] = mutable.Map[String, ActorRef[StreamPullPipe.Command]]()
+  val pushPipeMap: mutable.Map[String, ActorRef[StreamPushPipe.Command]] = mutable.Map[String, ActorRef[StreamPushPipe.Command]]()
 
-  def create(roomId: Long, host: String, client: String, pushLiveId: String, pushLiveCode: String,  layout: Int): Behavior[Command]= {
+  def create(roomId: Long, LiveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String, startTime:Long): Behavior[Command]= {
     Behaviors.setup[Command]{ ctx =>
       implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
       Behaviors.withTimers[Command] {
         implicit timer =>
           log.info(s"grabberManager start----")
-          work(mutable.Map[Long, List[ActorRef[GrabberActor.Command]]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
+          work(LiveIdList,mutable.Map[Long, List[ActorRef[GrabberActor.Command]]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
       }
     }
   }
 
   def work(
+            LiveIdList: List[String],
     grabberMap: mutable.Map[Long, List[ActorRef[GrabberActor.Command]]],
     recorderMap: mutable.Map[Long,ActorRef[RecorderActor.Command]],
     roomLiveMap: mutable.Map[Long, List[String]]
@@ -81,6 +82,8 @@ object RoomActor {
 
         case msg:NewRoom =>
           log.info(s"${ctx.self} receive a msg $msg")
+
+          //todo  这里的作用是什么？
           if (isDebug) {
             val file = new File(debugPath + msg.roomId)
             if (!file.exists()) {
@@ -92,46 +95,55 @@ object RoomActor {
           val pushSource= pushPipe.getSource
           val pushOut = Channels.newOutputStream(pushSink)
 
-          val pullPipe4Host = new PipeStream
-          val pullSink4Host = pullPipe4Host.getSink
-          val pullSource4Host= pullPipe4Host.getSource
-          val pullInput4Host = Channels.newInputStream(pullSource4Host)
-          val pullOut4Host = Channels.newOutputStream(pullSink4Host)
-
-          val pullPipe4Client = new PipeStream
-          val pullSink4Client = pullPipe4Client.getSink
-          val pullSource4Client= pullPipe4Client.getSource
-          val pullInput4Client= Channels.newInputStream(pullSource4Client)
-          val pullOut4Client = Channels.newOutputStream(pullSink4Client)
-
-          pipeMap.put(msg.host, pullPipe4Host)
-          pipeMap.put(msg.client, pullPipe4Client)
           pipeMap.put(msg.pushLiveId, pushPipe)
 
-          val recorderActor = getRecorderActor(ctx, msg.roomId, msg.host, msg.client ,msg.pushLiveId, msg.pushLiveCode, msg.layout, pushOut)
-          val grabber4host = getGrabberActor(ctx, msg.roomId, msg.host, pullInput4Host, recorderActor)
-          val grabber4client = getGrabberActor(ctx, msg.roomId, msg.client, pullInput4Client, recorderActor)
+          val liveIdList = msg.liveIdList
 
-          val pullPipe4host = getPullPipe(ctx, msg.roomId, msg.host, pullOut4Host)
-          val pullPipe4client = getPullPipe(ctx, msg.roomId, msg.client, pullOut4Client)
-          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource)
+          val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
 
-          pullPipeMap.put(msg.client, pullPipe4client)
-          pullPipeMap.put(msg.host, pullPipe4host)
+          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime)
           pushPipeMap.put(msg.pushLiveId, pushPipe4recorder)
-
-          grabberMap.put(msg.roomId, List(grabber4host, grabber4client))
           recorderMap.put(msg.roomId, recorderActor)
-          roomLiveMap.put(msg.roomId,List(msg.host,msg.client, msg.pushLiveId))
+
+          liveIdList.foreach{ liveId =>
+            val pullPipe4Live = new PipeStream
+            val pullSink4Live = pullPipe4Live.getSink
+            val pullSource4Live= pullPipe4Live.getSource
+            val pullInput4Live = Channels.newInputStream(pullSource4Live)
+            val pullOut4Live = Channels.newOutputStream(pullSink4Live)
+
+            pipeMap.put(liveId, pullPipe4Live)
+
+            val grabber4Live = getGrabberActor(ctx, msg.roomId, liveId, pullInput4Live, recorderActor)
+
+            grabberMap.get(msg.roomId).map{ grabberList =>
+              if(grabberList.nonEmpty)
+                grabberMap.put(msg.roomId, grabberMap(msg.roomId) ::: List(grabber4Live))
+              else
+                grabberMap.put(msg.roomId, List(grabber4Live))
+            }
+
+            val pullPipe4live = getPullPipe(ctx, msg.roomId,liveId, pullOut4Live)
+            pullPipeMap.put(liveId, pullPipe4live)
+          }
+
+          roomLiveMap.put(msg.roomId,List(msg.pushLiveId) ::: liveIdList)
           streamPushActor ! StreamPushActor.NewLive(msg.pushLiveId, msg.pushLiveCode)
           Behaviors.same
 
-        case UpdateRoomInfo(roomId, layout) =>
+        case UpdateRoomInfo(roomId, liveIdList, num, speaker) =>
+
           if(recorderMap.get(roomId).nonEmpty) {
-            recorderMap.get(roomId).foreach(_ ! RecorderActor.UpdateRoomInfo(roomId,layout ))
+            recorderMap.get(roomId).foreach(_ ! RecorderActor.UpdateRoomInfo(roomId,liveIdList, num, speaker ))
           } else {
             log.info(s"${roomId} recorder not exist")
           }
+
+          //todo 增加grabber  或  删掉 grabber,  对应的存储的东西改变
+          if(liveIdList != LiveIdList){
+
+          }
+
           Behaviors.same
 
         case msg:Recorder =>
@@ -157,7 +169,6 @@ object RoomActor {
             recorderMap.remove(roomId)
           } else{
             log.info(s"${roomId}  recorder not exist when closeRoom")
-
           }
           if(roomLiveMap.get(roomId).nonEmpty){
             streamPullActor ! StreamPullActor.RoomClose(roomLiveMap(roomId))
@@ -218,10 +229,10 @@ object RoomActor {
     }.unsafeUpcast[GrabberActor.Command]
   }
 
-  def getRecorderActor(ctx: ActorContext[Command], roomId: Long, host: String, client:String, pushLiveId: String,  pushLiveCode: String,layout: Int,  out: OutputStream) = {
+  def getRecorderActor(ctx: ActorContext[Command], roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String,  out: OutputStream) = {
     val childName = s"recorderActor_$pushLiveId"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(RecorderActor.create(roomId, host, client, layout, out), childName)
+      val actor = ctx.spawn(RecorderActor.create(roomId, liveIdList, num, speaker, out), childName)
       ctx.watchWith(actor,ChildDead4Recorder(roomId, childName, actor))
       actor
     }.unsafeUpcast[RecorderActor.Command]
@@ -236,10 +247,10 @@ object RoomActor {
     }.unsafeUpcast[StreamPullPipe.Command]
   }
 
-  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel) = {
+  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel, startTime:Long) = {
     val childName = s"pushPipeActor_$pushLiveId"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,0l), childName)
+      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,startTime), childName)
       ctx.watchWith(actor, ChildDead4PushPipe(pushLiveId, childName, actor) )
       actor
     }.unsafeUpcast[StreamPushPipe.Command]
