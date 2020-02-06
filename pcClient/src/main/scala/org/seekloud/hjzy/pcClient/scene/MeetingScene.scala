@@ -84,10 +84,10 @@ class MeetingScene(stage: Stage){
   val editMeetingNameBtn = new Button(s"确认")
 
   val meetingDesLabel = new Label(s"会议描述:")
-  val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomName}")
+  val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomDes}")
   meetingDesField.setPrefSize(160, 60)
   meetingDesField.setWrapText(true)
-  val meetingDesValue = new TextField(s"${RmManager.meetingRoomInfo.get.roomName}")
+  val meetingDesValue = new TextField(s"${RmManager.meetingRoomInfo.get.roomDes}")
   meetingDesValue.setEditable(false)
   meetingDesValue.setMaxSize(100, 60)
   val editMeetingDesBtn = new Button(s"确认")
