@@ -1,6 +1,7 @@
 package org.seekloud.hjzy.pcClient.scene
 
 import javafx.scene.{Group, Scene}
+import javafx.stage.Stage
 import org.seekloud.hjzy.pcClient.common.Constants.AppWindow
 import org.slf4j.LoggerFactory
 
@@ -17,7 +18,7 @@ object MeetingScene {
   }
 
 }
-class MeetingScene{
+class MeetingScene(stage: Stage){
   import MeetingScene._
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)

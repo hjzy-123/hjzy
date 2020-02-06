@@ -13,6 +13,7 @@ import org.seekloud.hjzy.pcClient.utils.RMClient
 import org.slf4j.LoggerFactory
 import org.seekloud.hjzy.pcClient.Boot.executor
 import org.seekloud.hjzy.pcClient.component.WarningDialog
+import org.seekloud.hjzy.pcClient.core.RmManager.{CreateMeetingSuccess, JoinMeetingSuccess}
 
 import scala.concurrent.Future
 
@@ -198,7 +199,6 @@ class HomeController(
           rmManager ! RmManager.LogInSuccess(rsp.userInfo.get, rsp.roomInfo.get)
           Boot.addToPlatform {
             removeLoading()
-            showScene()
           }
           if (isToCreate) {
             val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
@@ -269,6 +269,7 @@ class HomeController(
     RMClient.createMeeting(roomId, password, roomName, roomDes).map {
       case Right(rsp) =>
         if(rsp.errCode == 0){
+          rmManager ! CreateMeetingSuccess
           removeLoading()
         } else {
           log.error(s"createMeeting error: ${rsp.msg}")
@@ -295,6 +296,7 @@ class HomeController(
     RMClient.joinMeeting(roomId, password).map {
       case Right(rsp) =>
         if(rsp.errCode == 0){
+          rmManager ! JoinMeetingSuccess
           removeLoading()
         } else {
           log.error(s"joinMeeting error: ${rsp.msg}")
