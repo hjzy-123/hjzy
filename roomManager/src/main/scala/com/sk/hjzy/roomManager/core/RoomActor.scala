@@ -6,9 +6,9 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{GetLiveInfoRsp, JoinMeetingRsp, NewMeetingRsp}
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom}
 import org.seekloud.byteobject.MiddleBufferInJvm
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.{ WsProtocol}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.common.Common.Role
@@ -85,8 +85,9 @@ object RoomActor {
   private def init(
     roomId: Long,
     subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
-    partRoomInfoOpt: Option[RoomInfo] = None
-  )
+    partRoomInfoOpt: Option[RoomInfo] = None,
+    userInfoListOpt: Option[List[PartUserInfo]] = None
+                  )
     (
       implicit stashBuffer: StashBuffer[Command],
       timer: TimerScheduler[Command],
@@ -124,14 +125,35 @@ object RoomActor {
 
           Behaviors.same
 
+        case GetUserInfoList(roomId) =>
+          if(userInfoListOpt.nonEmpty)
+            dispatch(subscribers)(UserInfoListRsp(Some(userInfoListOpt.get)))
+          else
+            dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
+          Behaviors.same
+
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
+
+          //todo
           if (join == Common.Subscriber.join) {
               log.debug(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
             }else if(join == Common.Subscriber.left)
             subscribers.remove(userId)
 
-          Behaviors.same
+          UserInfoDao.searchById(userId).map{ userTableOpt =>
+            if(userTableOpt.nonEmpty){
+              val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
+
+              if(userInfoListOpt.nonEmpty)
+                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(userInfoListOpt.get ::: List(partUserInfo))))
+              else
+                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(List(partUserInfo))))
+            }else{
+              ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
+            }
+          }
+          switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case TestRoom(roomInfo) =>
           //仅用户测试使用空房间

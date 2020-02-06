@@ -84,4 +84,18 @@ object WsProtocol {
   case object HostCloseRoom extends WsMsgRm2Audience //房主关闭房间通知房间所有用户
   case class HostCloseRoom() extends WsMsgRm2Audience //房主关闭房间通知房间所有用户，class方便后台一些代码的处理
 
+
+
+  case class PartUserInfo(userId: Long, userName: String, headImgUrl:String)
+
+  /**
+   * 所有用户  群发消息
+   **/
+
+  case class UserInfoListRsp(
+                              UserInfoList: Option[List[PartUserInfo]] = None,
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                       ) extends WsMsgRm
+
 }

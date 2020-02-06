@@ -99,6 +99,7 @@ object UserActor {
           case UserClientActor(clientActor) =>
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
+            roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get)
             switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get))
             Behavior.same
 

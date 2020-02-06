@@ -8,7 +8,7 @@ import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.{RecordDao, UserInfoDao}
 import com.sk.hjzy.roomManager.core.RoomActor._
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom}
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,6 +53,14 @@ object RoomManager {
             case None =>
               log.debug(s"${ctx.self.path}房间未建立")
               replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:会议室不存在")
+          }
+          Behaviors.same
+
+        case r@GetUserInfoList(roomId) =>
+          getRoomActorOpt(roomId,ctx) match{
+            case Some(actor) =>actor ! r
+            case None =>
+              log.debug(s"${ctx.self.path}房间未建立")
           }
           Behaviors.same
 
