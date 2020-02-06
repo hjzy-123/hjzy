@@ -28,7 +28,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
           }
         }
       case Left(err) =>
-        complete(ErrorRsp(100003, "无效参数"))
+        complete(NewMeetingRsp(None,100003,s"无效参数"))
     }
   }
 
@@ -42,7 +42,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
           }
         }
       case Left(err) =>
-        complete(ErrorRsp(100003, "无效参数"))
+        complete(JoinMeetingRsp(None,100003,s"无效参数"))
     }
   }
 
