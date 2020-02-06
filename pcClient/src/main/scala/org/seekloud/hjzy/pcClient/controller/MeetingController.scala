@@ -32,6 +32,63 @@ class MeetingController(
 
     }
 
+    override def allowSbSpeak(): Unit = {
+
+    }
+
+    override def changeHost(): Unit = {
+
+    }
+
+    override def editMeetingDes(): Unit = {
+
+    }
+
+    override def editMeetingName(): Unit = {
+
+    }
+
+    override def exitFullScreen(): Unit = {
+
+    }
+
+    override def fullScreen(): Unit = {
+
+    }
+
+    override def kickSbOut(): Unit = {
+
+    }
+
+    override def refuseSbSpeak(): Unit = {
+
+    }
+
+    override def sendComment(): Unit = {
+
+    }
+
+    override def stopOnesImage(): Unit = {
+
+    }
+
+    override def stopOnesSound(): Unit = {
+
+    }
+
+    override def stopSbSpeak(): Unit = {
+
+    }
+
+    override def stopSelfImage(): Unit = {
+
+    }
+
+    override def stopSelfSound(): Unit = {
+
+    }
+
+
 
   })
 

@@ -60,6 +60,9 @@ object RmManager {
 
   final case object StopSelf extends RmCommand
 
+  /*参会者均可*/
+  final case object PullerStopped extends RmCommand
+
   /*主播*/
   final case object HostWsEstablish extends RmCommand
 
@@ -67,7 +70,7 @@ object RmManager {
   final case object AudienceWsEstablish extends RmCommand
 
 
-  final case object PullerStopped extends RmCommand
+
 
 
 
@@ -200,6 +203,9 @@ object RmManager {
           //            Boot.addToPlatform {
           //              hostController.showScene()
           //            }
+          Boot.addToPlatform {
+            WarningDialog.initWarningDialog("webSocket连接成功！")
+          }
         }
 
         def failureFunc(): Unit = {
@@ -250,6 +256,9 @@ object RmManager {
           //            Boot.addToPlatform {
           //              hostController.showScene()
           //            }
+          Boot.addToPlatform {
+            WarningDialog.initWarningDialog("webSocket连接成功！")
+          }
         }
 
         def failureFunc(): Unit = {
@@ -302,6 +311,7 @@ object RmManager {
         Future.successful(s"link room manager success.")
       } else {
         failureFunc
+        log.error(s"连接ws返回：${upgrade.response.status}")
         throw new RuntimeException(s"link room manager failed: ${upgrade.response.status}")
       }
     } //链接建立时

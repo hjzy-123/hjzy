@@ -3,7 +3,7 @@ package org.seekloud.hjzy.pcClient.scene
 import javafx.geometry.{Insets, Pos}
 import javafx.scene.canvas.{Canvas, GraphicsContext}
 import javafx.scene.control._
-import javafx.scene.image.Image
+import javafx.scene.image.{Image, ImageView}
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 import javafx.scene.text.Font
@@ -27,6 +27,33 @@ object MeetingScene {
 
     def stopLive()
 
+    def changeHost()
+
+    def editMeetingName()
+
+    def editMeetingDes()
+
+    def stopSelfImage()
+
+    def stopSelfSound()
+
+    def stopOnesImage()
+
+    def stopOnesSound()
+
+    def fullScreen()
+
+    def exitFullScreen()
+
+    def allowSbSpeak()
+
+    def refuseSbSpeak()
+
+    def stopSbSpeak()
+
+    def kickSbOut()
+
+    def sendComment()
 
 
   }
@@ -57,6 +84,11 @@ class MeetingScene(stage: Stage){
     this.listener = listener
   }
 
+  /*background*/
+  val background = new ImageView("img/picture/meetingSceneBg.jpg")
+  background.setFitHeight(height)
+  background.setFitWidth(width)
+
   /**
     * left Area
     *
@@ -84,10 +116,10 @@ class MeetingScene(stage: Stage){
   val editMeetingNameBtn = new Button(s"确认")
 
   val meetingDesLabel = new Label(s"会议描述:")
-  val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomName}")
+  val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomDes}")
   meetingDesField.setPrefSize(160, 60)
   meetingDesField.setWrapText(true)
-  val meetingDesValue = new TextField(s"${RmManager.meetingRoomInfo.get.roomName}")
+  val meetingDesValue = new TextField(s"${RmManager.meetingRoomInfo.get.roomDes}")
   meetingDesValue.setEditable(false)
   meetingDesValue.setMaxSize(100, 60)
   val editMeetingDesBtn = new Button(s"确认")
@@ -122,7 +154,7 @@ class MeetingScene(stage: Stage){
       new HBox(5, meetingDesLabel, meetingDesValue)
     }
 
-    val meetingInfoBox = new VBox(10, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
+    val meetingInfoBox = new VBox(15, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
     meetingInfoBox.setPadding(new Insets(20,20,20,20))
     meetingInfoBox
   }
@@ -215,6 +247,7 @@ class MeetingScene(stage: Stage){
       new VBox(10, canvasBox)
     }
     middleBox.setAlignment(Pos.TOP_CENTER)
+    middleBox.setPadding(new Insets(20,0,0,0))
     middleBox
   }
 
@@ -225,6 +258,24 @@ class MeetingScene(stage: Stage){
     * right Area
     *
     **/
+
+  val commentLabel = new Label(s"消息区")
+  commentLabel.setFont(Font.font(18))
+  val commentArea = new TextArea()
+  commentArea.setPrefSize(200, 500)
+  commentArea.setEditable(false)
+  val commentBox = new VBox(15, commentLabel, commentArea)
+  commentBox.setAlignment(Pos.TOP_LEFT)
+
+  val writeField = new TextField()
+  val sendBtn = new Button(s"发送")
+  val writeBox = new HBox(5, writeField, sendBtn)
+  writeBox.setAlignment(Pos.CENTER_LEFT)
+
+  val rightArea = new VBox(10, commentBox, writeBox)
+  rightArea.setPadding(new Insets(20,20,20,20))
+
+
 
 
 
@@ -248,11 +299,12 @@ class MeetingScene(stage: Stage){
   val borderPane = new BorderPane()
   borderPane.setLeft(genMeetingInfoBox)
   borderPane.setCenter(genMiddleBox())
+  borderPane.setRight(rightArea)
 
 
 
 
-  group.getChildren.addAll(borderPane)
+  group.getChildren.addAll(background, borderPane)
 
 
 }
