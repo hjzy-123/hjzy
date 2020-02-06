@@ -63,26 +63,29 @@ object Common {
    **/
 
   case class NewMeeting(
+                         userId: Long,
                          roomId: Long,
                          roomName: String,
                          roomDes: String,
                          password: String
                         )
 
-//  case class NewMeetingRsp(
-//                            errCode: Int = 0,
-//                            msg: String = "ok"
-//                          )extends CommonRsp
+  case class NewMeetingRsp(
+                            roomInfo: Option[RoomInfo],
+                            errCode: Int = 0,
+                            msg: String = "ok"
+                          )extends CommonRsp
 
   case class JoinMeeting(
                          roomId: Long,
                          password: String
                        )
 
-//  case class JoinMeetingRsp(
-//                            errCode: Int = 0,
-//                            msg: String = "ok"
-//                          )extends CommonRsp
+  case class JoinMeetingRsp(
+                             roomInfo:Option[RoomInfo],
+                             errCode: Int = 0,
+                             msg: String = "ok"
+                          )extends CommonRsp
 
 
 }

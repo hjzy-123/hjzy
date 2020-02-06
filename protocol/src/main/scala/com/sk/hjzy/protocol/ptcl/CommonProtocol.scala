@@ -10,6 +10,7 @@ object CommonProtocol {
                        userName:String,
                        headImgUrl:String,
                        coverImgUrl:String,
+                       var password: Option[String] = None,
                        var rtmp: Option[String] = None
                      )
 

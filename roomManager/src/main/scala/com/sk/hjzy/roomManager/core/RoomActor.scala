@@ -5,14 +5,16 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeetingRsp, NewMeetingRsp}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.CommonProtocol.GetLiveInfoRsp
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.NewRoom
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
 import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.common.Common.Role
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
+import com.sk.hjzy.roomManager.Boot.executor
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
 import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
@@ -84,18 +86,44 @@ object RoomActor {
   private def init(
     roomId: Long,
     subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
-    partRoomInfoOpt: Option[PartRoomInfo] = None
+    partRoomInfoOpt: Option[RoomInfo] = None
   )
     (
       implicit stashBuffer: StashBuffer[Command],
       timer: TimerScheduler[Command],
-      sendBuffer: MiddleBufferInJvm
+      sendBuffer: MiddleBufferInJvm,
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case NewRoom(roomId, roomName: String, roomDes: String, password: String) =>
-          val partRoomInfo = PartRoomInfo(roomId, roomName, roomDes)
-          switchBehavior(ctx, "init", init(roomId,subscribers, Some(partRoomInfo)))
+        case NewRoom(userId, roomId, roomName: String, roomDes: String, password: String, replyTo: ActorRef[NewMeetingRsp]) =>
+
+          UserInfoDao.searchById(userId).map{ userTableOpt =>
+            if(userTableOpt.nonEmpty){
+              val partRoomInfo = RoomInfo(roomId, roomName, roomDes, userTableOpt.get.uid, userTableOpt.get.userName,
+                UserInfoDao.getHeadImg(userTableOpt.get.headImg),
+                UserInfoDao.getHeadImg(userTableOpt.get.coverImg),Some(password), None)
+              replyTo ! NewMeetingRsp(Some(partRoomInfo))
+
+              ctx.self ! SwitchBehavior("init", init(roomId, subscribers,Some(partRoomInfo)))
+            }else{
+              replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
+              ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
+            }
+          }
+
+          switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
+
+        case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
+          if(partRoomInfoOpt.get.password.nonEmpty){
+            if(partRoomInfoOpt.get.password.get == password)
+              replyTo ! JoinMeetingRsp(Some(partRoomInfoOpt.get))
+            else
+              replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:密码错误")
+          }else{
+            replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:会议室不存在")
+          }
+
+          Behaviors.same
 
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
           if (join == Common.Subscriber.join) {
@@ -111,38 +139,35 @@ object RoomActor {
           idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
 
         case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
-//          log.debug(s"${ctx.self.path} 接受连线者请求，roomId=$roomId")
-//          val userIdList = subscribers.keys.toList
-//          val liveInfoMap = mutable.HashMap[Long, CommonInfo.LiveInfo]()
-//          var liveInfo4mix = CommonInfo.LiveInfo("","")
-//
-//          userIdList.foreach{ id =>
-//            for{
-//              userInfoOpt <- UserInfoDao.searchById(id)
-//              userLiveInfo <- RtpClient.getLiveInfoFunc()
-//            } yield {
-//              userLiveInfo match {
-//                case Right(GetLiveInfoRsp(liveInfo, 0, _)) =>
-//                 if(userInfoOpt.nonEmpty)
-//                   liveInfoMap.put(id, liveInfo)
-//                case _ =>
-//
-//              }
-//            }
-//          }
-//
-//          for{
-//            mixLiveInfo <- RtpClient.getLiveInfoFunc()
-//          } yield {
-//            mixLiveInfo match {
-//              case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
-//                liveInfo4mix = liveInfo4mix
-//              case _ =>
-//            }
-//          }
-//
+          log.debug(s"${ctx.self.path} 接受连线者请求，roomId=$roomId")
+          val userIdList = subscribers.keys.toList
+          val liveInfoMap = mutable.HashMap[Long, CommonInfo.LiveInfo]()
+          var liveInfo4mix = CommonInfo.LiveInfo("","")
+
+          userIdList.foreach{ id =>
+            for{
+              userLiveInfo <- RtpClient.getLiveInfoFunc()
+            } yield {
+              userLiveInfo match {
+                case Right(GetLiveInfoRsp(liveInfo, 0, _)) =>
+                   liveInfoMap.put(id, liveInfo)
+                case _ =>
+              }
+            }
+          }
+
+          for{
+            mixLiveInfo <- RtpClient.getLiveInfoFunc()
+          } yield {
+            mixLiveInfo match {
+              case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
+                liveInfo4mix = liveInfo4mix
+              case _ =>
+            }
+          }
+
 //          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
-//
+
         Behaviors.same
 
         case x =>
