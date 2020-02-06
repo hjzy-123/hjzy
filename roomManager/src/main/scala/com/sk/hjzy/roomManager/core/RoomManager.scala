@@ -4,11 +4,12 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
+import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeetingRsp, NewMeetingRsp}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.{RecordDao, UserInfoDao}
 import com.sk.hjzy.roomManager.core.RoomActor._
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.NewRoom
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{JoinRoom, NewRoom}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -23,7 +24,6 @@ object RoomManager {
   trait Command
 
 
-  case class JoinRoom(roomId: Long, password: String,replyTo: ActorRef[Boolean]) extends Command
 
   def create():Behavior[Command] = {
     Behaviors.setup[Command]{ctx =>
@@ -35,31 +35,28 @@ object RoomManager {
         log.debug(s"${ctx.self.path} ---===== ${roomInfo.rtmp}")
         getRoomActor(Common.TestConfig.TEST_ROOM_ID,ctx) ! TestRoom(roomInfo)
 
-        idle(mutable.Map[Long,String]())
+        idle()
       }
     }
   }
 
-  private def idle(roomPassMap: mutable.Map[Long, String])
+  private def idle()
                   (implicit stashBuffer: StashBuffer[Command],timer:TimerScheduler[Command]):Behavior[Command] = {
 
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
 
-        case r@NewRoom(roomId, roomName: String, roomDes: String, password: String) =>
+        case r@NewRoom(userId:Long, roomId, roomName: String, roomDes: String, password: String,replyTo: ActorRef[NewMeetingRsp]) =>
           val roomActor = getRoomActor(roomId, ctx)
           roomActor ! r
-          roomPassMap.put(roomId, password)
           Behaviors.same
 
-        case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[Boolean]) =>
-          if(roomPassMap.get(roomId).nonEmpty){
-            if(roomPassMap(roomId) == password)
-              replyTo ! true
-            else
-              replyTo ! false
-          }else{
-            replyTo ! false
+        case r@JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
+          getRoomActorOpt(roomId,ctx) match{
+            case Some(actor) =>actor ! r
+            case None =>
+              log.debug(s"${ctx.self.path}房间未建立")
+              replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:会议室不存在")
           }
           Behaviors.same
 

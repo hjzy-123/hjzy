@@ -8,7 +8,7 @@ class PipeStream {
   private val sink = pipe.sink()        //写
   private val source = pipe.source()    //读
 
-  def getSink = sink
-  def getSource = source
+  def getSink: Pipe.SinkChannel = sink
+  def getSource: Pipe.SourceChannel = source
 
 }
