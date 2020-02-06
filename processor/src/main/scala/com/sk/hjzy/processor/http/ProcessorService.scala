@@ -20,7 +20,7 @@ import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
 import com.sk.hjzy.processor.common.AppSettings.recordLocation
-import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, RecordInfoRsp, SeekRecord, UpdateRoomInfo, UpdateRsp}
+import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, RecordInfoRsp, SeekRecord, UpdateRoomInfo, UpdateRsp}
 import org.bytedeco.javacpp.Loader
 import org.slf4j.LoggerFactory
 
@@ -36,18 +36,19 @@ trait ProcessorService extends ServiceUtils {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  private def newConnect = (path("newConnect") & post) {
+  private def newConnect: Route = (path("newConnect") & post) {
     entity(as[Either[Error, NewConnect]]) {
       case Right(req) =>
         log.info(s"post method $NewConnect")
-        roomManager ! RoomManager.NewConnection(req.roomId, req.host, req.client, req.pushLiveId, req.pushLiveCode,req.layout)
-        complete(NewConnectRsp())
+        val startTime = System.currentTimeMillis()
+        roomManager ! RoomManager.NewConnection(req.roomId, req.liveIdList, req.num, req.speaker,req.pushLiveId, req.pushLiveCode, startTime)
+        complete(NewConnectRsp(startTime))
       case Left(e) =>
         complete(parseJsonError)
     }
   }
 
-  private def closeRoom = (path("closeRoom") & post) {
+  private def closeRoom: Route = (path("closeRoom") & post) {
     entity(as[Either[Error, CloseRoom]]) {
       case Right(req) =>
         log.info(s"post method closeRoom ${req.roomId}.")
@@ -59,11 +60,11 @@ trait ProcessorService extends ServiceUtils {
     }
   }
 
-  private def updateRoomInfo = (path("updateRoomInfo") & post) {
+  private def updateRoomInfo: Route = (path("updateRoomInfo") & post) {
     entity(as[Either[Error, UpdateRoomInfo]]) {
       case Right(req) =>
         log.info(s"post method updateRoomInfo.")
-        roomManager ! RoomManager.UpdateRoomInfo(req.roomId, req.layout)
+        roomManager ! RoomManager.UpdateRoomInfo(req.roomId, req.liveIdList, req.num, req.speaker)
         complete(UpdateRsp())
 
       case Left(e) =>

@@ -21,11 +21,11 @@ object RoomManager {
 
   sealed trait Command
 
-  case class NewConnection(roomId: Long, host: String, client: String, pushLiveId: String, pushLiveCode: String, layout: Int) extends Command
+  case class NewConnection(roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String, startTime:Long) extends Command
 
   case class CloseRoom(roomId: Long) extends Command
 
-  case class UpdateRoomInfo(roomId: Long, layout:Int ) extends Command
+  case class UpdateRoomInfo(roomId: Long, liveIdList: List[String], num: Int, speaker: String ) extends Command
 
   case class RecorderRef(roomId: Long, ref: ActorRef[RecorderActor.Command]) extends Command
 
@@ -51,8 +51,8 @@ object RoomManager {
 
         case msg:NewConnection =>
           log.info(s"${ctx.self} receive a msg${msg}")
-          val roomActor = getRoomActor(ctx, msg.roomId, msg.host, msg.client, msg.pushLiveId, msg.pushLiveCode, msg.layout) //fixme 参数更改
-          roomActor ! RoomActor.NewRoom(msg.roomId, msg.host, msg.client, msg.pushLiveId, msg.pushLiveCode, msg.layout)
+          val roomActor: ActorRef[RoomActor.Command] = getRoomActor(ctx, msg.roomId, msg.liveIdList, msg.num, msg.speaker,  msg.pushLiveId, msg.pushLiveCode, msg.startTime) //fixme 参数更改
+          roomActor ! RoomActor.NewRoom(msg.roomId, msg.liveIdList, msg.num, msg.speaker,  msg.pushLiveId, msg.pushLiveCode, msg.startTime)
           roomInfoMap.put(msg.roomId, roomActor)
           Behaviors.same
 
@@ -60,7 +60,7 @@ object RoomManager {
           log.info(s"${ctx.self} receive a msg${msg}")
           val roomInfo = roomInfoMap.get(msg.roomId)
           if(roomInfo.nonEmpty){
-            roomInfo.get ! RoomActor.UpdateRoomInfo(msg.roomId, msg.layout)
+            roomInfo.get ! RoomActor.UpdateRoomInfo(msg.roomId, msg.liveIdList, msg.num, msg.speaker)
           }
           Behaviors.same
 
@@ -93,10 +93,10 @@ object RoomManager {
     }
   }
 
-  def getRoomActor(ctx: ActorContext[Command], roomId:Long, host: String, client: String, pushLiveId: String,pushLiveCode: String,  layout: Int) = {
-    val childName = s"roomActor_${roomId}_${host}"
+  def getRoomActor(ctx: ActorContext[Command], roomId:Long,  liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String, startTime:Long): ActorRef[RoomActor.Command] = {
+    val childName = s"roomActor_${roomId}"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(RoomActor.create(roomId, host, client, pushLiveId, pushLiveCode, layout), childName)
+      val actor = ctx.spawn(RoomActor.create(roomId, liveIdList, num, speaker, pushLiveId, pushLiveCode, startTime), childName)
       ctx.watchWith(actor, ChildDead(roomId, childName, actor))
       actor
     }.unsafeUpcast[RoomActor.Command]

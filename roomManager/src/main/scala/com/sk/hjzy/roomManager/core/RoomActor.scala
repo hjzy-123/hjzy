@@ -137,11 +137,12 @@ object RoomActor {
           //仅用户测试使用空房间
           idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
 
+          //todo   获取liveInfo;   通知各个用户成功或失败的消息；  通知Processor开始录像，并返回StartTime
         case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
           log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
           val userIdList = subscribers.keys.toList
           val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
-          var liveInfo4mix = CommonInfo.LiveInfo("","")
+          var liveInfo4mix = LiveInfo("","")
 
           userIdList.foreach{ id =>
               RtpClient.getLiveInfoFunc().map {
@@ -152,15 +153,14 @@ object RoomActor {
               }
           }
 
-          for{
-            mixLiveInfo <- RtpClient.getLiveInfoFunc()
-          } yield {
-            mixLiveInfo match {
-              case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
-                liveInfo4mix = liveInfo4mix
-              case _ =>
-            }
+          RtpClient.getLiveInfoFunc().map {
+            case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
+              liveInfo4mix = liveInfo4Mix
+            case _ =>
           }
+
+
+
 
 //          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
 

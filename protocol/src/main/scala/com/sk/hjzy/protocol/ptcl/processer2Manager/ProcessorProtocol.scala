@@ -13,12 +13,14 @@ object ProcessorProtocol {
   case class NewConnect(
                          roomId: Long,
                          liveIdList: List[String],
+                         num: Int,
+                         speaker: String,
                          pushLiveId:String,
-                         pushLiveCode:String,
-                         speaker: String
+                         pushLiveCode:String
                        )
 
   case class NewConnectRsp(
+                            startTime:Long,
                             errCode: Int = 0,
                             msg:String = "ok"
                           ) extends CommonRsp
@@ -39,10 +41,11 @@ object ProcessorProtocol {
   /**  url:processor/update
    *  post
    */
-  // todo
   case class UpdateRoomInfo(
                              roomId: Long,
-                             layout: Int
+                             liveIdList: List[String],
+                             num: Int,
+                             speaker: String,
                            )
 
   case class UpdateRsp(
