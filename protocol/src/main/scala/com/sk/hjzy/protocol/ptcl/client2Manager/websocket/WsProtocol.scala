@@ -66,6 +66,17 @@ object WsProtocol {
 //  val StartMeetingRefused = StartMeetingRsp(errCode = 200001, msg = "start live refused.")
 //  val StartMeetingRefused4LiveInfoError = StartMeetingRsp(errCode = 200001, msg = "start live refused because of getting live info from distributor error.")
 
+  /*修改房间信息*/
+
+  case class ModifyRoomInfo(
+                             roomName: Option[String] = None,
+                             roomDes: Option[String] = None
+                           ) extends WsMsgHost
+
+  case class ModifyRoomRsp(errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
+
+  val ModifyRoomError = ModifyRoomRsp(errCode = 200010, msg = "modify room error.")
+
 
   /**
    *
@@ -80,22 +91,48 @@ object WsProtocol {
   /*room manager发送*/
   sealed trait WsMsgRm2Audience extends WsMsgRm
 
-
   case object HostCloseRoom extends WsMsgRm2Audience //房主关闭房间通知房间所有用户
   case class HostCloseRoom() extends WsMsgRm2Audience //房主关闭房间通知房间所有用户，class方便后台一些代码的处理
 
+  case class UpdateRoomInfo2Client(
+                                    roomName: String,
+                                    roomDec: String
+                                  ) extends WsMsgRm2Audience
 
-
-  case class PartUserInfo(userId: Long, userName: String, headImgUrl:String)
 
   /**
    * 所有用户  群发消息
    **/
 
+  case class PartUserInfo(userId: Long, userName: String, headImgUrl:String)
+
   case class UserInfoListRsp(
                               UserInfoList: Option[List[PartUserInfo]] = None,
                               errCode: Int = 0,
                               msg: String = "ok"
+                       ) extends WsMsgRm
+
+  case class LeftUserRsp(
+                              UserId: Long ,
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                            ) extends WsMsgRm
+
+  case class Comment(
+                      userId: Long,
+                      roomId: Long,
+                      comment: String,
+                      color:String = "#FFFFFF",
+                      extension: Option[String] = None
+                    ) extends WsMsgClient
+
+
+  case class RcvComment(
+                         userId: Long,
+                         userName: String,
+                         comment: String,
+                         color:String = "#FFFFFF",
+                         extension: Option[String] = None
                        ) extends WsMsgRm
 
 }
