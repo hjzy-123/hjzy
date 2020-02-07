@@ -86,16 +86,41 @@ object WsProtocol {
 
 
 
-  case class PartUserInfo(userId: Long, userName: String, headImgUrl:String)
+
 
   /**
    * 所有用户  群发消息
    **/
 
+  case class PartUserInfo(userId: Long, userName: String, headImgUrl:String)
+
   case class UserInfoListRsp(
                               UserInfoList: Option[List[PartUserInfo]] = None,
                               errCode: Int = 0,
                               msg: String = "ok"
+                       ) extends WsMsgRm
+
+  case class LeftUserRsp(
+                              UserId: Long ,
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                            ) extends WsMsgRm
+
+  case class Comment(
+                      userId: Long,
+                      roomId: Long,
+                      comment: String,
+                      color:String = "#FFFFFF",
+                      extension: Option[String] = None
+                    ) extends WsMsgClient
+
+
+  case class RcvComment(
+                         userId: Long,
+                         userName: String,
+                         comment: String,
+                         color:String = "#FFFFFF",
+                         extension: Option[String] = None
                        ) extends WsMsgRm
 
 }

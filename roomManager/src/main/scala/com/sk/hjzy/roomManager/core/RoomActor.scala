@@ -125,10 +125,11 @@ object RoomActor {
 
         case GetUserInfoList(roomId, userId) =>
           if(userInfoListOpt.nonEmpty) {
-              dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get)))
+              dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
 
               val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
               dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
+              dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
           } else
             dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
           Behaviors.same
@@ -139,21 +140,30 @@ object RoomActor {
           if (join == Common.Subscriber.join) {
               log.debug(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
-            }else if(join == Common.Subscriber.left)
+
+              UserInfoDao.searchById(userId).map{ userTableOpt =>
+                if(userTableOpt.nonEmpty){
+                  val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
+
+                  if(userInfoListOpt.nonEmpty)
+                    ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(userInfoListOpt.get :+ partUserInfo)))
+                  else
+                    ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(List(partUserInfo))))
+                }else{
+                  ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
+                }
+              }
+
+          }else if(join == Common.Subscriber.left){
+
+            val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
+            dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
+            dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
+
             subscribers.remove(userId)
-
-          UserInfoDao.searchById(userId).map{ userTableOpt =>
-            if(userTableOpt.nonEmpty){
-              val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
-
-              if(userInfoListOpt.nonEmpty)
-                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(userInfoListOpt.get :+ partUserInfo)))
-              else
-                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(List(partUserInfo))))
-            }else{
-              ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
-            }
+            ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(userInfoListOpt.get.filter(_.userId != userId))))
           }
+
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case TestRoom(roomInfo) =>
@@ -181,11 +191,14 @@ object RoomActor {
               liveInfo4mix = liveInfo4Mix
             case _ =>
           }
-
-
 //          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
 
         Behaviors.same
+
+        case ActorProtocol.HostCloseRoom(roomId) =>
+          log.debug(s"${ctx.self.path} host close the room")
+          dispatchTo(subscribers)(subscribers.filter(r => r._1 != partRoomInfoOpt.get.userId).keys.toList, HostCloseRoom())
+          Behaviors.stopped
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in init state...")
@@ -209,7 +222,7 @@ object RoomActor {
 
         case GetUserInfoList(roomId, userId) =>
           if(wholeRoomInfo.userInfoList.nonEmpty) {
-            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(wholeRoomInfo.userInfoList.get)))
+            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(wholeRoomInfo.userInfoList.get.filter(_.userId != userId))))
 
             val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(wholeRoomInfo.userInfoList.get.last))))

@@ -75,6 +75,14 @@ object RoomManager {
           getRoomActor(roomId,ctx) ! r
           Behaviors.same
 
+        case r@ActorProtocol.HostCloseRoom(roomId)=>
+          //如果断开websocket的用户的id能够和已经开的房间里面的信息匹配上，就说明是主播
+          getRoomActorOpt(roomId, ctx) match{
+            case Some(roomActor) => roomActor ! r
+            case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")
+          }
+          Behaviors.same
+
         case ChildDead(name,childRef) =>
           log.debug(s"${ctx.self.path} the child = ${ctx.children}")
           Behaviors.same

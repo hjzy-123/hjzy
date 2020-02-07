@@ -32,7 +32,7 @@ object RoomActor {
 
   case class NewRoom(roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String, startTime:Long) extends Command
 
-  case class UpdateRoomInfo(roomId: Long, liveIdList: List[String], num: Int, speaker: String) extends Command
+  case class UpdateRoomInfo(roomId: Long, liveIdList: List[(String, Int)], num: Int, speaker: String) extends Command
 
   case class Recorder(roomId: Long, recorderRef: ActorRef[RecorderActor.Command]) extends Command
 
@@ -140,9 +140,7 @@ object RoomActor {
           }
 
           //todo 增加grabber  或  删掉 grabber,  对应的存储的东西改变
-          if(liveIdList != LiveIdList){
 
-          }
 
           Behaviors.same
 

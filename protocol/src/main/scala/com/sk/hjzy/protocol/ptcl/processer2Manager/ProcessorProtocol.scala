@@ -43,7 +43,7 @@ object ProcessorProtocol {
    */
   case class UpdateRoomInfo(
                              roomId: Long,
-                             liveIdList: List[String],
+                             liveIdList: List[(String,Int)],
                              num: Int,
                              speaker: String,
                            )

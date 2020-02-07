@@ -25,7 +25,7 @@ object RoomManager {
 
   case class CloseRoom(roomId: Long) extends Command
 
-  case class UpdateRoomInfo(roomId: Long, liveIdList: List[String], num: Int, speaker: String ) extends Command
+  case class UpdateRoomInfo(roomId: Long, liveIdList: List[(String,Int)], num: Int, speaker: String ) extends Command
 
   case class RecorderRef(roomId: Long, ref: ActorRef[RecorderActor.Command]) extends Command
 

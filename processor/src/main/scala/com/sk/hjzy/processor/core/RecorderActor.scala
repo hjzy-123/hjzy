@@ -40,7 +40,7 @@ object RecorderActor {
 
   sealed trait Command
 
-  case class UpdateRoomInfo(roomId: Long, liveIdList: List[String], num: Int, speaker: String) extends Command
+  case class UpdateRoomInfo(roomId: Long,  liveIdList: List[(String, Int)],num: Int, speaker: String) extends Command
 
   case object Init extends Command
 
@@ -244,7 +244,12 @@ object RecorderActor {
             drawer ! SetSpeaker(msg.speaker)
           }
           ctx.self ! RestartRecord
-          work(roomId,  msg.liveIdList, msg.num, msg.speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
+
+          //todo  新加或者去掉 liveId
+
+          msg.liveIdList
+          val newliveIdList = liveIdList
+          work(roomId,  newliveIdList, msg.num, msg.speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
 
         case m@RestartRecord =>
           log.info(s"couple state get $m")
