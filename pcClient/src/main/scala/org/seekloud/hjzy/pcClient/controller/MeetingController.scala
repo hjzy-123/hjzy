@@ -25,6 +25,10 @@ class MeetingController(
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
   var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
+  var partInfoList: List[(Long, String)] = List() // (userId, userName)
+
+  var previousMeetingName = ""
+  var previousMeetingDes = ""
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
@@ -43,12 +47,10 @@ class MeetingController(
 
     }
 
-    override def editMeetingDes(): Unit = {
-
-    }
-
-    override def editMeetingName(): Unit = {
-
+    override def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None): Unit = {
+      if(roomName.nonEmpty) previousMeetingName = RmManager.meetingRoomInfo.get.roomName
+      if(roomDes.nonEmpty) previousMeetingDes = RmManager.meetingRoomInfo.get.roomDes
+      rmManager ! ModifyRoom(roomName, roomDes)
     }
 
     override def exitFullScreen(): Unit = {
@@ -112,8 +114,9 @@ class MeetingController(
 
   def addPartUser(userId: Long, userName: String): Unit = {
     if(partUserMap.keys.toList.length < 6){
+      partInfoList = (userId, userName) :: partInfoList
       val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
-      partUserMap = partUserMap.updated(num,userId)
+      partUserMap = partUserMap.updated(num, userId)
       meetingScene.nameLabelMap(num).setText(userName)
     }
   }
@@ -121,6 +124,7 @@ class MeetingController(
   def reducePartUser(userId: Long): Unit = {
     val userReduced = partUserMap.find(_._2 == userId)
     if(userReduced.nonEmpty){
+      partInfoList = partInfoList.filterNot(_._1 == userId)
       val num = userReduced.get._1
       partUserMap = partUserMap - num
       meetingScene.nameLabelMap(num).setText("")

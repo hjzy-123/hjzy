@@ -65,16 +65,24 @@ object RmManager {
 
   final case object LeaveRoom extends RmCommand
 
+  final case class SendComment() extends RmCommand
+
   final case object HeartBeat extends RmCommand
 
   final case object PingTimeOut extends RmCommand
 
   final case object PullerStopped extends RmCommand
 
-  /*主播*/
+  /*主持人*/
   final case object HostWsEstablish extends RmCommand
 
-  /*观众*/
+  final case class ModifyRoom(meetingName: Option[String], meetingDes: Option[String]) extends RmCommand
+
+  final case class changeHost(newHostId: Long) extends RmCommand
+
+  final case class KickSbOut(userId: Long) extends RmCommand
+
+  /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
 
   final case object HostClosedRoom extends RmCommand
@@ -241,6 +249,10 @@ object RmManager {
         Boot.addToPlatform {
           WarningDialog.initWarningDialog("webSocket连接断开！")
         }
+        Behaviors.same
+
+      case ModifyRoom(meetingName, meetingDes) =>
+        //todo
         Behaviors.same
 
       case LeaveRoom =>

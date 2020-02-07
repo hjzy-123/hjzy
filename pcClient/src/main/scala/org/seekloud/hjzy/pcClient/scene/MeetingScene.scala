@@ -29,9 +29,7 @@ object MeetingScene {
 
     def changeHost()
 
-    def editMeetingName()
-
-    def editMeetingDes()
+    def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None)
 
     def stopSelfImage()
 
@@ -119,6 +117,7 @@ class MeetingScene(stage: Stage){
   val meetingNameValue = new Label(s"${RmManager.meetingRoomInfo.get.roomName}")
   meetingNameValue.setMaxWidth(100)
   val editMeetingNameBtn = new Button(s"确认")
+  editMeetingNameBtn.setOnAction(_ => listener.modifyRoom(roomName = Some(meetingNameField.getText)))
 
   val meetingDesLabel = new Label(s"会议描述:")
   val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomDes}")
@@ -128,6 +127,8 @@ class MeetingScene(stage: Stage){
   meetingDesValue.setEditable(false)
   meetingDesValue.setMaxSize(100, 60)
   val editMeetingDesBtn = new Button(s"确认")
+  editMeetingDesBtn.setOnAction(_ => listener.modifyRoom(roomDes = Some(meetingDesField.getText)))
+
 
   def genMeetingInfoBox: VBox = {
     val isHost: Boolean =
