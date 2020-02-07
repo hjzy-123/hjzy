@@ -1,3 +1,15 @@
+.confirmBtn{
+    -fx-background-color: #dee7f4;
+    -fx-background-radius: 6;
+    -fx-border-color: #D3D3D3;
+    -fx-border-radius: 6;
+}
+
+.confirmBtn:hover{
+    -fx-effect: dropshadow(three-pass-box, #D3D3D3, 5,0,0,0);
+    -fx-cursor: hand;
+}
+
 .liveBtn {
     -fx-graphic: url("../img/button/liveOffBtn.png");
     -fx-background-color: 	#00000000;
