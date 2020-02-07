@@ -77,6 +77,13 @@ object WsProtocol {
 
   val ModifyRoomError = ModifyRoomRsp(errCode = 200010, msg = "modify room error.")
 
+  /*指派主持人*/
+  case class changeHost(
+                         userId: Long,
+                       ) extends WsMsgHost
+
+  case class changeHostRsp(errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
+
 
   /**
    *
@@ -98,7 +105,6 @@ object WsProtocol {
                                     roomName: String,
                                     roomDec: String
                                   ) extends WsMsgRm2Audience
-
 
   /**
    * 所有用户  群发消息
@@ -134,5 +140,11 @@ object WsProtocol {
                          color:String = "#FFFFFF",
                          extension: Option[String] = None
                        ) extends WsMsgRm
+
+
+  case class ChangeHostRsp(
+                                userId: Long,
+                                userName: String
+                              ) extends WsMsgClient
 
 }
