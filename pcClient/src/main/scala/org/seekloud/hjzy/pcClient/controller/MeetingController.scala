@@ -118,7 +118,10 @@ class MeetingController(
       partInfoList = (userId, userName) :: partInfoList
       val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
       partUserMap = partUserMap.updated(num, userId)
-      meetingScene.nameLabelMap(num).setText(userName)
+      Boot.addToPlatform{
+        meetingScene.nameLabelMap(num).setText(userName)
+      }
+
     }
   }
 
@@ -128,7 +131,10 @@ class MeetingController(
       partInfoList = partInfoList.filterNot(_._1 == userId)
       val num = userReduced.get._1
       partUserMap = partUserMap - num
-      meetingScene.nameLabelMap(num).setText("")
+      Boot.addToPlatform{
+        meetingScene.nameLabelMap(num).setText("")
+      }
+
     }
   }
 
