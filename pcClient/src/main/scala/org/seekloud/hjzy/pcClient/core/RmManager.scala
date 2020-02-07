@@ -80,7 +80,7 @@ object RmManager {
 
   final case class ModifyRoomFailed(previousName: String, previousDes: String) extends RmCommand
 
-  final case class changeHost(newHostId: Long) extends RmCommand
+  final case class ChangeHost(newHostId: Long) extends RmCommand
 
   final case class KickSbOut(userId: Long) extends RmCommand
 
@@ -91,6 +91,7 @@ object RmManager {
 
   final case class RoomModified(newName: String, newDes: String) extends RmCommand
 
+  final case object TurnToHost extends RmCommand
 
 
 
@@ -306,6 +307,11 @@ object RmManager {
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
+      case ChangeHost(newHostId) =>
+        log.info(s"rcv ChangeHost from meetingScene: newHostId == $newHostId")
+        sender.foreach(_ ! changeHost(newHostId))
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
+        switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
 
       case StopSelf =>
@@ -462,6 +468,11 @@ object RmManager {
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = newName))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = newDes))
         Behaviors.same
+
+      case TurnToHost =>
+        log.info(s"rcv TurnToHost from meetingScene")
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = userInfo.get.userId))
+        switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
 
       case StopSelf =>
