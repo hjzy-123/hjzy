@@ -253,21 +253,20 @@ object RoomActor {
     ): Behavior[Command] = {
     msg match {
 
-//      case ModifyRoomInfo(roomName, roomDes) =>
-//        val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
-//          wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
-//        } else if (roomName.nonEmpty) {
-//          wholeRoomInfo.roomInfo.copy(roomName = roomName.get)
-//        } else if (roomDes.nonEmpty) {
-//          wholeRoomInfo.roomInfo.copy(roomDes = roomDes.get)
-//        } else {
-//          wholeRoomInfo.roomInfo
-//        }
-//        val info = WholeRoomInfo(roomInfo, wholeRoomInfo.layout, wholeRoomInfo.aiMode)
-//        log.debug(s"${ctx.self.path} modify the room info$info")
-//        dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
-//        dispatchTo(List((wholeRoomInfo.roomInfo.userId, false)), ModifyRoomRsp())
-//        init(info, liveInfoMap, subscribers, liker, startTime, totalView, isJoinOpen)
+      case ModifyRoomInfo(roomName, roomDes) =>
+        val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
+          wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
+        } else if (roomName.nonEmpty) {
+          wholeRoomInfo.roomInfo.copy(roomName = roomName.get)
+        } else if (roomDes.nonEmpty) {
+          wholeRoomInfo.roomInfo.copy(roomDes = roomDes.get)
+        } else {
+          wholeRoomInfo.roomInfo
+        }
+        log.debug(s"${ctx.self.path} modify the room info$wholeRoomInfo")
+        dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
+        idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt)
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
