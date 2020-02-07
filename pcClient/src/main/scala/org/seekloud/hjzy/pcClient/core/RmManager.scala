@@ -286,6 +286,9 @@ object RmManager {
 
 
 
+      case StopSelf =>
+        log.info(s"rmManager stopped in host.")
+        Behaviors.stopped
 
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")
@@ -429,6 +432,9 @@ object RmManager {
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
+      case StopSelf =>
+        log.info(s"rmManager stopped in audience.")
+        Behaviors.stopped
 
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")
