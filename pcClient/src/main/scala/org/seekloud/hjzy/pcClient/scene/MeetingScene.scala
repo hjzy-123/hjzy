@@ -179,7 +179,7 @@ class MeetingScene(stage: Stage){
 
   val speakStateLabel = new Label(s"当前发言者：")
   val speakStateValue = new Label(s"无")
-  speakStateValue.setPrefWidth(95)
+  speakStateValue.setPrefWidth(85)
   val appointSpeakBtn = new Button(s"指派")
   appointSpeakBtn.getStyleClass.add("confirmBtn")
 
@@ -189,9 +189,13 @@ class MeetingScene(stage: Stage){
     val stateBox = if(isHost){
       new HBox(5, speakStateLabel, speakStateValue, appointSpeakBtn)
     } else {
-      new HBox(5510, speakStateLabel, speakStateValue)
+      new HBox(5, speakStateLabel, speakStateValue)
     }
-    new VBox(10, speakInfoLabel, stateBox)
+    stateBox.setAlignment(Pos.CENTER_LEFT)
+    val speakInfoBox = new VBox(15, speakInfoLabel, stateBox)
+    speakInfoBox.setPadding(new Insets(10,30,20,30))
+    speakInfoBox
+
   }
 
 
