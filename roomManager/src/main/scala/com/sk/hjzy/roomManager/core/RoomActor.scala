@@ -127,6 +127,8 @@ object RoomActor {
 
         case GetUserInfoList(roomId, userId) =>
           if(userInfoListOpt.nonEmpty) {
+
+            log.debug(s"${ctx.self.path}给roomId=$roomId,userId=$userId,用户发送用户列表")
               dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
 
               val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
@@ -154,6 +156,8 @@ object RoomActor {
                 }
               }
           }else if(join == Common.Subscriber.left){
+            log.debug(s"${ctx.self.path}新用户离开房间roomId=$roomId,userId=$userId")
+
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))

@@ -100,11 +100,13 @@ object UserActor {
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
             roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get, userId)
+            log.debug(s"${ctx.self.path}新用户，告知roomManager发送用户列表")
             switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get))
             Behavior.same
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
+            log.debug(s"${ctx.self.path}新用户,roomId=$roomId,userId=$userId")
             roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.join,roomId,userId,Some(ctx.self))
             init(userId,Some(roomId))
 
@@ -138,7 +140,7 @@ object UserActor {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
         case SendHeartBeat =>
-          //          log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
+          log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
           ctx.scheduleOnce(10.seconds, clientActor, Wrap(HeatBeat(System.currentTimeMillis()).asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()))
           Behaviors.same
 
@@ -223,7 +225,7 @@ object UserActor {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
         case SendHeartBeat =>
-          //          log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
+                    log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
           ctx.scheduleOnce(10.seconds, clientActor, Wrap(HeatBeat(System.currentTimeMillis()).asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()))
           Behaviors.same
 
