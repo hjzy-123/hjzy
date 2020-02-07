@@ -39,3 +39,17 @@
     -fx-cursor: hand;
 }
 
+
+.commentBoard{
+    -fx-background-color: #f2f5fb;
+    -fx-border-radius: 5;
+}
+.system_comment{
+    -fx-text-fill: red;
+}
+.user_comment_name{
+    -fx-text-fill: blue;
+}
+.user_comment_text{
+    -fx-text-fill: black;
+}

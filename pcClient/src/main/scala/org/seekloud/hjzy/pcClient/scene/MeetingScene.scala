@@ -11,7 +11,7 @@ import javafx.scene.{Group, Scene}
 import javafx.stage.Stage
 import org.seekloud.hjzy.pcClient.common.Constants
 import org.seekloud.hjzy.pcClient.common.Constants.AppWindow
-import org.seekloud.hjzy.pcClient.component.CanvasBar
+import org.seekloud.hjzy.pcClient.component.{CanvasBar, CommentBoard, WarningDialog}
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.slf4j.LoggerFactory
 
@@ -29,9 +29,7 @@ object MeetingScene {
 
     def changeHost()
 
-    def editMeetingName()
-
-    def editMeetingDes()
+    def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None)
 
     def stopSelfImage()
 
@@ -53,7 +51,7 @@ object MeetingScene {
 
     def kickSbOut()
 
-    def sendComment()
+    def sendComment(comment: String)
 
     def leaveRoom()
 
@@ -119,6 +117,7 @@ class MeetingScene(stage: Stage){
   val meetingNameValue = new Label(s"${RmManager.meetingRoomInfo.get.roomName}")
   meetingNameValue.setMaxWidth(100)
   val editMeetingNameBtn = new Button(s"确认")
+  editMeetingNameBtn.setOnAction(_ => listener.modifyRoom(roomName = Some(meetingNameField.getText)))
 
   val meetingDesLabel = new Label(s"会议描述:")
   val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomDes}")
@@ -128,6 +127,8 @@ class MeetingScene(stage: Stage){
   meetingDesValue.setEditable(false)
   meetingDesValue.setMaxSize(100, 60)
   val editMeetingDesBtn = new Button(s"确认")
+  editMeetingDesBtn.setOnAction(_ => listener.modifyRoom(roomDes = Some(meetingDesField.getText)))
+
 
   def genMeetingInfoBox: VBox = {
     val isHost: Boolean =
@@ -243,8 +244,9 @@ class MeetingScene(stage: Stage){
   /*others' nameLabel*/
   val nameLabelMap: Map[Int, Label] = List(1,2,3,4,5,6).map{ i =>
     val nameLabel = new Label()
-    nameLabel.setPrefWidth(Constants.DefaultPlayer.width/3)
-    nameLabel.setAlignment(Pos.CENTER)
+    nameLabel.setPrefSize(Constants.DefaultPlayer.width/3, 30)
+    nameLabel.setFont(Font.font(15))
+    nameLabel.setAlignment(Pos.BOTTOM_CENTER)
     i -> nameLabel
   }.toMap
 
@@ -300,16 +302,33 @@ class MeetingScene(stage: Stage){
     *
     **/
 
+  /*commentArea*/
   val commentLabel = new Label(s"消息区")
   commentLabel.setFont(Font.font(18))
-  val commentArea = new TextArea()
-  commentArea.setPrefSize(200, 500)
-  commentArea.setEditable(false)
+
+//  val commentArea = new TextArea()
+//  commentArea.setPrefSize(200, 500)
+//  commentArea.setEditable(false)
+//  commentArea.setWrapText(true)
+  val commentBoard = new CommentBoard(200, 500)
+  val commentArea: VBox = commentBoard.commentBoard
+
   val commentBox = new VBox(15, commentLabel, commentArea)
   commentBox.setAlignment(Pos.TOP_LEFT)
 
+  /*writeArea*/
   val writeField = new TextField()
+  writeField.setPromptText("输入你的留言~")
+
   val sendBtn = new Button(s"发送")
+  sendBtn.setOnAction{_ =>
+    if(writeField.getText != "" && writeField.getText != null){
+      listener.sendComment(writeField.getText)
+      writeField.clear()
+    } else {
+      WarningDialog.initWarningDialog("请输入评论！")
+    }
+  }
   val writeBox = new HBox(5, writeField, sendBtn)
   writeBox.setAlignment(Pos.CENTER_LEFT)
 

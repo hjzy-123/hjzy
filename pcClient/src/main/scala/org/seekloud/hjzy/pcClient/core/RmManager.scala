@@ -29,6 +29,8 @@ import org.seekloud.byteobject.ByteObject._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import concurrent.duration._
+
 
 /**
   * Author: zwq
@@ -63,18 +65,27 @@ object RmManager {
 
   final case object LeaveRoom extends RmCommand
 
+  final case class SendComment(userId: Long, roomId: Long, comment: String) extends RmCommand
+
   final case object HeartBeat extends RmCommand
 
   final case object PingTimeOut extends RmCommand
 
-  /*参会者均可*/
   final case object PullerStopped extends RmCommand
 
-  /*主播*/
+  /*主持人*/
   final case object HostWsEstablish extends RmCommand
 
-  /*观众*/
+  final case class ModifyRoom(meetingName: Option[String], meetingDes: Option[String]) extends RmCommand
+
+  final case class changeHost(newHostId: Long) extends RmCommand
+
+  final case class KickSbOut(userId: Long) extends RmCommand
+
+  /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
+
+  final case object HostClosedRoom extends RmCommand
 
 
 
@@ -225,6 +236,25 @@ object RmManager {
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
+      case HeartBeat =>
+        sender.foreach(_ ! PingPackage)
+        timer.cancel(PingTimeOut)
+        timer.startSingleTimer(PingTimeOut, PingTimeOut, 30.seconds)
+        Behaviors.same
+
+
+      case PingTimeOut =>
+        log.info(s"lose webSocket connection with roomManager!")
+        //ws断了
+        Boot.addToPlatform {
+          WarningDialog.initWarningDialog("webSocket连接断开！")
+        }
+        Behaviors.same
+
+      case ModifyRoom(meetingName, meetingDes) =>
+        //todo
+        Behaviors.same
+
       case LeaveRoom =>
         log.info(s"host back to home.")
         timer.cancel(HeartBeat)
@@ -250,9 +280,15 @@ object RmManager {
         System.gc()
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
+      case SendComment(userId, roomId, comment) =>
+        sender.foreach(_ ! Comment(userId, roomId, comment))
+        Behaviors.same
 
 
 
+      case StopSelf =>
+        log.info(s"rmManager stopped in host.")
+        Behaviors.stopped
 
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")
@@ -303,6 +339,21 @@ object RmManager {
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
+      case HeartBeat =>
+        sender.foreach(_ ! PingPackage)
+        timer.cancel(PingTimeOut)
+        timer.startSingleTimer(PingTimeOut, PingTimeOut, 30.seconds)
+        Behaviors.same
+
+
+      case PingTimeOut =>
+        log.info(s"lose webSocket connection with roomManager!")
+        //ws断了
+        Boot.addToPlatform {
+          WarningDialog.initWarningDialog("webSocket连接断开！")
+        }
+        Behaviors.same
+
 
 
       case LeaveRoom =>
@@ -310,8 +361,6 @@ object RmManager {
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
-
-
 
         if(meetingStatus == MeetingStatus.LIVE){
           assert(userInfo.nonEmpty)
@@ -344,8 +393,48 @@ object RmManager {
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
+      case HostClosedRoom =>
+        log.info("host close room.")
+        timer.cancel(HeartBeat)
+        timer.cancel(PingTimeOut)
+        sender.foreach(_ ! CompleteMsgClient)
+
+        if(meetingStatus == MeetingStatus.LIVE){
+          assert(userInfo.nonEmpty)
+          val userId = userInfo.get.userId
+          liveManager ! LiveManager.StopPull
+
+          joinAudienceList.foreach{ audList =>
+            audList.foreach{ audInfo =>
+              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
+              //              mediaPlayer.stop(playId, meetingScene.resetBack)
+              mediaPlayer.stop(playId, () => ())
+            }
+          }
+
+          liveManager ! LiveManager.StopPush
+        }
+
+        liveManager ! LiveManager.DeviceOff
+
+        Boot.addToPlatform {
+          //          meetingScene.stopPackageLoss()
+          homeController.foreach(_.showScene())
+          WarningDialog.initWarningDialog("主持人离开，会议结束，房间已关闭！")
+        }
+        //        meetingScene.stopPackageLoss()
+        //        meetingScene.finalize()
+        System.gc()
+        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
+      case SendComment(userId, roomId, comment) =>
+        sender.foreach(_ ! Comment(userId, roomId, comment))
+        Behaviors.same
+
+      case StopSelf =>
+        log.info(s"rmManager stopped in audience.")
+        Behaviors.stopped
 
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")

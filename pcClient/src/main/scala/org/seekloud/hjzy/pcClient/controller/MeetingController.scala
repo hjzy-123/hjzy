@@ -1,12 +1,12 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{UserInfoListRsp, WsMsgRm}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
-import org.seekloud.hjzy.pcClient.core.RmManager.LeaveRoom
+import org.seekloud.hjzy.pcClient.core.RmManager._
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -25,6 +25,10 @@ class MeetingController(
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
   var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
+  var partInfoList: List[(Long, String)] = List() // (userId, userName)
+
+  var previousMeetingName = ""
+  var previousMeetingDes = ""
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
@@ -43,12 +47,10 @@ class MeetingController(
 
     }
 
-    override def editMeetingDes(): Unit = {
-
-    }
-
-    override def editMeetingName(): Unit = {
-
+    override def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None): Unit = {
+      if(roomName.nonEmpty) previousMeetingName = RmManager.meetingRoomInfo.get.roomName
+      if(roomDes.nonEmpty) previousMeetingDes = RmManager.meetingRoomInfo.get.roomDes
+      rmManager ! ModifyRoom(roomName, roomDes)
     }
 
     override def exitFullScreen(): Unit = {
@@ -67,7 +69,8 @@ class MeetingController(
 
     }
 
-    override def sendComment(): Unit = {
+    override def sendComment(comment: String): Unit = {
+      rmManager ! SendComment(RmManager.userInfo.get.userId, RmManager.meetingRoomInfo.get.roomId, comment)
 
     }
 
@@ -103,7 +106,7 @@ class MeetingController(
   def showScene(): Unit = {
     Boot.addToPlatform(
       if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-        context.switchScene(meetingScene.getScene, title = s"${RmManager.userInfo.get.userName}的直播间-${RmManager.roomInfo.get.roomName}")
+        context.switchScene(meetingScene.getScene, title = s"会议室-${RmManager.roomInfo.get.roomName}")
       } else {
         WarningDialog.initWarningDialog(s"无房间信息！")
       }
@@ -112,8 +115,9 @@ class MeetingController(
 
   def addPartUser(userId: Long, userName: String): Unit = {
     if(partUserMap.keys.toList.length < 6){
+      partInfoList = (userId, userName) :: partInfoList
       val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
-      partUserMap = partUserMap.updated(num,userId)
+      partUserMap = partUserMap.updated(num, userId)
       meetingScene.nameLabelMap(num).setText(userName)
     }
   }
@@ -121,6 +125,7 @@ class MeetingController(
   def reducePartUser(userId: Long): Unit = {
     val userReduced = partUserMap.find(_._2 == userId)
     if(userReduced.nonEmpty){
+      partInfoList = partInfoList.filterNot(_._1 == userId)
       val num = userReduced.get._1
       partUserMap = partUserMap - num
       meetingScene.nameLabelMap(num).setText("")
@@ -129,13 +134,34 @@ class MeetingController(
 
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
+      case msg: HeatBeat =>
+        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
+        rmManager ! HeartBeat
+
+      case HostCloseRoom =>
+        log.info(s"rcv HostCloseRoom from rm")
+        rmManager ! HostClosedRoom
+
       case msg: UserInfoListRsp =>
+        log.info(s"rcv UserInfoListRsp from rm: $msg")
         val addPartListOpt = msg.UserInfoList
         addPartListOpt.foreach{ addPartList =>
           addPartList.foreach{ partUser =>
             addPartUser(partUser.userId, partUser.userName)
           }
         }
+
+      case msg: LeftUserRsp =>
+        log.info(s"rcv LeftUserRsp from rm: $msg")
+        val userId = msg.UserId
+        reducePartUser(userId)
+
+      case msg: RcvComment =>
+        log.info(s"rcv RcvComment from rm: $msg")
+        Boot.addToPlatform {
+          meetingScene.commentBoard.updateComment(msg)
+        }
+
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")

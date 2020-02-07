@@ -317,7 +317,7 @@ class HomeController(
 
 
 //  /**
-//    * 创建theia登录临时文件
+//    * 创建登录临时文件
 //    */
 //  def createLoginTemp(password: String, userInfo: UserInfo, roomInfo: RoomInfo): Unit = {
 //
