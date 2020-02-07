@@ -128,7 +128,7 @@ object RoomActor {
         case GetUserInfoList(roomId, userId) =>
           if(userInfoListOpt.nonEmpty) {
 
-            log.debug(s"${ctx.self.path}给roomId=$roomId,userId=$userId,用户发送用户列表")
+            log.info(s"${ctx.self.path}给roomId=$roomId,userId=$userId,用户发送用户列表")
               dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
 
               val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
@@ -139,8 +139,9 @@ object RoomActor {
           Behaviors.same
 
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
+          log.info(s"${ctx.self.path} 新用户进入具体的房间")
           if (join == Common.Subscriber.join) {
-              log.debug(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
+              log.info(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
 
               UserInfoDao.searchById(userId).map{ userTableOpt =>
@@ -156,7 +157,7 @@ object RoomActor {
                 }
               }
           }else if(join == Common.Subscriber.left){
-            log.debug(s"${ctx.self.path}新用户离开房间roomId=$roomId,userId=$userId")
+            log.info(s"${ctx.self.path}新用户离开房间roomId=$roomId,userId=$userId")
 
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
@@ -198,7 +199,7 @@ object RoomActor {
 //        Behaviors.same
 
         case ActorProtocol.HostCloseRoom(roomId) =>
-          log.debug(s"${ctx.self.path} host close the room")
+          log.info(s"${ctx.self.path} host close the room")
           dispatchTo(subscribers)(subscribers.filter(r => r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, HostCloseRoom())
           Behaviors.stopped
 
@@ -267,24 +268,25 @@ object RoomActor {
         } else {
           wholeRoomInfo.roomInfo
         }
-        log.debug(s"${ctx.self.path} modify the room info$wholeRoomInfo")
+        log.info(s"${ctx.self.path} modify the room info$wholeRoomInfo")
         dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
         idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt)
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
+        log.info(s"${ctx.self.path} 收到用户留言$comment")
         UserInfoDao.searchById(userId).onComplete {
           case Success(value) =>
             value match {
               case Some(v) =>
                 dispatch(RcvComment(userId, v.userName, comment, color, extension))
               case None =>
-                log.debug(s"${ctx.self.path.name} the database doesn't have the user")
+                log.info(s"${ctx.self.path.name} the database doesn't have the user")
             }
             ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,userInfoListOpt))
           case Failure(e) =>
-            log.debug(s"s${ctx.self.path.name} the search by userId error:$e")
+            log.info(s"s${ctx.self.path.name} the search by userId error:$e")
             ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt))
         }
 
@@ -301,7 +303,7 @@ object RoomActor {
   }
 
   private def dispatch(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
-    log.debug(s"${subscribers}分发消息：$msg")
+    log.info(s"${subscribers}分发消息：$msg")
     subscribers.values.foreach(_ ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[WsProtocol.HostCloseRoom]))
   }
 
@@ -311,7 +313,7 @@ object RoomActor {
     * msg：发送的消息
     **/
   private def dispatchTo(subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]])(targetUserIdList: List[Long], msg: WsMsgRm)(implicit sendBuffer: MiddleBufferInJvm): Unit = {
-    log.debug(s"${subscribers}定向分发消息：$msg")
+    log.info(s"${subscribers}定向分发消息：$msg")
     targetUserIdList.foreach { k =>
       subscribers.get(k).foreach(r => r ! UserActor.DispatchMsg(Wrap(msg.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()), msg.isInstanceOf[WsProtocol.HostCloseRoom]))
     }

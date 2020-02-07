@@ -99,26 +99,26 @@ object UserActor {
           case UserClientActor(clientActor) =>
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
+            log.info(s"${ctx.self.path}开启定时器，发送心跳包")
             roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get, userId)
-            log.debug(s"${ctx.self.path}新用户，告知roomManager发送用户列表")
+            log.info(s"${ctx.self.path}新用户，告知roomManager发送用户列表")
             switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get))
-            Behavior.same
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
-            log.debug(s"${ctx.self.path}新用户,roomId=$roomId,userId=$userId")
+            log.info(s"${ctx.self.path}新用户,roomId=$roomId,userId=$userId")
             roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.join,roomId,userId,Some(ctx.self))
             init(userId,Some(roomId))
 
           case TimeOut(m) =>
-            log.debug(s"${ctx.self.path} is time out when busy,msg=$m")
+            log.info(s"${ctx.self.path} is time out when busy,msg=$m")
             Behaviors.stopped
 
           case unknown =>
             if(userId == Common.TestConfig.TEST_USER_ID){
-              log.debug(s"${ctx.self.path} 测试房间的房主actor，不处理其他类型的消息msg=$unknown")
+              log.info(s"${ctx.self.path} 测试房间的房主actor，不处理其他类型的消息msg=$unknown")
             }else{
-              log.debug(s"${ctx.self.path} recv an unknown msg:$msg in init state...")
+              log.info(s"${ctx.self.path} recv an unknown msg:$msg in init state...")
               stashBuffer.stash(unknown)
             }
             Behavior.same
@@ -140,7 +140,7 @@ object UserActor {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
         case SendHeartBeat =>
-          log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
+          log.info(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
           ctx.scheduleOnce(10.seconds, clientActor, Wrap(HeatBeat(System.currentTimeMillis()).asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()))
           Behaviors.same
 
@@ -160,7 +160,7 @@ object UserActor {
                 UserInfoDao.searchById(userId).map{
                   case Some(v) =>
                     if(v.`sealed`){
-                      log.debug(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
+                      log.info(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
                       clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                       ctx.self ! CompleteMsgClient
                       ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
@@ -191,12 +191,12 @@ object UserActor {
 
         case CompleteMsgClient =>
           //主持人结束会议
-          log.debug(s"${ctx.self.path.name} 主持人结束会议，roomId=$roomId,userId=$userId")
+          log.info(s"${ctx.self.path.name} 主持人结束会议，roomId=$roomId,userId=$userId")
           roomManager ! ActorProtocol.HostCloseRoom(roomId)
           Behaviors.stopped
 
         case FailMsgClient(ex) =>
-          log.debug(s"${ctx.self.path} websocket消息错误，断开ws=${userId} error=$ex")
+          log.info(s"${ctx.self.path} websocket消息错误，断开ws=${userId} error=$ex")
           roomManager ! ActorProtocol.HostCloseRoom(roomId)
           Behaviors.stopped
 
@@ -225,7 +225,7 @@ object UserActor {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
         case SendHeartBeat =>
-                    log.debug(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
+                    log.info(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
           ctx.scheduleOnce(10.seconds, clientActor, Wrap(HeatBeat(System.currentTimeMillis()).asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()))
           Behaviors.same
 
@@ -240,13 +240,13 @@ object UserActor {
         case CompleteMsgClient =>
           //主播需要关闭房间，通知所有观众
           //观众需要清楚房间中对应的用户信息映射
-          log.debug(s"${ctx.self.path.name} complete msg")
+          log.info(s"${ctx.self.path.name} complete msg")
           timer.cancelAll()
           roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.left,roomId,userId,Some(ctx.self))
           Behaviors.stopped
 
         case FailMsgClient(ex) =>
-          log.debug(s"${ctx.self.path} websocket消息错误，断开ws=${userId} error=$ex")
+          log.info(s"${ctx.self.path} websocket消息错误，断开ws=${userId} error=$ex")
           roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.left,roomId,userId,Some(ctx.self))
           Behaviors.stopped
 
@@ -262,7 +262,7 @@ object UserActor {
                   UserInfoDao.searchById(userId).map{
                     case Some(v) =>
                       if(v.`sealed`){
-                        log.debug(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
+                        log.info(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
                         clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                         ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
                       }else{
@@ -272,6 +272,7 @@ object UserActor {
                             ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
 
                           case x =>
+                            log.info(s"收到ws消息$req")
                             roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,req)
                             ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
                         }
@@ -286,7 +287,7 @@ object UserActor {
 
 
               case None =>
-                log.debug(s"${ctx.self.path} there is no web socket msg in anchor state")
+                log.info(s"${ctx.self.path} there is no web socket msg in anchor state")
                 Behaviors.same
             }
           }
@@ -334,6 +335,8 @@ object UserActor {
   )
 
   def flow(userActor: ActorRef[UserActor.Command]):Flow[WebSocketMsg,WsMsgManager,Any] = {
+
+    log.info(s"进入${userActor} 的flow函数")
     val in = Flow[WebSocketMsg].to(sink(userActor))
     val out = ActorSource.actorRef[WsMsgManager](
       completionMatcher = {
