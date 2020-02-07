@@ -94,7 +94,12 @@ class MeetingScene(stage: Stage){
     *
     **/
 
-  val leaveBtn = new Button(s"离开")
+  /*meetingInfo*/
+  val leaveImg = new ImageView("img/button/back.png")
+  leaveImg.setFitWidth(25)
+  leaveImg.setFitHeight(25)
+  val leaveBtn = new Button("", leaveImg)
+  leaveBtn.getStyleClass.add("confirmBtn")
   leaveBtn.setOnAction(_ => this.listener.leaveRoom())
 
   val meetingInfoLabel = new Label(s"会议信息")
@@ -110,6 +115,7 @@ class MeetingScene(stage: Stage){
   val meetingHostValue = new Label(s"${RmManager.meetingRoomInfo.get.userName}")
   meetingHostValue.setPrefWidth(95)
   val changeHostBtn = new Button(s"变更")
+  changeHostBtn.getStyleClass.add("confirmBtn")
 
   val meetingNameLabel = new Label(s"会议名称:")
   val meetingNameField = new TextField(s"${RmManager.meetingRoomInfo.get.roomName}")
@@ -117,6 +123,7 @@ class MeetingScene(stage: Stage){
   val meetingNameValue = new Label(s"${RmManager.meetingRoomInfo.get.roomName}")
   meetingNameValue.setMaxWidth(100)
   val editMeetingNameBtn = new Button(s"确认")
+  editMeetingNameBtn.getStyleClass.add("confirmBtn")
   editMeetingNameBtn.setOnAction(_ => listener.modifyRoom(roomName = Some(meetingNameField.getText)))
 
   val meetingDesLabel = new Label(s"会议描述:")
@@ -127,6 +134,7 @@ class MeetingScene(stage: Stage){
   meetingDesValue.setEditable(false)
   meetingDesValue.setMaxSize(100, 60)
   val editMeetingDesBtn = new Button(s"确认")
+  editMeetingDesBtn.getStyleClass.add("confirmBtn")
   editMeetingDesBtn.setOnAction(_ => listener.modifyRoom(roomDes = Some(meetingDesField.getText)))
 
 
@@ -161,9 +169,35 @@ class MeetingScene(stage: Stage){
     }
 
     val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-    meetingInfoBox.setPadding(new Insets(10,20,20,20))
+    meetingInfoBox.setPadding(new Insets(10,30,20,30))
     meetingInfoBox
   }
+
+  /*speakInfo*/
+  val speakInfoLabel = new Label(s"发言信息")
+  speakInfoLabel.setFont(Font.font(18))
+
+  val speakStateLabel = new Label(s"当前发言者：")
+  val speakStateValue = new Label(s"无")
+  speakStateValue.setPrefWidth(85)
+  val appointSpeakBtn = new Button(s"指派")
+  appointSpeakBtn.getStyleClass.add("confirmBtn")
+
+
+  def genSpeakInfoBox(): VBox = {
+    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
+    val stateBox = if(isHost){
+      new HBox(5, speakStateLabel, speakStateValue, appointSpeakBtn)
+    } else {
+      new HBox(5, speakStateLabel, speakStateValue)
+    }
+    stateBox.setAlignment(Pos.CENTER_LEFT)
+    val speakInfoBox = new VBox(15, speakInfoLabel, stateBox)
+    speakInfoBox.setPadding(new Insets(10,30,20,30))
+    speakInfoBox
+
+  }
+
 
 
 
@@ -243,7 +277,7 @@ class MeetingScene(stage: Stage){
 
   /*others' nameLabel*/
   val nameLabelMap: Map[Int, Label] = List(1,2,3,4,5,6).map{ i =>
-    val nameLabel = new Label()
+    val nameLabel = new Label("")
     nameLabel.setPrefSize(Constants.DefaultPlayer.width/3, 30)
     nameLabel.setFont(Font.font(15))
     nameLabel.setAlignment(Pos.BOTTOM_CENTER)
@@ -310,7 +344,7 @@ class MeetingScene(stage: Stage){
 //  commentArea.setPrefSize(200, 500)
 //  commentArea.setEditable(false)
 //  commentArea.setWrapText(true)
-  val commentBoard = new CommentBoard(200, 500)
+  val commentBoard = new CommentBoard(250, 500)
   val commentArea: VBox = commentBoard.commentBoard
 
   val commentBox = new VBox(15, commentLabel, commentArea)
@@ -318,9 +352,11 @@ class MeetingScene(stage: Stage){
 
   /*writeArea*/
   val writeField = new TextField()
+  writeField.setPrefWidth(200)
   writeField.setPromptText("输入你的留言~")
 
   val sendBtn = new Button(s"发送")
+  sendBtn.getStyleClass.add("confirmBtn")
   sendBtn.setOnAction{_ =>
     if(writeField.getText != "" && writeField.getText != null){
       listener.sendComment(writeField.getText)
@@ -332,8 +368,8 @@ class MeetingScene(stage: Stage){
   val writeBox = new HBox(5, writeField, sendBtn)
   writeBox.setAlignment(Pos.CENTER_LEFT)
 
-  val rightArea = new VBox(10, commentBox, writeBox)
-  rightArea.setPadding(new Insets(20,20,20,20))
+  val rightArea = new VBox(15, commentBox, writeBox)
+  rightArea.setPadding(new Insets(23,30,20,30))
 
 
 
@@ -357,7 +393,8 @@ class MeetingScene(stage: Stage){
     *
     **/
   val borderPane = new BorderPane()
-  borderPane.setLeft(genMeetingInfoBox)
+  val leftArea = new VBox(20, genMeetingInfoBox, genSpeakInfoBox())
+  borderPane.setLeft(leftArea)
   borderPane.setCenter(genMiddleBox())
   borderPane.setRight(rightArea)
 

@@ -28,7 +28,7 @@ class CommentBoard(boardWidth: Double, boardHeight: Double) {
 
   //default message
   val defaultText = new Label("还没有留言哦~")
-  defaultText.setFont(Font.font("Verdana", 18))
+  defaultText.setFont(Font.font("Verdana", 15))
   defaultText.setPrefSize(200, 15)
 
   //commentBoard
