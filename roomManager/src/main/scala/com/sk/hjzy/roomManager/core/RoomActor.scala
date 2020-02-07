@@ -195,10 +195,17 @@ object RoomActor {
 ////          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
 //        Behaviors.same
 
-        case ActorProtocol.HostCloseRoom(roomId) =>
+        case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host close the room")
-          dispatchTo(subscribers)(subscribers.filter(r => r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, HostCloseRoom())
-          Behaviors.stopped
+          subscribers.remove(wholeRoomInfo.roomInfo.userId)
+          val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
+          dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))
+          dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
+          dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
+
+          val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl),
+            wholeRoomInfo.liveInfoMap,wholeRoomInfo.userInfoList)
+          idle(roomId, subscribers,newRoomInfo, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
           handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)

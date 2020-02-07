@@ -101,7 +101,10 @@ object UserActor {
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
             roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get, userId)
-            switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get, hostId))
+            if(userId == hostId)
+              switchBehavior(ctx, "host", host(userId,clientActor,roomIdOpt.get, hostId))
+            else
+              switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get, hostId))
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
@@ -165,9 +168,9 @@ object UserActor {
                       ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
                     }else{
                       req match {
-//                        case StartLiveReq(`userId`,token,clientType) =>
-//                          roomManager ! ActorProtocol.StartLiveAgain(roomId)
-//                          ctx.self ! SwitchBehavior("anchor",anchor(userId,clientActor,roomId))
+                        case StartMeetingReq(`userId`,token,clientType) =>
+                          roomManager ! ActorProtocol.StartMeeting(userId,roomId,ctx.self)
+                          ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                         case x =>
                           roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,x)
@@ -191,12 +194,12 @@ object UserActor {
         case CompleteMsgClient =>
           //主持人结束会议
           log.info(s"${ctx.self.path.name} 主持人结束会议，roomId=$roomId,userId=$userId")
-          roomManager ! ActorProtocol.HostCloseRoom(roomId)
+          roomManager ! ActorProtocol.HostLeaveRoom(roomId)
           Behaviors.stopped
 
         case FailMsgClient(ex) =>
           log.info(s"${ctx.self.path} websocket消息错误，断开ws=${userId} error=$ex")
-          roomManager ! ActorProtocol.HostCloseRoom(roomId)
+          roomManager ! ActorProtocol.HostLeaveRoom(roomId)
           Behaviors.stopped
 
         case ChangeBehaviorToInit =>
@@ -267,9 +270,6 @@ object UserActor {
                         ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId, hostId))
                       }else{
                         req match{
-                          case StartMeetingReq(`userId`,token,clientType) =>
-                            roomManager ! ActorProtocol.StartMeeting(userId,roomId,ctx.self)
-                            ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                           case x =>
                             log.info(s"收到ws消息$req")
