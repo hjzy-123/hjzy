@@ -89,6 +89,8 @@ object RmManager {
 
   final case object HostClosedRoom extends RmCommand
 
+  final case class RoomModified(newName: String, newDes: String) extends RmCommand
+
 
 
 
@@ -206,7 +208,7 @@ object RmManager {
     liveManager: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     sender: Option[ActorRef[WsMsgFront]] = None,
-    meetingStatus: Int = MeetingStatus.LIVE, //0-会议未开始，1-会议进行中
+    meetingStatus: Int = MeetingStatus.UNLIVE, //0-会议未开始，1-会议进行中
     joinAudienceList: Option[List[AudienceInfo]] = None   //房间内直播中的除自己以外的人
   )(
     implicit stashBuffer: StashBuffer[RmCommand],
@@ -238,6 +240,10 @@ object RmManager {
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
+      case msg: GetSender =>
+        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, Some(msg.sender))
+
+
       case HeartBeat =>
         sender.foreach(_ ! PingPackage)
         timer.cancel(PingTimeOut)
@@ -254,6 +260,7 @@ object RmManager {
         Behaviors.same
 
       case ModifyRoom(meetingName, meetingDes) =>
+        log.info(s"rcv ModifyRoom from meetingScene: name == $meetingName, des == $meetingDes")
         if(meetingName.nonEmpty){
           this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = meetingName.get))
         }
@@ -270,6 +277,7 @@ object RmManager {
 
       case LeaveRoom =>
         log.info(s"host back to home.")
+        log.info(s"sender: $sender")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -294,6 +302,7 @@ object RmManager {
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
       case SendComment(userId, roomId, comment) =>
+        log.info(s"rcv SendComment from meetingScene")
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
@@ -320,7 +329,7 @@ object RmManager {
     liveManager: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     sender: Option[ActorRef[WsMsgFront]] = None,
-    meetingStatus: Int = MeetingStatus.LIVE, //0-会议未开始，1-会议进行中
+    meetingStatus: Int = MeetingStatus.UNLIVE, //0-会议未开始，1-会议进行中
     joinAudienceList: Option[List[AudienceInfo]] = None
   )(
     implicit stashBuffer: StashBuffer[RmCommand],
@@ -352,6 +361,10 @@ object RmManager {
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
+      case msg: GetSender =>
+        audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, Some(msg.sender))
+
+
       case HeartBeat =>
         sender.foreach(_ ! PingPackage)
         timer.cancel(PingTimeOut)
@@ -367,13 +380,12 @@ object RmManager {
         }
         Behaviors.same
 
-
-
       case LeaveRoom =>
         log.debug(s"audience back to home.")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
+        log.debug(s"send CompleteMsgClient ######################################################")
 
         if(meetingStatus == MeetingStatus.LIVE){
           assert(userInfo.nonEmpty)
@@ -387,7 +399,6 @@ object RmManager {
               mediaPlayer.stop(playId, () => ())
             }
           }
-
           liveManager ! LiveManager.StopPush
         }
 
@@ -444,6 +455,13 @@ object RmManager {
       case SendComment(userId, roomId, comment) =>
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
+
+
+      case RoomModified(newName, newDes) =>
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = newName))
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = newDes))
+        Behaviors.same
+
 
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")

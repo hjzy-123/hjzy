@@ -48,6 +48,7 @@ class MeetingController(
     }
 
     override def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None): Unit = {
+      log.info(s"点击更改房间信息：name == $roomName, des == $roomDes")
       if(roomName.nonEmpty) previousMeetingName = RmManager.meetingRoomInfo.get.roomName
       if(roomDes.nonEmpty) previousMeetingDes = RmManager.meetingRoomInfo.get.roomDes
       rmManager ! ModifyRoom(roomName, roomDes)
@@ -70,6 +71,7 @@ class MeetingController(
     }
 
     override def sendComment(comment: String): Unit = {
+      log.info(s"点击发送留言：$comment")
       rmManager ! SendComment(RmManager.userInfo.get.userId, RmManager.meetingRoomInfo.get.roomId, comment)
 
     }
@@ -95,6 +97,7 @@ class MeetingController(
     }
 
     override def leaveRoom(): Unit = {
+      log.info(s"点击离开房间")
       rmManager ! LeaveRoom
 
     }
@@ -181,6 +184,10 @@ class MeetingController(
 
       case msg: UpdateRoomInfo2Client =>
         log.info(s"rcv UpdateRoomInfo2Client from rm: $msg")
+        Boot.addToPlatform{
+          meetingScene.meetingNameValue.setText(msg.roomName)
+          meetingScene.meetingDesValue.setText(msg.roomDec)
+        }
 
 
 
