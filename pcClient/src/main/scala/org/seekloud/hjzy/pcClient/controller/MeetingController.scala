@@ -1,12 +1,12 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{UserInfoListRsp, WsMsgRm}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HeatBeat, HostCloseRoom, UserInfoListRsp, WsMsgRm}
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
-import org.seekloud.hjzy.pcClient.core.RmManager.LeaveRoom
+import org.seekloud.hjzy.pcClient.core.RmManager._
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -129,6 +129,12 @@ class MeetingController(
 
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
+      case msg: HeatBeat =>
+        rmManager ! HeartBeat
+
+      case HostCloseRoom =>
+        rmManager ! HostClosedRoom
+
       case msg: UserInfoListRsp =>
         val addPartListOpt = msg.UserInfoList
         addPartListOpt.foreach{ addPartList =>
