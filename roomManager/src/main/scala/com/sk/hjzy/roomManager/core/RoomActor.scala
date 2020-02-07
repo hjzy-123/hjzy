@@ -259,6 +259,8 @@ object RoomActor {
     msg match {
 
       case ModifyRoomInfo(roomName, roomDes) =>
+
+        log.info(s"${ctx.self.path}修改房间信息${(roomName, roomDes)}")
         val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
           wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
         } else if (roomName.nonEmpty) {
@@ -268,10 +270,12 @@ object RoomActor {
         } else {
           wholeRoomInfo.roomInfo
         }
+
+        val info = WholeRoomInfo(roomInfo, wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList)
         log.info(s"${ctx.self.path} modify the room info$wholeRoomInfo")
         dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
-        idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt)
+        idle(roomId,subscribers,info, userInfoListOpt)
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
