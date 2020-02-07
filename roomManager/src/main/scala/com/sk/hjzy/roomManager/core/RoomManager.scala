@@ -85,6 +85,15 @@ object RoomManager {
           }
           Behaviors.same
 
+
+        case r@ActorProtocol.WebSocketMsgWithActor(userId,roomId,req) =>
+          log.info(s"roomManager收到ws消息$req")
+          getRoomActorOpt(roomId,ctx) match{
+            case Some(actor) => actor ! r
+            case None => log.debug(s"${ctx.self.path}请求错误，该房间还不存在，房间id=$roomId，用户id=$userId")
+          }
+          Behaviors.same
+
         case ChildDead(name,childRef) =>
           log.debug(s"${ctx.self.path} the child = ${ctx.children}")
           Behaviors.same

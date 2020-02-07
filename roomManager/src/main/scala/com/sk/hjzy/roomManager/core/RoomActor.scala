@@ -260,7 +260,6 @@ object RoomActor {
     msg match {
 
       case ModifyRoomInfo(roomName, roomDes) =>
-
         log.info(s"${ctx.self.path}修改房间信息${(roomName, roomDes)}")
         val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
           wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
