@@ -280,6 +280,9 @@ object RmManager {
         System.gc()
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
+      case SendComment(userId, roomId, comment) =>
+        sender.foreach(_ ! Comment(userId, roomId, comment))
+        Behaviors.same
 
 
 
@@ -420,6 +423,12 @@ object RmManager {
         //        meetingScene.finalize()
         System.gc()
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
+
+
+      case SendComment(userId, roomId, comment) =>
+        sender.foreach(_ ! Comment(userId, roomId, comment))
+        Behaviors.same
+
 
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")

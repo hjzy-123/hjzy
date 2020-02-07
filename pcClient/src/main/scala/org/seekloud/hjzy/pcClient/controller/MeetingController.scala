@@ -1,7 +1,7 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HeatBeat, HostCloseRoom, UserInfoListRsp, WsMsgRm}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
@@ -106,7 +106,7 @@ class MeetingController(
   def showScene(): Unit = {
     Boot.addToPlatform(
       if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-        context.switchScene(meetingScene.getScene, title = s"${RmManager.userInfo.get.userName}的直播间-${RmManager.roomInfo.get.roomName}")
+        context.switchScene(meetingScene.getScene, title = s"会议室-${RmManager.roomInfo.get.roomName}")
       } else {
         WarningDialog.initWarningDialog(s"无房间信息！")
       }
@@ -135,18 +135,33 @@ class MeetingController(
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
       case msg: HeatBeat =>
+        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
       case HostCloseRoom =>
+        log.info(s"rcv HostCloseRoom from rm")
         rmManager ! HostClosedRoom
 
       case msg: UserInfoListRsp =>
+        log.info(s"rcv UserInfoListRsp from rm: $msg")
         val addPartListOpt = msg.UserInfoList
         addPartListOpt.foreach{ addPartList =>
           addPartList.foreach{ partUser =>
             addPartUser(partUser.userId, partUser.userName)
           }
         }
+
+      case msg: LeftUserRsp =>
+        log.info(s"rcv LeftUserRsp from rm: $msg")
+        val userId = msg.UserId
+        reducePartUser(userId)
+
+      case msg: RcvComment =>
+        log.info(s"rcv RcvComment from rm: $msg")
+        Boot.addToPlatform {
+          meetingScene.commentBoard.updateComment(msg)
+        }
+
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")
