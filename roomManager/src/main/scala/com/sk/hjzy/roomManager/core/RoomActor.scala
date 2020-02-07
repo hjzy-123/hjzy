@@ -204,6 +204,7 @@ object RoomActor {
           Behaviors.stopped
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
+          log.info(s"处理ws消息$wsMsg")
           handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
@@ -259,6 +260,7 @@ object RoomActor {
     msg match {
 
       case ModifyRoomInfo(roomName, roomDes) =>
+        log.info(s"${ctx.self.path}修改房间信息${(roomName, roomDes)}")
         val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
           wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
         } else if (roomName.nonEmpty) {
@@ -268,10 +270,12 @@ object RoomActor {
         } else {
           wholeRoomInfo.roomInfo
         }
+
+        val info = WholeRoomInfo(roomInfo, wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList)
         log.info(s"${ctx.self.path} modify the room info$wholeRoomInfo")
         dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
-        idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt)
+        idle(roomId,subscribers,info, userInfoListOpt)
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
@@ -289,15 +293,39 @@ object RoomActor {
             log.info(s"s${ctx.self.path.name} the search by userId error:$e")
             ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt))
         }
-
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
+      case changeHost(userId: Long)  =>
+        log.info(s"${ctx.self.path} 指派新的主持人$userId")
+        val oldHost = wholeRoomInfo.roomInfo.userId
+        UserInfoDao.searchById(userId).onComplete {
+          case Success(value) =>
+            value match {
+              case Some(v) =>
+                val roomInfo = wholeRoomInfo.roomInfo.copy(userId = userId ,userName = v.userName, headImgUrl = v.headImg, coverImgUrl = v.coverImg)
+                val info = WholeRoomInfo(roomInfo, wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList)
+
+                dispatchTo(List(userInfoListOpt.get.filter(_.userId != oldHost)), ChangeHost2Client(userId, v.userName))
+                dispatchTo(List(oldHost), changeHostRsp(userId, v.userName))
+                dispatch(RcvComment(-1, "", s"${v.userName}成为新主持人"))
+                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,info, userInfoListOpt))
+              case None =>
+                dispatchTo(List(oldHost), changeHostRsp(userId, "", 10002 ,"此用户不存在"))
+                log.info(s"${ctx.self.path.name} the database doesn't have the user")
+                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,userInfoListOpt))
+            }
+          case Failure(e) =>
+            dispatchTo(List(oldHost), changeHostRsp(userId, "", 10002 ,"查询失败"))
+            log.info(s"s${ctx.self.path.name} the search by userId error:$e")
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt))
+        }
+        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
       case PingPackage =>
         Behaviors.same
 
       case x =>
-        log.debug(s"${ctx.self.path} recv an unknown msg:$x")
+        log.info(s"${ctx.self.path} recv an unknown msg:$x")
         Behaviors.same
     }
   }

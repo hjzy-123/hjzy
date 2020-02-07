@@ -225,7 +225,7 @@ object UserActor {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
         case SendHeartBeat =>
-                    log.info(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
+          log.info(s"${ctx.self.path} 发送心跳给userId=$userId,roomId=$roomId")
           ctx.scheduleOnce(10.seconds, clientActor, Wrap(HeatBeat(System.currentTimeMillis()).asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result()))
           Behaviors.same
 
