@@ -319,9 +319,12 @@ class MeetingScene(stage: Stage){
   def genMiddleBox(): VBox = {
     val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
     val middleBox = if(isHost){
-      new VBox(10, liveToggleButton, canvasBox)
+      val vBox = new VBox(10, liveToggleButton, canvasBox)
+      vBox
     } else {
-      new VBox(10, canvasBox)
+      val vBox = new VBox(10, canvasBox)
+      vBox.setPadding(new Insets(20,0,0,0))
+      vBox
     }
     middleBox.setAlignment(Pos.TOP_CENTER)
     middleBox.setPadding(new Insets(20,0,0,0))
