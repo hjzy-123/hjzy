@@ -25,6 +25,7 @@ import org.seekloud.byteobject.ByteObject._
 
 import scala.concurrent.Future
 import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
 
 /**
@@ -77,16 +78,17 @@ object RoomActor {
         implicit val sendBuffer: MiddleBufferInJvm = new MiddleBufferInJvm(1024)  //8192
         //todo subscribers的参数是什么？
         val subscribers = mutable.HashMap.empty[Long, ActorRef[UserActor.Command]]
-        init(roomId, subscribers)
+        val wholeRoomInfo = WholeRoomInfo(RoomInfo(roomId,"","",-1,"","",""))
+        idle(roomId,subscribers,wholeRoomInfo)
       }
     }
   }
 
-  private def init(
-    roomId: Long,
-    subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
-    partRoomInfoOpt: Option[RoomInfo] = None,
-    userInfoListOpt: Option[List[PartUserInfo]] = None
+  private def idle(
+                  roomId : Long,
+                  subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
+                  wholeRoomInfo: WholeRoomInfo,
+                  userInfoListOpt: Option[List[PartUserInfo]] = None
                   )
     (
       implicit stashBuffer: StashBuffer[Command],
@@ -104,18 +106,18 @@ object RoomActor {
                 UserInfoDao.getHeadImg(userTableOpt.get.coverImg),Some(password), None)
               replyTo ! NewMeetingRsp(Some(partRoomInfo))
 
-              ctx.self ! SwitchBehavior("init", init(roomId, subscribers,Some(partRoomInfo)))
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo)))
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
-              ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo))
             }
           }
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
-          if(partRoomInfoOpt.get.password.nonEmpty){
-            if(partRoomInfoOpt.get.password.get == password)
-              replyTo ! JoinMeetingRsp(Some(partRoomInfoOpt.get))
+          if(wholeRoomInfo.roomInfo.password.nonEmpty){
+            if(wholeRoomInfo.roomInfo.password.get == password)
+              replyTo ! JoinMeetingRsp(Some(wholeRoomInfo.roomInfo))
             else
               replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:密码错误")
           }else{
@@ -135,8 +137,6 @@ object RoomActor {
           Behaviors.same
 
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
-
-          //todo
           if (join == Common.Subscriber.join) {
               log.debug(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
@@ -146,95 +146,63 @@ object RoomActor {
                   val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
 
                   if(userInfoListOpt.nonEmpty)
-                    ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(userInfoListOpt.get :+ partUserInfo)))
+                    ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, Some(userInfoListOpt.get :+ partUserInfo)))
                   else
-                    ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(List(partUserInfo))))
+                    ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, Some(List(partUserInfo))))
                 }else{
-                  ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
+                  ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo))
                 }
               }
-
           }else if(join == Common.Subscriber.left){
-
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
-
             subscribers.remove(userId)
-            ctx.self ! SwitchBehavior("init", init(roomId, subscribers,partRoomInfoOpt, Some(userInfoListOpt.get.filter(_.userId != userId))))
+            ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, Some(userInfoListOpt.get.filter(_.userId != userId))))
           }
 
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case TestRoom(roomInfo) =>
           //仅用户测试使用空房间
-          idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
+//          idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
+          Behaviors.same
 
-          //todo   获取liveInfo;   通知各个用户成功或失败的消息；  通知Processor开始录像，并返回StartTime
-        case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
-          log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
-          val userIdList = subscribers.keys.toList
-          val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
-          var liveInfo4mix = LiveInfo("","")
 
-          userIdList.foreach{ id =>
-              RtpClient.getLiveInfoFunc().map {
-                case Right(rsp: GetLiveInfoRsp) =>
-                  liveInfoMap.put(id, rsp.liveInfo)
-                case Left(error) =>
-                  log.debug(s"${ctx.self.path} 开始会议被拒绝，请求rtp server解析失败，error:$error")
-              }
-          }
-
-          RtpClient.getLiveInfoFunc().map {
-            case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
-              liveInfo4mix = liveInfo4Mix
-            case _ =>
-          }
-//          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
-
-        Behaviors.same
+//          //todo   获取liveInfo;   通知各个用户成功或失败的消息；  通知Processor开始录像，并返回StartTime
+//        case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
+//          log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
+//          val userIdList = subscribers.keys.toList
+//          val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
+//          var liveInfo4mix = LiveInfo("","")
+//
+//          userIdList.foreach{ id =>
+//              RtpClient.getLiveInfoFunc().map {
+//                case Right(rsp: GetLiveInfoRsp) =>
+//                  liveInfoMap.put(id, rsp.liveInfo)
+//                case Left(error) =>
+//                  log.debug(s"${ctx.self.path} 开始会议被拒绝，请求rtp server解析失败，error:$error")
+//              }
+//          }
+//
+//          RtpClient.getLiveInfoFunc().map {
+//            case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
+//              liveInfo4mix = liveInfo4Mix
+//            case _ =>
+//          }
+////          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
+//        Behaviors.same
 
         case ActorProtocol.HostCloseRoom(roomId) =>
           log.debug(s"${ctx.self.path} host close the room")
-          dispatchTo(subscribers)(subscribers.filter(r => r._1 != partRoomInfoOpt.get.userId).keys.toList, HostCloseRoom())
+          dispatchTo(subscribers)(subscribers.filter(r => r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, HostCloseRoom())
           Behaviors.stopped
 
-        case x =>
-          log.debug(s"${ctx.self.path} recv an unknown msg:$x in init state...")
-          Behaviors.same
-      }
-    }
-  }
-
-  private def idle(
-    wholeRoomInfo: WholeRoomInfo,
-    subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
-    startTime: Long,
-    totalView: Int,
-  )
-    (implicit stashBuffer: StashBuffer[Command],
-      timer: TimerScheduler[Command],
-      sendBuffer: MiddleBufferInJvm
-    ): Behavior[Command] = {
-    Behaviors.receive[Command] { (ctx, msg) =>
-      msg match {
-
-        case GetUserInfoList(roomId, userId) =>
-          if(wholeRoomInfo.userInfoList.nonEmpty) {
-            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(wholeRoomInfo.userInfoList.get.filter(_.userId != userId))))
-
-            val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
-            dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(wholeRoomInfo.userInfoList.get.last))))
-          } else
-            dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
-          Behaviors.same
-
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(wholeRoomInfo, subscribers, startTime, totalView,  dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
+          handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
-          log.debug(s"${ctx.self.path} recv an unknown msg $x")
+          log.debug(s"${ctx.self.path} recv an unknown msg:$x in idle state...")
           Behaviors.same
       }
     }
@@ -273,8 +241,7 @@ object RoomActor {
   private def handleWebSocketMsg(
     wholeRoomInfo: WholeRoomInfo,
     subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]], //包括主播在内的所有用户
-    startTime: Long,
-    totalView: Int,
+    userInfoListOpt: Option[List[PartUserInfo]] = None,
     dispatch: WsMsgRm => Unit,
     dispatchTo: (List[Long], WsMsgRm) => Unit
   )
@@ -285,6 +252,41 @@ object RoomActor {
       sendBuffer: MiddleBufferInJvm
     ): Behavior[Command] = {
     msg match {
+
+//      case ModifyRoomInfo(roomName, roomDes) =>
+//        val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
+//          wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
+//        } else if (roomName.nonEmpty) {
+//          wholeRoomInfo.roomInfo.copy(roomName = roomName.get)
+//        } else if (roomDes.nonEmpty) {
+//          wholeRoomInfo.roomInfo.copy(roomDes = roomDes.get)
+//        } else {
+//          wholeRoomInfo.roomInfo
+//        }
+//        val info = WholeRoomInfo(roomInfo, wholeRoomInfo.layout, wholeRoomInfo.aiMode)
+//        log.debug(s"${ctx.self.path} modify the room info$info")
+//        dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
+//        dispatchTo(List((wholeRoomInfo.roomInfo.userId, false)), ModifyRoomRsp())
+//        init(info, liveInfoMap, subscribers, liker, startTime, totalView, isJoinOpen)
+
+
+      case Comment(`userId`, `roomId`, comment, color, extension) =>
+        UserInfoDao.searchById(userId).onComplete {
+          case Success(value) =>
+            value match {
+              case Some(v) =>
+                dispatch(RcvComment(userId, v.userName, comment, color, extension))
+              case None =>
+                log.debug(s"${ctx.self.path.name} the database doesn't have the user")
+            }
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,userInfoListOpt))
+          case Failure(e) =>
+            log.debug(s"s${ctx.self.path.name} the search by userId error:$e")
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt))
+        }
+
+        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
+
 
       case PingPackage =>
         Behaviors.same
