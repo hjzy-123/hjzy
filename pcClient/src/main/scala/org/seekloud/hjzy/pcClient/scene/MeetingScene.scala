@@ -11,7 +11,7 @@ import javafx.scene.{Group, Scene}
 import javafx.stage.Stage
 import org.seekloud.hjzy.pcClient.common.Constants
 import org.seekloud.hjzy.pcClient.common.Constants.AppWindow
-import org.seekloud.hjzy.pcClient.component.CanvasBar
+import org.seekloud.hjzy.pcClient.component.{CanvasBar, WarningDialog}
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.slf4j.LoggerFactory
 
@@ -51,7 +51,7 @@ object MeetingScene {
 
     def kickSbOut()
 
-    def sendComment()
+    def sendComment(content: String)
 
     def leaveRoom()
 
@@ -311,6 +311,13 @@ class MeetingScene(stage: Stage){
 
   val writeField = new TextField()
   val sendBtn = new Button(s"发送")
+  sendBtn.setOnAction{_ =>
+    if(writeField.getText != "" && writeField.getText != null){
+      listener.sendComment(writeField.getText)
+    } else {
+      WarningDialog.initWarningDialog("请输入评论！")
+    }
+  }
   val writeBox = new HBox(5, writeField, sendBtn)
   writeBox.setAlignment(Pos.CENTER_LEFT)
 

@@ -69,7 +69,8 @@ class MeetingController(
 
     }
 
-    override def sendComment(): Unit = {
+    override def sendComment(comment: String): Unit = {
+      rmManager ! SendComment(RmManager.userInfo.get.userId, RmManager.meetingRoomInfo.get.roomId, comment)
 
     }
 

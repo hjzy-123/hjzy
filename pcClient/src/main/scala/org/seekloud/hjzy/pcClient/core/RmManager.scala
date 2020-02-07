@@ -65,7 +65,7 @@ object RmManager {
 
   final case object LeaveRoom extends RmCommand
 
-  final case class SendComment() extends RmCommand
+  final case class SendComment(userId: Long, roomId: Long, comment: String) extends RmCommand
 
   final case object HeartBeat extends RmCommand
 
