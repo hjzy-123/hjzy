@@ -197,7 +197,7 @@ object RoomActor {
 
   private def idle(
     wholeRoomInfo: WholeRoomInfo, //可以考虑是否将主路的liveinfo加在这里，单独存一份连线者的liveinfo列表
-    subscribe: mutable.HashMap[Long, ActorRef[UserActor.Command]], //需要区分订阅的用户的身份，注册用户还是临时用户(uid,是否是临时用户true:是)
+    subscribes: mutable.HashMap[Long, ActorRef[UserActor.Command]], //需要区分订阅的用户的身份，注册用户还是临时用户(uid,是否是临时用户true:是)
     startTime: Long,
     totalView: Int,
   )
@@ -208,8 +208,15 @@ object RoomActor {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
 
+        case GetUserInfoList(roomId) =>
+          if(wholeRoomInfo.userInfoList.nonEmpty)
+            dispatch(subscribes)(UserInfoListRsp(Some(wholeRoomInfo.userInfoList.get)))
+          else
+            dispatch(subscribes)(UserInfoListRsp(None,100008, "此房间没有用户"))
+          Behaviors.same
+
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(wholeRoomInfo, subscribe, startTime, totalView,  dispatch(subscribe), dispatchTo(subscribe))(ctx, userId, roomId, wsMsg)
+          handleWebSocketMsg(wholeRoomInfo, subscribes, startTime, totalView,  dispatch(subscribes), dispatchTo(subscribes))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg $x")
