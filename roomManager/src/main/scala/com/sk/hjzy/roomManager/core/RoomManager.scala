@@ -67,7 +67,6 @@ object RoomManager {
         case r@ActorProtocol.UpdateSubscriber(join,roomId,userId,userActor) =>
           getRoomActorOpt(roomId,ctx)match{
             case Some(actor) =>
-              log.info(s"${ctx.self.path}更新用户信息，房间id=$roomId,用户id=$userId")
               actor ! r
             case None =>log.debug(s"${ctx.self.path}更新用户信息失败，房间不存在，有可能该用户是主持人等待房间开启，房间id=$roomId,用户id=$userId")
           }
@@ -85,9 +84,7 @@ object RoomManager {
           }
           Behaviors.same
 
-
         case r@ActorProtocol.WebSocketMsgWithActor(userId,roomId,req) =>
-          log.info(s"roomManager收到ws消息$req")
           getRoomActorOpt(roomId,ctx) match{
             case Some(actor) => actor ! r
             case None => log.debug(s"${ctx.self.path}请求错误，该房间还不存在，房间id=$roomId，用户id=$userId")

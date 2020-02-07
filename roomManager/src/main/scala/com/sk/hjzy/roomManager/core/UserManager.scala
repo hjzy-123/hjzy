@@ -29,9 +29,9 @@ object UserManager {
 
   case class TimeOut(msg:String) extends Command
 
-  final case class WebSocketFlowSetup(userId:Long,roomId:Long, replyTo:ActorRef[Option[Flow[Message,Message,Any]]]) extends Command
+  final case class WebSocketFlowSetup(userId:Long,roomId:Long, hostId:Long, replyTo:ActorRef[Option[Flow[Message,Message,Any]]]) extends Command
 
-  final case class SetupWs(uidOpt:Long, tokenOpt:String ,roomId:Long,replyTo: ActorRef[Option[Flow[Message, Message, Any]]]) extends Command
+  final case class SetupWs(uidOpt:Long, tokenOpt:String ,roomId:Long, hostId:Long, replyTo: ActorRef[Option[Flow[Message, Message, Any]]]) extends Command
 
   def create():Behavior[Command] = {
     log.debug(s"RoomManager start...")
@@ -50,12 +50,12 @@ object UserManager {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
 
-        case SetupWs(uid, token, roomId,replyTo) =>
+        case SetupWs(uid, token, roomId,hostId,replyTo) =>
           UserInfoDao.verifyUserWithToken(uid, token).onComplete {
             case Success(f) =>
               if (f) {
                 log.debug(s"${ctx.self.path} ws start")
-                val flowFuture: Future[Option[Flow[Message, Message, Any]]] = ctx.self ? (WebSocketFlowSetup(uid,roomId, _))
+                val flowFuture: Future[Option[Flow[Message, Message, Any]]] = ctx.self ? (WebSocketFlowSetup(uid,roomId, hostId, _))
                 flowFuture.map(replyTo ! _)
               } else {
                 replyTo ! None
@@ -66,7 +66,7 @@ object UserManager {
           }
           Behaviors.same
 
-        case WebSocketFlowSetup(userId,roomId,replyTo) =>
+        case WebSocketFlowSetup(userId,roomId, hostId,replyTo) =>
             log.info(s"${ctx.self.path} websocket will setup for user:$userId")
             getUserActorOpt(userId,ctx) match{
               case Some(actor) =>
@@ -76,7 +76,7 @@ object UserManager {
                 //                replyTo ! Some(setupWebSocketFlow(actor))
                 replyTo ! None
               case None =>
-                val userActor = getUserActor(userId,ctx)
+                val userActor = getUserActor(userId,hostId,ctx)
                 userActor ! UserActor.UserLogin(roomId,userId)
                 replyTo ! Some(setupWebSocketFlow(userActor))
             }
@@ -92,10 +92,10 @@ object UserManager {
       }
     }
 
-  private def getUserActor(userId:Long,ctx: ActorContext[Command]): ActorRef[UserActor.Command] = {
+  private def getUserActor(userId:Long, hostId:Long, ctx: ActorContext[Command]): ActorRef[UserActor.Command] = {
     val childrenName = s"userActor-$userId"
     ctx.child(childrenName).getOrElse {
-      val actor = ctx.spawn(UserActor.create(userId), childrenName)
+      val actor = ctx.spawn(UserActor.create(userId, hostId), childrenName)
       ctx.watchWith(actor, ChildDead(userId,actor))
       actor
     }.unsafeUpcast[UserActor.Command]

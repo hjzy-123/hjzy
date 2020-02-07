@@ -128,18 +128,16 @@ object RoomActor {
         case GetUserInfoList(roomId, userId) =>
           if(userInfoListOpt.nonEmpty) {
 
-            log.info(s"${ctx.self.path}给roomId=$roomId,userId=$userId,用户发送用户列表")
-              dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
+            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
 
-              val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
-              dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
-              dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
+            val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
+            dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
+            dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
           } else
             dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
           Behaviors.same
 
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
-          log.info(s"${ctx.self.path} 新用户进入具体的房间")
           if (join == Common.Subscriber.join) {
               log.info(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
               subscribers.put(userId, userActorOpt.get)
@@ -158,7 +156,6 @@ object RoomActor {
               }
           }else if(join == Common.Subscriber.left){
             log.info(s"${ctx.self.path}新用户离开房间roomId=$roomId,userId=$userId")
-
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
@@ -204,7 +201,6 @@ object RoomActor {
           Behaviors.stopped
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          log.info(s"处理ws消息$wsMsg")
           handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
@@ -260,7 +256,6 @@ object RoomActor {
     msg match {
 
       case ModifyRoomInfo(roomName, roomDes) =>
-        log.info(s"${ctx.self.path}修改房间信息${(roomName, roomDes)}")
         val roomInfo = if (roomName.nonEmpty && roomDes.nonEmpty) {
           wholeRoomInfo.roomInfo.copy(roomName = roomName.get, roomDes = roomDes.get)
         } else if (roomName.nonEmpty) {
@@ -279,7 +274,6 @@ object RoomActor {
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
-        log.info(s"${ctx.self.path} 收到用户留言$comment")
         UserInfoDao.searchById(userId).onComplete {
           case Success(value) =>
             value match {
@@ -304,10 +298,9 @@ object RoomActor {
               case Some(v) =>
                 val roomInfo = wholeRoomInfo.roomInfo.copy(userId = userId ,userName = v.userName, headImgUrl = v.headImg, coverImgUrl = v.coverImg)
                 val info = WholeRoomInfo(roomInfo, wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList)
-
-                dispatchTo(List(userInfoListOpt.get.filter(_.userId != oldHost)), ChangeHost2Client(userId, v.userName))
+                dispatchTo(subscribers.filter(r => r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, ChangeHost2Client(userId, v.userName))
                 dispatchTo(List(oldHost), changeHostRsp(userId, v.userName))
-                dispatch(RcvComment(-1, "", s"${v.userName}成为新主持人"))
+                dispatch(RcvComment(-1, "", s"${v.userName}被指派为新的主持人"))
                 ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,info, userInfoListOpt))
               case None =>
                 dispatchTo(List(oldHost), changeHostRsp(userId, "", 10002 ,"此用户不存在"))

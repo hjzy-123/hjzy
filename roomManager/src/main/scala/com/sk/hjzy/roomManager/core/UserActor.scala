@@ -73,21 +73,22 @@ object UserActor {
   /**
     * userId
     * */
-  def create(userId: Long): Behavior[Command] = {
+  def create(userId: Long, hostId:Long): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>
       log.info(s"userActor-$userId is starting...")
       ctx.setReceiveTimeout(30.seconds, CompleteMsgClient)
       implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
       Behaviors.withTimers[Command] { implicit timer =>
         implicit val sendBuffer: MiddleBufferInJvm = new MiddleBufferInJvm(8192)
-        init(userId,None)
+        init(userId, hostId)
       }
     }
   }
 
   private def init(
                     userId:Long,
-                    roomIdOpt:Option[Long]
+                    hostId: Long,
+                    roomIdOpt:Option[Long] = None,
                   )(
     implicit stashBuffer:StashBuffer[Command],
     sendBuffer: MiddleBufferInJvm,
@@ -99,16 +100,13 @@ object UserActor {
           case UserClientActor(clientActor) =>
             ctx.watchWith(clientActor, UserLeft(clientActor))
             timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
-            log.info(s"${ctx.self.path}开启定时器，发送心跳包")
             roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get, userId)
-            log.info(s"${ctx.self.path}新用户，告知roomManager发送用户列表")
-            switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get))
+            switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get, hostId))
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
-            log.info(s"${ctx.self.path}新用户,roomId=$roomId,userId=$userId")
             roomManager ! ActorProtocol.UpdateSubscriber(Common.Subscriber.join,roomId,userId,Some(ctx.self))
-            init(userId,Some(roomId))
+            init(userId,hostId,Some(roomId))
 
           case TimeOut(m) =>
             log.info(s"${ctx.self.path} is time out when busy,msg=$m")
@@ -130,7 +128,8 @@ object UserActor {
   private def host(
                       userId: Long,
                       clientActor:ActorRef[WsMsgRm],
-                      roomId:Long
+                      roomId:Long,
+                      hostId:Long
                     )
                     (
                       implicit stashBuffer: StashBuffer[Command],
@@ -163,7 +162,7 @@ object UserActor {
                       log.info(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
                       clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                       ctx.self ! CompleteMsgClient
-                      ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
+                      ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
                     }else{
                       req match {
 //                        case StartLiveReq(`userId`,token,clientType) =>
@@ -172,7 +171,7 @@ object UserActor {
 
                         case x =>
                           roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,x)
-                          ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
+                          ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
 
                       }
                     }
@@ -180,7 +179,7 @@ object UserActor {
                     log.debug(s"${ctx.self.path} 该用户不存在，无法开始会议")
                     clientActor !Wrap(WsProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                     ctx.self ! CompleteMsgClient
-                    ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
+                    ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
                 }
                 switchBehavior(ctx,"busy",busy(),BusyTime,TimeOut("busy"))
               case None =>
@@ -202,7 +201,7 @@ object UserActor {
 
         case ChangeBehaviorToInit =>
           log.debug(s"${ctx.self.path} 切换到init状态")
-          init(userId,None)
+          init(userId,hostId )
 
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:${msg} in anchor state...")
@@ -213,9 +212,10 @@ object UserActor {
 
   //参会者
   private def participant(
-                        userId: Long,
-                        clientActor:ActorRef[WsMsgRm],
-                        roomId:Long//观众所在的房间id
+                           userId: Long,
+                           clientActor:ActorRef[WsMsgRm],
+                           roomId:Long, //观众所在的房间id,
+                           hostId:Long
                       )
                       (
                         implicit stashBuffer: StashBuffer[Command],
@@ -264,24 +264,24 @@ object UserActor {
                       if(v.`sealed`){
                         log.info(s"${ctx.self.path} 该用户已经被封号，无法发送ws消息")
                         clientActor !Wrap(WsProtocol.AccountSealed.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
-                        ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
+                        ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId, hostId))
                       }else{
                         req match{
                           case StartMeetingReq(`userId`,token,clientType) =>
                             roomManager ! ActorProtocol.StartMeeting(userId,roomId,ctx.self)
-                            ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId))
+                            ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                           case x =>
                             log.info(s"收到ws消息$req")
                             roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,req)
-                            ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
+                            ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId, hostId))
                         }
                       }
                     case None =>
                       log.debug(s"${ctx.self.path} 该用户不存在，无法参与会议")
                       clientActor !Wrap(WsProtocol.NoUser.asInstanceOf[WsMsgRm].fillMiddleBuffer(sendBuffer).result())
                       ctx.self ! CompleteMsgClient
-                      ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId))
+                      ctx.self ! SwitchBehavior("participant",participant(userId,clientActor,roomId, hostId))
                   }
                   switchBehavior(ctx,"busy",busy(),BusyTime,TimeOut("busy"))
 
@@ -294,7 +294,7 @@ object UserActor {
 
         case ChangeBehaviorToInit =>
           log.debug(s"${ctx.self.path} 切换到init状态")
-          init(userId,None)
+          init(userId,hostId)
 
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$msg in audience state...")
