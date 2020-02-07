@@ -103,7 +103,6 @@ object UserActor {
             roomManager ! ActorProtocol.GetUserInfoList(roomIdOpt.get, userId)
             log.info(s"${ctx.self.path}新用户，告知roomManager发送用户列表")
             switchBehavior(ctx, "participant", participant(userId,clientActor,roomIdOpt.get))
-            Behavior.same
 
           case UserLogin(roomId,`userId`) =>
             //先发一个用户登陆，再切换到其他的状态
