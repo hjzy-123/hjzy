@@ -302,7 +302,7 @@ object RmManager {
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
       case SendComment(userId, roomId, comment) =>
-        log.info(s"rcv SendComment from meetingScene")
+        log.info(s"rcv SendComment from meetingScene.")
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
@@ -453,6 +453,7 @@ object RmManager {
 
 
       case SendComment(userId, roomId, comment) =>
+        log.info(s"rcv SendComment from meetingScene.")
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
