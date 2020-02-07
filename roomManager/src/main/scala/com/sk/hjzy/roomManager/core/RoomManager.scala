@@ -56,7 +56,7 @@ object RoomManager {
           }
           Behaviors.same
 
-        case r@GetUserInfoList(roomId) =>
+        case r@GetUserInfoList(roomId, userId) =>
           getRoomActorOpt(roomId,ctx) match{
             case Some(actor) =>actor ! r
             case None =>

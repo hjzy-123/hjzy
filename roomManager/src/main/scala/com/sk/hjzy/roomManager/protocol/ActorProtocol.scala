@@ -18,7 +18,7 @@ object ActorProtocol {
 
   case class JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) extends RoomCommand
 
-  case class GetUserInfoList(roomId:Long) extends RoomCommand
+  case class GetUserInfoList(roomId:Long, userId: Long) extends RoomCommand
 
   case class UpdateSubscriber(join:Int,roomId:Long,userId:Long, userActorOpt:Option[ActorRef[UserActor.Command]]) extends RoomCommand
 
