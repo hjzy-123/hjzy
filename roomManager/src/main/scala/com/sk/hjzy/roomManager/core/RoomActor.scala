@@ -204,6 +204,7 @@ object RoomActor {
           Behaviors.stopped
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
+          log.info(s"处理ws消息$wsMsg")
           handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
@@ -301,7 +302,7 @@ object RoomActor {
         Behaviors.same
 
       case x =>
-        log.debug(s"${ctx.self.path} recv an unknown msg:$x")
+        log.info(s"${ctx.self.path} recv an unknown msg:$x")
         Behaviors.same
     }
   }
