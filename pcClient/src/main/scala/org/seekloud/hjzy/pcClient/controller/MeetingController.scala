@@ -1,11 +1,12 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.WsMsgRm
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{UserInfoListRsp, WsMsgRm}
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
+import org.seekloud.hjzy.pcClient.core.RmManager.LeaveRoom
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -22,6 +23,8 @@ class MeetingController(
   rmManager: ActorRef[RmManager.RmCommand]) {
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)
+
+  var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
@@ -88,6 +91,11 @@ class MeetingController(
 
     }
 
+    override def leaveRoom(): Unit = {
+      rmManager ! LeaveRoom
+
+    }
+
 
 
   })
@@ -102,8 +110,32 @@ class MeetingController(
     )
   }
 
+  def addPartUser(userId: Long, userName: String): Unit = {
+    if(partUserMap.keys.toList.length < 6){
+      val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
+      partUserMap = partUserMap.updated(num,userId)
+      meetingScene.nameLabelMap(num).setText(userName)
+    }
+  }
+
+  def reducePartUser(userId: Long): Unit = {
+    val userReduced = partUserMap.find(_._2 == userId)
+    if(userReduced.nonEmpty){
+      val num = userReduced.get._1
+      partUserMap = partUserMap - num
+      meetingScene.nameLabelMap(num).setText("")
+    }
+  }
+
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
+      case msg: UserInfoListRsp =>
+        val addPartListOpt = msg.UserInfoList
+        addPartListOpt.foreach{ addPartList =>
+          addPartList.foreach{ partUser =>
+            addPartUser(partUser.userId, partUser.userName)
+          }
+        }
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")

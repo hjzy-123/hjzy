@@ -55,6 +55,8 @@ object MeetingScene {
 
     def sendComment()
 
+    def leaveRoom()
+
 
   }
 
@@ -93,6 +95,9 @@ class MeetingScene(stage: Stage){
     * left Area
     *
     **/
+
+  val leaveBtn = new Button(s"离开")
+  leaveBtn.setOnAction(_ => this.listener.leaveRoom())
 
   val meetingInfoLabel = new Label(s"会议信息")
   meetingInfoLabel.setFont(Font.font(18))
@@ -154,8 +159,8 @@ class MeetingScene(stage: Stage){
       new HBox(5, meetingDesLabel, meetingDesValue)
     }
 
-    val meetingInfoBox = new VBox(15, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-    meetingInfoBox.setPadding(new Insets(20,20,20,20))
+    val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
+    meetingInfoBox.setPadding(new Insets(10,20,20,20))
     meetingInfoBox
   }
 
@@ -231,11 +236,47 @@ class MeetingScene(stage: Stage){
     val imageGc: GraphicsContext = imageCanvas.getGraphicsContext2D
     val imageCanvasBg = new Image("img/picture/background.jpg")
     imageGc.drawImage(imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+
     i -> (imageCanvas, imageGc)
   }.toMap
 
-  val box1 = new HBox(canvasMap(1)._1, canvasMap(2)._1, canvasMap(3)._1)
-  val box2 = new HBox(canvasMap(4)._1, canvasMap(5)._1, canvasMap(6)._1)
+  /*others' nameLabel*/
+  val nameLabelMap: Map[Int, Label] = List(1,2,3,4,5,6).map{ i =>
+    val nameLabel = new Label()
+    nameLabel.setPrefWidth(Constants.DefaultPlayer.width/3)
+    nameLabel.setAlignment(Pos.CENTER)
+    i -> nameLabel
+  }.toMap
+
+//  /*others' liveBar*/
+//  val liveBarMap: List[(Int, HBox)] = List(1,2,3,4,5,6).map{ i =>
+//    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
+//    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
+//    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
+//    val liveBar: HBox = canvasBar.liveBarBox
+//
+//    imageToggleBtn.setOnAction {
+//      _ =>
+//
+//    }
+//
+//    soundToggleBtn.setOnAction {
+//      _ =>
+//
+//    }
+//    i -> liveBar
+//  }
+
+  val box1 = new HBox(
+    new VBox(nameLabelMap(1),canvasMap(1)._1),
+    new VBox(nameLabelMap(2),canvasMap(2)._1),
+    new VBox(nameLabelMap(3),canvasMap(3)._1)
+  )
+  val box2 = new HBox(
+    new VBox(nameLabelMap(4),canvasMap(4)._1),
+    new VBox(nameLabelMap(5),canvasMap(5)._1),
+    new VBox(nameLabelMap(6),canvasMap(6)._1)
+  )
   val othersCanvasBox = new VBox(box1, box2)
   val canvasBox = new VBox(5, selfLivePane, othersCanvasBox)
 
