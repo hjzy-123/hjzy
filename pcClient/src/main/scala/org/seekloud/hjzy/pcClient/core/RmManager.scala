@@ -12,11 +12,12 @@ import akka.stream.typed.scaladsl.ActorSource
 import akka.util.{ByteString, ByteStringBuilder}
 import com.sk.hjzy.protocol.ptcl.CommonInfo.AudienceInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol._
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import org.seekloud.byteobject.MiddleBufferInJvm
 import org.seekloud.hjzy.pcClient.Boot
-import org.seekloud.hjzy.pcClient.common.Constants.HostStatus
-import org.seekloud.hjzy.pcClient.common.{AppSettings, Routes, StageContext}
+import org.seekloud.hjzy.pcClient.common.Constants.MeetingStatus
+import org.seekloud.hjzy.pcClient.common.{AppSettings, Ids, Routes, StageContext}
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.controller.{HomeController, MeetingController}
 import org.seekloud.hjzy.pcClient.core.stream.LiveManager
@@ -59,6 +60,12 @@ object RmManager {
   final case class GetSender(sender: ActorRef[WsMsgFront]) extends RmCommand
 
   final case object StopSelf extends RmCommand
+
+  final case object LeaveRoom extends RmCommand
+
+  final case object HeartBeat extends RmCommand
+
+  final case object PingTimeOut extends RmCommand
 
   /*参会者均可*/
   final case object PullerStopped extends RmCommand
@@ -163,7 +170,6 @@ object RmManager {
 //        idle(stageCtx, liveManager, mediaPlayer, homeController, Some(roomController))
 
 
-
       case Logout =>
         log.info(s"logout success.")
         this.roomInfo = None
@@ -187,8 +193,8 @@ object RmManager {
     liveManager: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     sender: Option[ActorRef[WsMsgFront]] = None,
-    hostStatus: Int = HostStatus.LIVE, //0-会议未开始，1-会议进行中
-    joinAudience: Option[AudienceInfo] = None
+    meetingStatus: Int = MeetingStatus.LIVE, //0-会议未开始，1-会议进行中
+    joinAudienceList: Option[List[AudienceInfo]] = None   //房间内直播中的除自己以外的人
   )(
     implicit stashBuffer: StashBuffer[RmCommand],
     timer: TimerScheduler[RmCommand]
@@ -219,6 +225,31 @@ object RmManager {
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
+      case LeaveRoom =>
+        log.info(s"host back to home.")
+        timer.cancel(HeartBeat)
+        timer.cancel(PingTimeOut)
+        sender.foreach(_ ! CompleteMsgClient)
+        if (meetingStatus == MeetingStatus.LIVE) {
+          joinAudienceList.foreach{ audList =>
+            audList.foreach{ audInfo =>
+              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
+//              mediaPlayer.stop(playId, meetingScene.resetBack)
+              mediaPlayer.stop(playId, () => ())
+            }
+          }
+          liveManager ! LiveManager.StopPull
+          liveManager ! LiveManager.StopPush
+        }
+        liveManager ! LiveManager.DeviceOff
+        Boot.addToPlatform {
+//          meetingScene.stopPackageLoss()
+          homeController.foreach(_.showScene())
+        }
+//        meetingScene.stopPackageLoss()
+        System.gc()
+        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
+
 
 
 
@@ -240,8 +271,8 @@ object RmManager {
     liveManager: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     sender: Option[ActorRef[WsMsgFront]] = None,
-    hostStatus: Int = HostStatus.LIVE, //0-会议未开始，1-会议进行中
-    joinAudience: Option[AudienceInfo] = None
+    meetingStatus: Int = MeetingStatus.LIVE, //0-会议未开始，1-会议进行中
+    joinAudienceList: Option[List[AudienceInfo]] = None
   )(
     implicit stashBuffer: StashBuffer[RmCommand],
     timer: TimerScheduler[RmCommand]
@@ -271,6 +302,46 @@ object RmManager {
         val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, meetingRoomInfo.map(_.roomId).get)
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
+
+
+
+      case LeaveRoom =>
+        log.debug(s"audience back to home.")
+        timer.cancel(HeartBeat)
+        timer.cancel(PingTimeOut)
+        sender.foreach(_ ! CompleteMsgClient)
+
+
+
+        if(meetingStatus == MeetingStatus.LIVE){
+          assert(userInfo.nonEmpty)
+          val userId = userInfo.get.userId
+          liveManager ! LiveManager.StopPull
+
+          joinAudienceList.foreach{ audList =>
+            audList.foreach{ audInfo =>
+              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
+//              mediaPlayer.stop(playId, meetingScene.resetBack)
+              mediaPlayer.stop(playId, () => ())
+            }
+          }
+
+          liveManager ! LiveManager.StopPush
+        }
+
+        liveManager ! LiveManager.DeviceOff
+
+        Boot.addToPlatform {
+//          meetingScene.stopPackageLoss()
+          homeController.foreach {
+            r =>
+              r.showScene()
+          }
+        }
+//        meetingScene.stopPackageLoss()
+//        meetingScene.finalize()
+        System.gc()
+        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
 

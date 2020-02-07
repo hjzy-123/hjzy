@@ -1,11 +1,12 @@
 package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
-import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.AuthProtocol.WsMsgRm
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.WsMsgRm
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
+import org.seekloud.hjzy.pcClient.core.RmManager.LeaveRoom
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -85,6 +86,11 @@ class MeetingController(
     }
 
     override def stopSelfSound(): Unit = {
+
+    }
+
+    override def leaveRoom(): Unit = {
+      rmManager ! LeaveRoom
 
     }
 

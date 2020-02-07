@@ -12,10 +12,11 @@ object Constants {
     val height = 864
   }
 
-  object HostStatus {
+  object MeetingStatus {
     val UNLIVE = 0
     val LIVE = 1
   }
+
 
   object DefaultPlayer {
     val width = 512

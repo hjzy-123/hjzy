@@ -55,6 +55,8 @@ object MeetingScene {
 
     def sendComment()
 
+    def leaveRoom()
+
 
   }
 
@@ -93,6 +95,9 @@ class MeetingScene(stage: Stage){
     * left Area
     *
     **/
+
+  val leaveBtn = new Button(s"离开")
+  leaveBtn.setOnAction(_ => this.listener.leaveRoom())
 
   val meetingInfoLabel = new Label(s"会议信息")
   meetingInfoLabel.setFont(Font.font(18))
@@ -154,8 +159,8 @@ class MeetingScene(stage: Stage){
       new HBox(5, meetingDesLabel, meetingDesValue)
     }
 
-    val meetingInfoBox = new VBox(15, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-    meetingInfoBox.setPadding(new Insets(20,20,20,20))
+    val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
+    meetingInfoBox.setPadding(new Insets(10,20,20,20))
     meetingInfoBox
   }
 
