@@ -78,6 +78,8 @@ object RmManager {
 
   final case class ModifyRoom(meetingName: Option[String], meetingDes: Option[String]) extends RmCommand
 
+  final case class ModifyRoomFailed(previousName: String, previousDes: String) extends RmCommand
+
   final case class changeHost(newHostId: Long) extends RmCommand
 
   final case class KickSbOut(userId: Long) extends RmCommand
@@ -252,7 +254,18 @@ object RmManager {
         Behaviors.same
 
       case ModifyRoom(meetingName, meetingDes) =>
-        //todo
+        if(meetingName.nonEmpty){
+          this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = meetingName.get))
+        }
+        if(meetingDes.nonEmpty){
+          this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = meetingDes.get))
+        }
+        sender.foreach(_ ! ModifyRoomInfo(meetingName, meetingDes))
+        Behaviors.same
+
+      case ModifyRoomFailed(previousName, previousDes) =>
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = previousName))
+        this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = previousDes))
         Behaviors.same
 
       case LeaveRoom =>

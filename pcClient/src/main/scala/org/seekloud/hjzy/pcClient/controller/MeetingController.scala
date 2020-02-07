@@ -168,6 +168,21 @@ class MeetingController(
           meetingScene.commentBoard.updateComment(msg)
         }
 
+      case msg: ModifyRoomRsp =>
+        log.info(s"rcv ModifyRoomRsp from rm: $msg")
+        if(msg.errCode != 0){
+          Boot.addToPlatform{
+            meetingScene.meetingNameField.setText(previousMeetingName)
+            meetingScene.meetingDesField.setText(previousMeetingName)
+            WarningDialog.initWarningDialog("修改房间信息失败！")
+          }
+          rmManager ! ModifyRoomFailed(previousMeetingName, previousMeetingDes)
+        }
+
+      case msg: UpdateRoomInfo2Client =>
+        log.info(s"rcv UpdateRoomInfo2Client from rm: $msg")
+
+
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")
