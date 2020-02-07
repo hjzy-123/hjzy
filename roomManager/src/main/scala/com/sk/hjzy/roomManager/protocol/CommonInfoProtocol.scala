@@ -2,6 +2,7 @@ package com.sk.hjzy.roomManager.protocol
 
 import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.PartUserInfo
 
 import scala.collection.mutable
 
@@ -11,7 +12,8 @@ object CommonInfoProtocol {
   final case class WholeRoomInfo(
                                 var roomInfo:RoomInfo,
                                 //var recordStartTime: Option[Long] = None,
-                                liveInfoMap: mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]] //"audience"/"anchor"->Map(userId->LiveInfo)
+                                liveInfoMap: mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]], //"audience"/"anchor"->Map(userId->LiveInfo)
+                                userInfoList:  Option[List[PartUserInfo]] = None
                                 )
 
 }

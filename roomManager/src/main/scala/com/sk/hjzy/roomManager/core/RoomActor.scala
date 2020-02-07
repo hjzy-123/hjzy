@@ -110,7 +110,6 @@ object RoomActor {
               ctx.self ! SwitchBehavior("init", init(roomId, subscribers))
             }
           }
-
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
@@ -122,13 +121,15 @@ object RoomActor {
           }else{
             replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:会议室不存在")
           }
-
           Behaviors.same
 
-        case GetUserInfoList(roomId) =>
-          if(userInfoListOpt.nonEmpty)
-            dispatch(subscribers)(UserInfoListRsp(Some(userInfoListOpt.get)))
-          else
+        case GetUserInfoList(roomId, userId) =>
+          if(userInfoListOpt.nonEmpty) {
+              dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get)))
+
+              val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
+              dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
+          } else
             dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
           Behaviors.same
 
@@ -146,7 +147,7 @@ object RoomActor {
               val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
 
               if(userInfoListOpt.nonEmpty)
-                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(userInfoListOpt.get ::: List(partUserInfo))))
+                ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(userInfoListOpt.get :+ partUserInfo)))
               else
                 ctx.self ! SwitchBehavior("init", init(roomId, subscribers,None, Some(List(partUserInfo))))
             }else{
@@ -171,7 +172,7 @@ object RoomActor {
                 case Right(rsp: GetLiveInfoRsp) =>
                   liveInfoMap.put(id, rsp.liveInfo)
                 case Left(error) =>
-                  log.debug(s"${ctx.self.path} 开始直播被拒绝，请求rtp server解析失败，error:$error")
+                  log.debug(s"${ctx.self.path} 开始会议被拒绝，请求rtp server解析失败，error:$error")
               }
           }
 
@@ -180,8 +181,6 @@ object RoomActor {
               liveInfo4mix = liveInfo4Mix
             case _ =>
           }
-
-
 
 
 //          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
@@ -196,8 +195,8 @@ object RoomActor {
   }
 
   private def idle(
-    wholeRoomInfo: WholeRoomInfo, //可以考虑是否将主路的liveinfo加在这里，单独存一份连线者的liveinfo列表
-    subscribe: mutable.HashMap[Long, ActorRef[UserActor.Command]], //需要区分订阅的用户的身份，注册用户还是临时用户(uid,是否是临时用户true:是)
+    wholeRoomInfo: WholeRoomInfo,
+    subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
     startTime: Long,
     totalView: Int,
   )
@@ -208,8 +207,18 @@ object RoomActor {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
 
+        case GetUserInfoList(roomId, userId) =>
+          if(wholeRoomInfo.userInfoList.nonEmpty) {
+            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(wholeRoomInfo.userInfoList.get)))
+
+            val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
+            dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(wholeRoomInfo.userInfoList.get.last))))
+          } else
+            dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
+          Behaviors.same
+
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(wholeRoomInfo, subscribe, startTime, totalView,  dispatch(subscribe), dispatchTo(subscribe))(ctx, userId, roomId, wsMsg)
+          handleWebSocketMsg(wholeRoomInfo, subscribers, startTime, totalView,  dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg $x")
