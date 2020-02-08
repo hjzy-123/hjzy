@@ -213,7 +213,7 @@ class MeetingController(
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
       case msg: HeatBeat =>
-        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
+//        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
       case HostCloseRoom =>
@@ -264,7 +264,6 @@ class MeetingController(
           Boot.addToPlatform{
             meetingScene.meetingHostValue.setText(msg.userName)
           }
-
         } else {
           rmManager ! TurnToHost
         }
@@ -275,6 +274,7 @@ class MeetingController(
           meetingScene.meetingHostValue.setText(msg.userName)
         }
         if(msg.userId == RmManager.userInfo.get.userId){
+          log.info("=============================")
           rmManager ! TurnToHost
         }
 
