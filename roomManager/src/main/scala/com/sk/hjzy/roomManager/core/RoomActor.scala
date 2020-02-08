@@ -164,35 +164,9 @@ object RoomActor {
 //          idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
           Behaviors.same
 
-
-//          //todo   获取liveInfo;   通知各个用户成功或失败的消息；  通知Processor开始录像，并返回StartTime
-//        case ActorProtocol.StartMeeting(userId, `roomId`, actor) =>
-//          log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
-//          val userIdList = subscribers.keys.toList
-//          val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
-//          var liveInfo4mix = LiveInfo("","")
-//
-//          userIdList.foreach{ id =>
-//              RtpClient.getLiveInfoFunc().map {
-//                case Right(rsp: GetLiveInfoRsp) =>
-//                  liveInfoMap.put(id, rsp.liveInfo)
-//                case Left(error) =>
-//                  log.debug(s"${ctx.self.path} 开始会议被拒绝，请求rtp server解析失败，error:$error")
-//              }
-//          }
-//
-//          RtpClient.getLiveInfoFunc().map {
-//            case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
-//              liveInfo4mix = liveInfo4Mix
-//            case _ =>
-//          }
-////          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
-//        Behaviors.same
-
         case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host leave room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
-
 
           if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId)){
             val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
@@ -326,8 +300,27 @@ object RoomActor {
         }
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
-
-      case StartMeetingReq(`userId`,token,clientType) =>
+      case StartMeetingReq(`userId`,token) =>
+        //          log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
+        //          val userIdList = subscribers.keys.toList
+        //          val liveInfoMap = mutable.HashMap[Long, LiveInfo]()
+        //          var liveInfo4mix = LiveInfo("","")
+        //
+        //          userIdList.foreach{ id =>
+        //              RtpClient.getLiveInfoFunc().map {
+        //                case Right(rsp: GetLiveInfoRsp) =>
+        //                  liveInfoMap.put(id, rsp.liveInfo)
+        //                case Left(error) =>
+        //                  log.debug(s"${ctx.self.path} 开始会议被拒绝，请求rtp server解析失败，error:$error")
+        //              }
+        //          }
+        //
+        //          RtpClient.getLiveInfoFunc().map {
+        //            case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
+        //              liveInfo4mix = liveInfo4Mix
+        //            case _ =>
+        //          }
+        ////          ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
         Behaviors.same
 
       case PingPackage =>
