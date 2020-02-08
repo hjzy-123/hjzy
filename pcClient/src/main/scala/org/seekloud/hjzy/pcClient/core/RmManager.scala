@@ -87,7 +87,7 @@ object RmManager {
   /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
 
-  final case object HostClosedRoom extends RmCommand
+//  final case object HostClosedRoom extends RmCommand
 
   final case class RoomModified(newName: String, newDes: String) extends RmCommand
 
@@ -379,7 +379,6 @@ object RmManager {
         timer.startSingleTimer(PingTimeOut, PingTimeOut, 30.seconds)
         Behaviors.same
 
-
       case PingTimeOut =>
         log.info(s"lose webSocket connection with roomManager!")
         //ws断了
@@ -424,39 +423,39 @@ object RmManager {
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
-      case HostClosedRoom =>
-        log.info("host close room.")
-        timer.cancel(HeartBeat)
-        timer.cancel(PingTimeOut)
-        sender.foreach(_ ! CompleteMsgClient)
-
-        if(meetingStatus == MeetingStatus.LIVE){
-          assert(userInfo.nonEmpty)
-          val userId = userInfo.get.userId
-          liveManager ! LiveManager.StopPull
-
-          joinAudienceList.foreach{ audList =>
-            audList.foreach{ audInfo =>
-              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
-              //              mediaPlayer.stop(playId, meetingScene.resetBack)
-              mediaPlayer.stop(playId, () => ())
-            }
-          }
-
-          liveManager ! LiveManager.StopPush
-        }
-
-        liveManager ! LiveManager.DeviceOff
-
-        Boot.addToPlatform {
-          //          meetingScene.stopPackageLoss()
-          homeController.foreach(_.showScene())
-          WarningDialog.initWarningDialog("主持人离开，会议结束，房间已关闭！")
-        }
-        //        meetingScene.stopPackageLoss()
-        //        meetingScene.finalize()
-        System.gc()
-        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
+//      case HostClosedRoom =>
+//        log.info("host close room.")
+//        timer.cancel(HeartBeat)
+//        timer.cancel(PingTimeOut)
+//        sender.foreach(_ ! CompleteMsgClient)
+//
+//        if(meetingStatus == MeetingStatus.LIVE){
+//          assert(userInfo.nonEmpty)
+//          val userId = userInfo.get.userId
+//          liveManager ! LiveManager.StopPull
+//
+//          joinAudienceList.foreach{ audList =>
+//            audList.foreach{ audInfo =>
+//              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
+//              //              mediaPlayer.stop(playId, meetingScene.resetBack)
+//              mediaPlayer.stop(playId, () => ())
+//            }
+//          }
+//
+//          liveManager ! LiveManager.StopPush
+//        }
+//
+//        liveManager ! LiveManager.DeviceOff
+//
+//        Boot.addToPlatform {
+//          //          meetingScene.stopPackageLoss()
+//          homeController.foreach(_.showScene())
+//          WarningDialog.initWarningDialog("主持人离开，会议结束，房间已关闭！")
+//        }
+//        //        meetingScene.stopPackageLoss()
+//        //        meetingScene.finalize()
+//        System.gc()
+//        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
       case SendComment(userId, roomId, comment) =>

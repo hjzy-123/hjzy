@@ -215,12 +215,12 @@ class MeetingController(
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
       case msg: HeatBeat =>
-//        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
+        log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
-      case HostCloseRoom =>
-        log.info(s"rcv HostCloseRoom from rm")
-        rmManager ! HostClosedRoom
+//      case HostCloseRoom =>
+//        log.info(s"rcv HostCloseRoom from rm")
+//        rmManager ! HostClosedRoom
 
       case msg: UserInfoListRsp =>
         log.info(s"rcv UserInfoListRsp from rm: $msg")
