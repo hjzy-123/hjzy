@@ -193,15 +193,20 @@ object RoomActor {
           log.info(s"${ctx.self.path} host close the room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
 
-          // todo
-          val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
-          dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))
-          dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
-          dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
-          userManager ! ActorProtocol.ChangeBehaviorToHost(newHost.userId, newHost.userId)
-          val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl),
-            wholeRoomInfo.liveInfoMap,wholeRoomInfo.userInfoList)
-          idle(roomId, subscribers,newRoomInfo, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+
+          if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId)){
+            val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
+            dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))
+            dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
+            dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
+            userManager ! ActorProtocol.ChangeBehaviorToHost(newHost.userId, newHost.userId)
+            val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl),
+              wholeRoomInfo.liveInfoMap,wholeRoomInfo.userInfoList)
+            idle(roomId, subscribers,newRoomInfo, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+          } else
+            idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = ""), wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList))
+        //todo  主持人离开房间时没有人时， 相当于结束会议，要删除房间信息，及对应的Actor
+
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
           handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
