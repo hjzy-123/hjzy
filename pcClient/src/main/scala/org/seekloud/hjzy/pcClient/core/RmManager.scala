@@ -237,7 +237,7 @@ object RmManager {
           }
         }
 
-        val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, roomInfo.map(_.roomId).get)
+        val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, roomInfo.map(_.roomId).get, meetingRoomInfo.get.userId)
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
@@ -363,7 +363,7 @@ object RmManager {
           }
         }
 
-        val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, meetingRoomInfo.map(_.roomId).get)
+        val url = Routes.linkRoomManager(userInfo.get.userId, userInfo.get.token, meetingRoomInfo.map(_.roomId).get, meetingRoomInfo.get.userId)
         buildWebSocket(ctx, url, meetingController, successFunc(), failureFunc())
         Behaviors.same
 
