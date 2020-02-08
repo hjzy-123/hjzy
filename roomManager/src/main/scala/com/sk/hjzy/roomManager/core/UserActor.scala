@@ -209,6 +209,8 @@ object UserActor {
 
         case ChangeBehaviorToParticipant(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到participant状态")
+          timer.cancelAll()
+          timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
           switchBehavior(ctx, "participant", participant(userId ,clientActor,roomId ,newHostId))
 
 
@@ -303,6 +305,8 @@ object UserActor {
 
         case ChangeBehaviorToHost(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到host状态")
+          timer.cancelAll()
+          timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
           switchBehavior(ctx, "host", host(userId ,clientActor,roomId ,newHostId))
 
         case unknown =>
