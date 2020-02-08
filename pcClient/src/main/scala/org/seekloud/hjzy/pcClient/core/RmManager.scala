@@ -278,7 +278,6 @@ object RmManager {
 
       case LeaveRoom =>
         log.info(s"host back to home.")
-        log.info(s"sender: $sender")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -311,6 +310,9 @@ object RmManager {
         log.info(s"rcv TurnToAudience from meetingScene: newHostId == $newHostId")
         sender.foreach(_ ! changeHost(newHostId))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
+        Boot.addToPlatform{
+          meetingScene.refreshScene()
+        }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
 
@@ -391,7 +393,6 @@ object RmManager {
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
-        log.debug(s"send CompleteMsgClient ######################################################")
 
         if(meetingStatus == MeetingStatus.LIVE){
           assert(userInfo.nonEmpty)
@@ -472,6 +473,9 @@ object RmManager {
       case TurnToHost =>
         log.info(s"rcv TurnToHost from meetingScene")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = userInfo.get.userId))
+        Boot.addToPlatform{
+          meetingScene.refreshScene()
+        }
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
 

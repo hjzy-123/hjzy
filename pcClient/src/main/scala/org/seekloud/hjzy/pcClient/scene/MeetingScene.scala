@@ -213,6 +213,8 @@ class MeetingScene(stage: Stage){
   liveToggleButton.getStyleClass.add("liveBtn")
   liveToggleButton.setDisable(true)
   Tooltip.install(liveToggleButton, new Tooltip("设备准备中"))
+  val meetingStateLabel = new Label(s"会议未开始")
+  meetingStateLabel.setFont(Font.font(15))
 
   def changeToggleAction(): Unit = {
     liveToggleButton.setDisable(false)
@@ -220,10 +222,10 @@ class MeetingScene(stage: Stage){
       _ =>
         if (liveToggleButton.isSelected) {
           listener.startLive()
-          Tooltip.install(liveToggleButton, new Tooltip("点击停止直播"))
+          Tooltip.install(liveToggleButton, new Tooltip("点击停止会议"))
         } else {
           listener.stopLive()
-          Tooltip.install(liveToggleButton, new Tooltip("点击开始直播"))
+          Tooltip.install(liveToggleButton, new Tooltip("点击开始会议"))
         }
 
     }
@@ -319,14 +321,14 @@ class MeetingScene(stage: Stage){
 
   def genMiddleBox(): VBox = {
     val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-    val middleBox = if(isHost){
-      val vBox = new VBox(10, liveToggleButton, canvasBox)
-      vBox
+    val topBox = if(isHost){
+      new HBox(5,liveToggleButton, meetingStateLabel)
     } else {
-      val vBox = new VBox(10, canvasBox)
-      vBox.setPadding(new Insets(20,0,0,0))
-      vBox
+      new HBox(meetingStateLabel)
     }
+    topBox.setAlignment(Pos.CENTER)
+
+    val middleBox = new VBox(10, topBox, canvasBox)
     middleBox.setAlignment(Pos.TOP_CENTER)
     middleBox.setPadding(new Insets(20,0,0,0))
     middleBox

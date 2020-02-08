@@ -53,7 +53,7 @@ class MeetingController(
     override def changeHost(): Unit = {
       if(partInfoList.nonEmpty){
         val newHostId = changeHostDialog()
-        newHostId.foreach(rmManager ! ChangeHost(_))
+        newHostId.foreach(rmManager ! TurnToAudience(_))
       } else {
         Boot.addToPlatform{
           WarningDialog.initWarningDialog("当前房间无其他人！")
