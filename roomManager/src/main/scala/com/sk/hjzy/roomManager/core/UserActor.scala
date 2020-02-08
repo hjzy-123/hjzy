@@ -169,9 +169,6 @@ object UserActor {
                       ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
                     }else{
                       req match {
-                        case StartMeetingReq(`userId`,token,clientType) =>
-                          roomManager ! ActorProtocol.StartMeeting(userId,roomId,ctx.self)
-                          ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                         case x =>
                           log.info(s"收到webSocket消息$req")

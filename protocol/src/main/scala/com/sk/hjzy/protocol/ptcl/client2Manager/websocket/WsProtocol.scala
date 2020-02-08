@@ -50,18 +50,13 @@ object WsProtocol {
 
   case object NoAuthor extends WsMsgRm
 
+
   //todo 开始会议
   case class StartMeetingReq(
                               userId: Long,
-                              token: String,
-                              clientType: Int
+                              token: String
                             ) extends WsMsgHost
 
-  case class StartMeetingRsp(
-                           liveInfo: Option[LiveInfo] = None,
-                           errCode: Int = 0,
-                           msg: String = "ok"
-                         ) extends WsMsgRm2Host
 
 //  val StartMeetingRefused = StartMeetingRsp(errCode = 200001, msg = "start live refused.")
 //  val StartMeetingRefused4LiveInfoError = StartMeetingRsp(errCode = 200001, msg = "start live refused because of getting live info from distributor error.")
@@ -145,6 +140,17 @@ object WsProtocol {
                          color:String = "#FFFFFF",
                          extension: Option[String] = None
                        ) extends WsMsgRm
+
+  case class PushLiveInfo(userId:Long, liveInfo:Option[LiveInfo] = None)
+
+  case class PullLiveList(LiveIdList: List[(Long, Option[String])])
+
+  case class StartMeetingRsp(
+                              pushLiveInfo: PushLiveInfo,
+                              pullLiveList: PullLiveList,
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                            ) extends WsMsgRm
 
 
 }

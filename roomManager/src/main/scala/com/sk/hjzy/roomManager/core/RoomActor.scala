@@ -326,6 +326,10 @@ object RoomActor {
         }
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
+
+      case StartMeetingReq(`userId`,token,clientType) =>
+        Behaviors.same
+
       case PingPackage =>
         Behaviors.same
 
