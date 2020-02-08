@@ -313,7 +313,7 @@ object RmManager {
         Boot.addToPlatform{
           meetingScene.refreshScene(false)
         }
-        switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
+        switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
 
       case StopSelf =>
@@ -475,7 +475,7 @@ object RmManager {
         Boot.addToPlatform{
           meetingScene.refreshScene(true)
         }
-        switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
+        switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
 
       case StopSelf =>
