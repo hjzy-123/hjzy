@@ -59,7 +59,6 @@ class MeetingController(
           WarningDialog.initWarningDialog("当前房间无其他人！")
         }
       }
-
     }
 
     override def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None): Unit = {
@@ -114,6 +113,9 @@ class MeetingController(
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom
+//      Boot.addToPlatform{
+//        meetingScene.refreshScene(false)
+//      }
 
     }
 

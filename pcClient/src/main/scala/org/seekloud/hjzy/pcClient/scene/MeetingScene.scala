@@ -75,10 +75,10 @@ class MeetingScene(stage: Stage){
   )
 
   def getScene(isHost: Boolean): Scene = {
-    addToMeetingHostBox(meetingHostBox, isHost)
-    addToMeetingNameBox(meetingNameBox, isHost)
-    addToMeetingDesBox(meetingDesBox, isHost)
-    addToSpeakStateBox(speakStateBox, isHost)
+    addToMeetingHostBox(isHost)
+    addToMeetingNameBox(isHost)
+    addToMeetingDesBox(isHost)
+    addToSpeakStateBox(isHost)
     this.scene
   }
 
@@ -124,8 +124,8 @@ class MeetingScene(stage: Stage){
 
   val meetingHostBox = new HBox(5)
   meetingHostBox.setAlignment(Pos.CENTER_LEFT)
-  def addToMeetingHostBox(meetingHostBox: HBox, isHost: Boolean): Boolean = {
-    meetingHostBox.getChildren.removeAll()
+  def addToMeetingHostBox(isHost: Boolean): Boolean = {
+    meetingHostBox.getChildren.clear()
     if(isHost){
       meetingHostBox.getChildren.addAll(meetingHostLabel, meetingHostValue, changeHostBtn)
     } else {
@@ -146,8 +146,8 @@ class MeetingScene(stage: Stage){
 
   val meetingNameBox = new VBox(10)
   meetingNameBox.setAlignment(Pos.CENTER_LEFT)
-  def addToMeetingNameBox(meetingNameBox: VBox, isHost: Boolean): Boolean = {
-    meetingNameBox.getChildren.removeAll()
+  def addToMeetingNameBox(isHost: Boolean): Boolean = {
+    meetingNameBox.getChildren.clear()
     if(isHost){
       meetingNameBox.getChildren.addAll(meetingNameLabel, editMeetingNameBox)
     } else {
@@ -170,8 +170,8 @@ class MeetingScene(stage: Stage){
 
   val meetingDesBox = new VBox(10)
   meetingDesBox.setAlignment(Pos.CENTER_LEFT)
-  def addToMeetingDesBox(meetingDesBox: VBox, isHost: Boolean): Boolean = {
-    meetingDesBox.getChildren.removeAll()
+  def addToMeetingDesBox(isHost: Boolean): Boolean = {
+    meetingDesBox.getChildren.clear()
     if(isHost){
       meetingDesBox.getChildren.addAll(meetingDesLabel, editMeetingDesBox)
     } else {
@@ -230,8 +230,8 @@ class MeetingScene(stage: Stage){
 
   val speakStateBox = new HBox(5)
   speakStateBox.setAlignment(Pos.CENTER_LEFT)
-  def addToSpeakStateBox(speakStateBox: HBox, isHost: Boolean): Boolean = {
-    speakStateBox.getChildren.removeAll()
+  def addToSpeakStateBox(isHost: Boolean): Boolean = {
+    speakStateBox.getChildren.clear()
     if(isHost){
       speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, appointSpeakBtn)
     } else {
@@ -276,8 +276,8 @@ class MeetingScene(stage: Stage){
 
   val controlBox = new HBox(5)
   controlBox.setAlignment(Pos.CENTER)
-  def addToControlBox(controlBox: HBox, isHost: Boolean): Boolean = {
-    controlBox.getChildren.removeAll()
+  def addToControlBox(isHost: Boolean): Boolean = {
+    controlBox.getChildren.clear()
     if(isHost){
       controlBox.getChildren.addAll(liveToggleButton, meetingStateLabel)
     } else {
@@ -474,11 +474,11 @@ class MeetingScene(stage: Stage){
     **/
   def refreshScene(isHost: Boolean): Unit = {
     log.info(s" ==================== refreshScene, isHost: $isHost ================================")
-    addToMeetingHostBox(meetingHostBox, isHost)
-    addToMeetingNameBox(meetingNameBox, isHost)
-    addToMeetingDesBox(meetingDesBox, isHost)
-    addToSpeakStateBox(speakStateBox, isHost)
-    addToControlBox(controlBox, isHost)
+    addToMeetingHostBox(isHost)
+    addToMeetingNameBox(isHost)
+    addToMeetingDesBox(isHost)
+    addToSpeakStateBox(isHost)
+    addToControlBox(isHost)
   }
 
 
