@@ -209,7 +209,8 @@ object UserActor {
 
         case ChangeBehaviorToParticipant(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到participant状态")
-          participant(userId ,clientActor,roomId ,newHostId)
+          switchBehavior(ctx, "participant", participant(userId ,clientActor,roomId ,newHostId))
+
 
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:${msg} in anchor state...")
@@ -302,7 +303,7 @@ object UserActor {
 
         case ChangeBehaviorToHost(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到host状态")
-          host(userId ,clientActor,roomId ,newHostId)
+          switchBehavior(ctx, "host", host(userId ,clientActor,roomId ,newHostId))
 
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$msg in audience state...")
