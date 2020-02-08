@@ -256,6 +256,7 @@ class MeetingScene(stage: Stage){
 //  }
 
   val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)
+  leftArea.setPrefWidth(275)
 
 
 
