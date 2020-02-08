@@ -436,6 +436,17 @@ class MeetingScene(stage: Stage){
   val writeField = new TextField()
   writeField.setPrefWidth(200)
   writeField.setPromptText("输入你的留言~")
+  writeField.setOnKeyPressed { e =>
+    if (e.getCode == javafx.scene.input.KeyCode.ENTER) {
+      if(writeField.getText != "" && writeField.getText != null){
+        listener.sendComment(writeField.getText)
+        writeField.clear()
+      } else {
+        WarningDialog.initWarningDialog("请输入评论！")
+      }
+
+    }
+  }
 
   val sendBtn = new Button(s"发送")
   sendBtn.getStyleClass.add("confirmBtn")
