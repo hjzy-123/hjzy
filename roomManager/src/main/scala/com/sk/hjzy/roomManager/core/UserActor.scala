@@ -174,6 +174,7 @@ object UserActor {
                           ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                         case x =>
+                          log.info(s"收到webSocket消息$req")
                           roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,x)
                           ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
 
@@ -209,6 +210,8 @@ object UserActor {
 
         case ChangeBehaviorToParticipant(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到participant状态")
+          timer.cancelAll()
+          timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
           switchBehavior(ctx, "participant", participant(userId ,clientActor,roomId ,newHostId))
 
 
@@ -303,6 +306,8 @@ object UserActor {
 
         case ChangeBehaviorToHost(userId,newHostId) =>
           log.info(s"${ctx.self.path} 切换到host状态")
+          timer.cancelAll()
+          timer.startPeriodicTimer("HeartBeatKey_" + userId, SendHeartBeat, 10.seconds)
           switchBehavior(ctx, "host", host(userId ,clientActor,roomId ,newHostId))
 
         case unknown =>
