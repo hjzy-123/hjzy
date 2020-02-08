@@ -218,10 +218,6 @@ class MeetingController(
         log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
-//      case HostCloseRoom =>
-//        log.info(s"rcv HostCloseRoom from rm")
-//        rmManager ! HostClosedRoom
-
       case msg: UserInfoListRsp =>
         log.info(s"rcv UserInfoListRsp from rm: $msg")
         val addPartListOpt = msg.UserInfoList
