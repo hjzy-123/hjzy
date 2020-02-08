@@ -13,6 +13,7 @@ import com.sk.hjzy.roomManager.Boot.{executor, roomManager}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{ChangeBehaviorToHost, ChangeBehaviorToParticipant}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -206,6 +207,10 @@ object UserActor {
           log.debug(s"${ctx.self.path} 切换到init状态")
           init(userId,hostId )
 
+        case ChangeBehaviorToParticipant(userId,newHostId) =>
+          log.info(s"${ctx.self.path} 切换到participant状态")
+          participant(userId ,clientActor,roomId ,newHostId)
+
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:${msg} in anchor state...")
           stashBuffer.stash(unknown)
@@ -285,7 +290,6 @@ object UserActor {
                   }
                   switchBehavior(ctx,"busy",busy(),BusyTime,TimeOut("busy"))
 
-
               case None =>
                 log.info(s"${ctx.self.path} there is no web socket msg in anchor state")
                 Behaviors.same
@@ -295,6 +299,10 @@ object UserActor {
         case ChangeBehaviorToInit =>
           log.debug(s"${ctx.self.path} 切换到init状态")
           init(userId,hostId)
+
+        case ChangeBehaviorToHost(userId,newHostId) =>
+          log.info(s"${ctx.self.path} 切换到host状态")
+          host(userId ,clientActor,roomId ,newHostId)
 
         case unknown =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$msg in audience state...")

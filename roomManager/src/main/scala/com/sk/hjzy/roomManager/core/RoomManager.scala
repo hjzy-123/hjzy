@@ -85,7 +85,7 @@ object RoomManager {
           Behaviors.same
 
         case r@ActorProtocol.HostLeaveRoom(roomId)=>
-          //主持人webSocket断开
+          //主持人webSocket断开，离开房间
           getRoomActorOpt(roomId, ctx) match{
             case Some(roomActor) => roomActor ! r
             case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")
