@@ -190,7 +190,7 @@ object RoomActor {
 //        Behaviors.same
 
         case ActorProtocol.HostLeaveRoom(roomId) =>
-          log.info(s"${ctx.self.path} host close the room")
+          log.info(s"${ctx.self.path} host leave room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
 
 
@@ -283,6 +283,7 @@ object RoomActor {
 
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
+        log.info(s"收到留言$comment")
         UserInfoDao.searchById(userId).onComplete {
           case Success(value) =>
             value match {
