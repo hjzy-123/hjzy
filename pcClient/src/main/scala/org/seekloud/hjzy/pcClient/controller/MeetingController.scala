@@ -121,10 +121,10 @@ class MeetingController(
 
   })
 
-  def showScene(): Unit = {
+  def showScene(isHost: Boolean): Unit = {
     Boot.addToPlatform(
       if (RmManager.userInfo.nonEmpty && RmManager.roomInfo.nonEmpty) {
-        context.switchScene(meetingScene.getScene, title = s"会议室-${RmManager.roomInfo.get.roomName}")
+        context.switchScene(meetingScene.getScene(isHost), title = s"会议室-${RmManager.roomInfo.get.roomName}")
       } else {
         WarningDialog.initWarningDialog(s"无房间信息！")
       }

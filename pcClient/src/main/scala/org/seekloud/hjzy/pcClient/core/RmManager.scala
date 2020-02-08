@@ -153,7 +153,7 @@ object RmManager {
         ctx.self ! HostWsEstablish
         Boot.addToPlatform{
           if (homeController != null) homeController.get.removeLoading()
-          meetingController.showScene()
+          meetingController.showScene(true)
         }
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
@@ -169,7 +169,7 @@ object RmManager {
         ctx.self ! AudienceWsEstablish
         Boot.addToPlatform{
           if (homeController != null) homeController.get.removeLoading()
-          meetingController.showScene()
+          meetingController.showScene(false)
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
@@ -311,7 +311,7 @@ object RmManager {
         sender.foreach(_ ! changeHost(newHostId))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
-          meetingScene.refreshScene()
+          meetingScene.refreshScene(false)
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 
@@ -474,7 +474,7 @@ object RmManager {
         log.info(s"rcv TurnToHost from meetingScene")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = userInfo.get.userId))
         Boot.addToPlatform{
-          meetingScene.refreshScene()
+          meetingScene.refreshScene(true)
         }
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
 

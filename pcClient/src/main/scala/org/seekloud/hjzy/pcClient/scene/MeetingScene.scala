@@ -74,7 +74,11 @@ class MeetingScene(stage: Stage){
     this.getClass.getClassLoader.getResource("css/meetingSceneCss.css").toExternalForm
   )
 
-  def getScene: Scene = {
+  def getScene(isHost: Boolean): Scene = {
+    addToMeetingHostBox(meetingHostBox, isHost)
+    addToMeetingNameBox(meetingNameBox, isHost)
+    addToMeetingDesBox(meetingDesBox, isHost)
+    addToSpeakStateBox(speakStateBox, isHost)
     this.scene
   }
 
@@ -118,14 +122,38 @@ class MeetingScene(stage: Stage){
   changeHostBtn.setOnAction(_ => listener.changeHost())
   changeHostBtn.getStyleClass.add("confirmBtn")
 
+  val meetingHostBox = new HBox(5)
+  meetingHostBox.setAlignment(Pos.CENTER_LEFT)
+  def addToMeetingHostBox(meetingHostBox: HBox, isHost: Boolean): Boolean = {
+    meetingHostBox.getChildren.removeAll()
+    if(isHost){
+      meetingHostBox.getChildren.addAll(meetingHostLabel, meetingHostValue, changeHostBtn)
+    } else {
+      meetingHostBox.getChildren.addAll(meetingHostLabel, meetingHostValue)
+    }
+  }
+
   val meetingNameLabel = new Label(s"会议名称:")
-  val meetingNameField = new TextField(s"${RmManager.meetingRoomInfo.get.roomName}")
-  meetingNameField.setPrefWidth(160)
   val meetingNameValue = new Label(s"${RmManager.meetingRoomInfo.get.roomName}")
   meetingNameValue.setMaxWidth(100)
+  val meetingNameField = new TextField(s"${RmManager.meetingRoomInfo.get.roomName}")
+  meetingNameField.setPrefWidth(160)
   val editMeetingNameBtn = new Button(s"确认")
   editMeetingNameBtn.getStyleClass.add("confirmBtn")
   editMeetingNameBtn.setOnAction(_ => listener.modifyRoom(roomName = Some(meetingNameField.getText)))
+  val editMeetingNameBox = new HBox(5, meetingNameField, editMeetingNameBtn)
+  editMeetingNameBox.setAlignment(Pos.BOTTOM_LEFT)
+
+  val meetingNameBox = new VBox(10)
+  meetingNameBox.setAlignment(Pos.CENTER_LEFT)
+  def addToMeetingNameBox(meetingNameBox: VBox, isHost: Boolean): Boolean = {
+    meetingNameBox.getChildren.removeAll()
+    if(isHost){
+      meetingNameBox.getChildren.addAll(meetingNameLabel, editMeetingNameBox)
+    } else {
+      meetingNameBox.getChildren.addAll(meetingNameLabel, meetingNameValue)
+    }
+  }
 
   val meetingDesLabel = new Label(s"会议描述:")
   val meetingDesField  = new TextArea(s"${RmManager.meetingRoomInfo.get.roomDes}")
@@ -137,42 +165,58 @@ class MeetingScene(stage: Stage){
   val editMeetingDesBtn = new Button(s"确认")
   editMeetingDesBtn.getStyleClass.add("confirmBtn")
   editMeetingDesBtn.setOnAction(_ => listener.modifyRoom(roomDes = Some(meetingDesField.getText)))
+  val editMeetingDesBox = new HBox(5, meetingDesField, editMeetingDesBtn)
+  editMeetingDesBox.setAlignment(Pos.BOTTOM_LEFT)
 
-
-  def genMeetingInfoBox(): VBox = {
-    val isHost: Boolean =
-      if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-
-    val meetingHostBox = if(isHost){
-      new HBox(5, meetingHostLabel, meetingHostValue, changeHostBtn)
+  val meetingDesBox = new VBox(10)
+  meetingDesBox.setAlignment(Pos.CENTER_LEFT)
+  def addToMeetingDesBox(meetingDesBox: VBox, isHost: Boolean): Boolean = {
+    meetingDesBox.getChildren.removeAll()
+    if(isHost){
+      meetingDesBox.getChildren.addAll(meetingDesLabel, editMeetingDesBox)
     } else {
-      new HBox(5, meetingHostLabel, meetingHostValue)
+      meetingDesBox.getChildren.addAll(meetingDesLabel, meetingDesValue)
     }
-    meetingHostBox.setAlignment(Pos.CENTER_LEFT)
-
-
-    val meetingNameBox = if(isHost){
-      val vBox = new VBox(5, meetingNameLabel, meetingNameField)
-      val hBox = new HBox(5, vBox, editMeetingNameBtn)
-      hBox.setAlignment(Pos.BOTTOM_LEFT)
-      hBox
-    } else {
-      new HBox(5, meetingNameLabel, meetingNameValue)
-    }
-
-    val meetingDesBox = if(isHost){
-      val vBox = new VBox(5, meetingDesLabel, meetingDesField)
-      val hBox = new HBox(5, vBox, editMeetingDesBtn)
-      hBox.setAlignment(Pos.BOTTOM_LEFT)
-      hBox
-    } else {
-      new HBox(5, meetingDesLabel, meetingDesValue)
-    }
-
-    val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-    meetingInfoBox.setPadding(new Insets(10,30,20,30))
-    meetingInfoBox
   }
+
+  val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
+  meetingInfoBox.setPadding(new Insets(10,30,20,30))
+
+
+//  def genMeetingInfoBox(): VBox = {
+//    val isHost: Boolean =
+//      if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
+//
+//    val meetingHostBox = if(isHost){
+//      new HBox(5, meetingHostLabel, meetingHostValue, changeHostBtn)
+//    } else {
+//      new HBox(5, meetingHostLabel, meetingHostValue)
+//    }
+//    meetingHostBox.setAlignment(Pos.CENTER_LEFT)
+//
+//
+//    val meetingNameBox = if(isHost){
+//      val vBox = new VBox(5, meetingNameLabel, meetingNameField)
+//      val hBox = new HBox(5, vBox, editMeetingNameBtn)
+//      hBox.setAlignment(Pos.BOTTOM_LEFT)
+//      hBox
+//    } else {
+//      new HBox(5, meetingNameLabel, meetingNameValue)
+//    }
+//
+//    val meetingDesBox = if(isHost){
+//      val vBox = new VBox(5, meetingDesLabel, meetingDesField)
+//      val hBox = new HBox(5, vBox, editMeetingDesBtn)
+//      hBox.setAlignment(Pos.BOTTOM_LEFT)
+//      hBox
+//    } else {
+//      new HBox(5, meetingDesLabel, meetingDesValue)
+//    }
+//
+//    val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
+//    meetingInfoBox.setPadding(new Insets(10,30,20,30))
+//    meetingInfoBox
+//  }
 
   /*speakInfo*/
   val speakInfoLabel = new Label(s"发言信息")
@@ -184,20 +228,34 @@ class MeetingScene(stage: Stage){
   val appointSpeakBtn = new Button(s"指派")
   appointSpeakBtn.getStyleClass.add("confirmBtn")
 
-
-  def genSpeakInfoBox(): VBox = {
-    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-    val stateBox = if(isHost){
-      new HBox(5, speakStateLabel, speakStateValue, appointSpeakBtn)
+  val speakStateBox = new HBox(5)
+  speakStateBox.setAlignment(Pos.CENTER_LEFT)
+  def addToSpeakStateBox(speakStateBox: HBox, isHost: Boolean) = {
+    speakStateBox.getChildren.removeAll()
+    if(isHost){
+      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, appointSpeakBtn)
     } else {
-      new HBox(5, speakStateLabel, speakStateValue)
+      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue)
     }
-    stateBox.setAlignment(Pos.CENTER_LEFT)
-    val speakInfoBox = new VBox(15, speakInfoLabel, stateBox)
-    speakInfoBox.setPadding(new Insets(10,30,20,30))
-    speakInfoBox
-
   }
+  val speakInfoBox = new VBox(15, speakInfoLabel, speakStateBox)
+  speakInfoBox.setPadding(new Insets(10,30,20,30))
+
+//  def genSpeakInfoBox(): VBox = {
+//    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
+//    val stateBox = if(isHost){
+//      new HBox(5, speakStateLabel, speakStateValue, appointSpeakBtn)
+//    } else {
+//      new HBox(5, speakStateLabel, speakStateValue)
+//    }
+//    stateBox.setAlignment(Pos.CENTER_LEFT)
+//    val speakInfoBox = new VBox(15, speakInfoLabel, stateBox)
+//    speakInfoBox.setPadding(new Insets(10,30,20,30))
+//    speakInfoBox
+//
+//  }
+
+  val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)
 
 
 
@@ -215,6 +273,18 @@ class MeetingScene(stage: Stage){
   Tooltip.install(liveToggleButton, new Tooltip("设备准备中"))
   val meetingStateLabel = new Label(s"会议未开始")
   meetingStateLabel.setFont(Font.font(15))
+
+  val controlBox = new HBox(5)
+  controlBox.setAlignment(Pos.CENTER)
+  def addToControlBox(controlBox: HBox, isHost: Boolean): Boolean = {
+    controlBox.getChildren.removeAll()
+    if(isHost){
+      controlBox.getChildren.addAll(liveToggleButton, meetingStateLabel)
+    } else {
+      controlBox.getChildren.addAll(meetingStateLabel)
+
+    }
+  }
 
   def changeToggleAction(): Unit = {
     liveToggleButton.setDisable(false)
@@ -321,20 +391,24 @@ class MeetingScene(stage: Stage){
   val othersCanvasBox = new VBox(box1, box2)
   val canvasBox = new VBox(5, selfLivePane, othersCanvasBox)
 
-  def genMiddleBox(): VBox = {
-    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-    val topBox = if(isHost){
-      new HBox(5,liveToggleButton, meetingStateLabel)
-    } else {
-      new HBox(meetingStateLabel)
-    }
-    topBox.setAlignment(Pos.CENTER)
+  val middleBox = new VBox(10, controlBox, canvasBox)
+  middleBox.setAlignment(Pos.TOP_CENTER)
+  middleBox.setPadding(new Insets(20,0,0,0))
 
-    val middleBox = new VBox(10, topBox, canvasBox)
-    middleBox.setAlignment(Pos.TOP_CENTER)
-    middleBox.setPadding(new Insets(20,0,0,0))
-    middleBox
-  }
+//  def genMiddleBox(): VBox = {
+//    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
+//    val topBox = if(isHost){
+//      new HBox(5,liveToggleButton, meetingStateLabel)
+//    } else {
+//      new HBox(meetingStateLabel)
+//    }
+//    topBox.setAlignment(Pos.CENTER)
+//
+//    val middleBox = new VBox(10, topBox, canvasBox)
+//    middleBox.setAlignment(Pos.TOP_CENTER)
+//    middleBox.setPadding(new Insets(20,0,0,0))
+//    middleBox
+//  }
 
 
 
@@ -382,35 +456,14 @@ class MeetingScene(stage: Stage){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /**
     * Layout
     *
     **/
   val borderPane = new BorderPane()
-  var meetingInfoBox = genMeetingInfoBox()
-  var speakInfoBox = genSpeakInfoBox()
-  var middleBox = genMiddleBox()
-  val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)
   borderPane.setLeft(leftArea)
   borderPane.setCenter(middleBox)
   borderPane.setRight(rightArea)
-
-
-
 
   group.getChildren.addAll(background, borderPane)
 
@@ -419,15 +472,12 @@ class MeetingScene(stage: Stage){
     * refresh Func
     *
     **/
-  def refreshScene(): Unit = {
-    meetingInfoBox.getChildren.removeAll()
-    meetingInfoBox = genMeetingInfoBox()
-
-    speakInfoBox.getChildren.removeAll()
-    speakInfoBox = genSpeakInfoBox()
-
-    middleBox.getChildren.removeAll()
-    middleBox = genMiddleBox()
+  def refreshScene(isHost: Boolean): Unit = {
+    addToMeetingHostBox(meetingHostBox, isHost)
+    addToMeetingNameBox(meetingNameBox, isHost)
+    addToMeetingDesBox(meetingDesBox, isHost)
+    addToSpeakStateBox(speakStateBox, isHost)
+    addToControlBox(controlBox, isHost)
 
   }
 
