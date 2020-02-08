@@ -271,12 +271,11 @@ class MeetingController(
 
       case msg: ChangeHost2Client =>
         log.info(s"rcv ChangeHost2Client from rm: $msg")
+        Boot.addToPlatform{
+          meetingScene.meetingHostValue.setText(msg.userName)
+        }
         if(msg.userId == RmManager.userInfo.get.userId){
           rmManager ! TurnToHost
-        } else {
-          Boot.addToPlatform{
-            meetingScene.meetingHostValue.setText(msg.userName)
-          }
         }
 
 
