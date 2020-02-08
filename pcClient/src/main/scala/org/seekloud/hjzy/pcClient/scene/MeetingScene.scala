@@ -222,9 +222,11 @@ class MeetingScene(stage: Stage){
       _ =>
         if (liveToggleButton.isSelected) {
           listener.startLive()
+          meetingStateLabel.setText("会议进行中")
           Tooltip.install(liveToggleButton, new Tooltip("点击停止会议"))
         } else {
           listener.stopLive()
+          meetingStateLabel.setText("会议未开始")
           Tooltip.install(liveToggleButton, new Tooltip("点击开始会议"))
         }
 
