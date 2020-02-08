@@ -37,6 +37,6 @@ object Routes {
 
 
   val wsBase: String = rmWsProtocol + "://" + rmHostName + ":" + rmPort + "/" + rmUrl + "/User"
-  def linkRoomManager(userId: Long, token: String, roomId: Long): String = wsBase + "/setupWebSocket" + s"?userId=$userId&token=$token&roomId=$roomId"
+  def linkRoomManager(userId: Long, token: String, roomId: Long, hostId: Long): String = wsBase + "/setupWebSocket" + s"?userId=$userId&token=$token&roomId=$roomId&hostId=$hostId"
 
 }

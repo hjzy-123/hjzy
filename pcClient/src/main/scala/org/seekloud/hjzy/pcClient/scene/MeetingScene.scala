@@ -115,6 +115,7 @@ class MeetingScene(stage: Stage){
   val meetingHostValue = new Label(s"${RmManager.meetingRoomInfo.get.userName}")
   meetingHostValue.setPrefWidth(95)
   val changeHostBtn = new Button(s"变更")
+  changeHostBtn.setOnAction(_ => listener.changeHost())
   changeHostBtn.getStyleClass.add("confirmBtn")
 
   val meetingNameLabel = new Label(s"会议名称:")

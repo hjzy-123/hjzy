@@ -2,6 +2,13 @@ package org.seekloud.hjzy.pcClient.controller
 
 import akka.actor.typed.ActorRef
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
+import javafx.geometry.{Insets, Pos}
+import javafx.scene.Group
+import javafx.scene.control.ButtonBar.ButtonData
+import javafx.scene.control._
+import javafx.scene.image.ImageView
+import javafx.scene.layout.{GridPane, HBox, VBox}
+import javafx.scene.text.{Font, Text}
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
@@ -44,6 +51,14 @@ class MeetingController(
     }
 
     override def changeHost(): Unit = {
+      if(partInfoList.nonEmpty){
+        val newHostId = changeHostDialog()
+        newHostId.foreach(rmManager ! ChangeHost(_))
+      } else {
+        Boot.addToPlatform{
+          WarningDialog.initWarningDialog("当前房间无其他人！")
+        }
+      }
 
     }
 
@@ -141,6 +156,60 @@ class MeetingController(
     }
   }
 
+  //变更主持人弹窗
+  def changeHostDialog(): Option[Long] = {
+    val dialog = new Dialog[String]()
+    dialog.setTitle("变更主持人")
+
+    val changeHostLabel = new Label(s"请选择新的会议主持人：")
+
+    val btnBox = new VBox(5)
+
+    val toggleGroup = new ToggleGroup
+
+    partInfoList.map{ user =>
+      val radioBtn = new RadioButton(s"${user._2}")
+      radioBtn.setToggleGroup(toggleGroup)
+      radioBtn.setUserData(user._1)
+      btnBox.getChildren.add(radioBtn)
+    }
+    btnBox.setAlignment(Pos.CENTER)
+    btnBox.setPadding(new Insets(20,20,20,20))
+
+    val wholeBox = new VBox(10, changeHostLabel, btnBox)
+
+    val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
+
+    val group = new Group()
+    group.getChildren.add(wholeBox)
+    dialog.getDialogPane.getButtonTypes.add(confirmButton)
+    dialog.getDialogPane.setContent(group)
+    dialog.setResultConverter(dialogButton =>
+      if (toggleGroup.getSelectedToggle != null) {
+        if (dialogButton == confirmButton){
+          toggleGroup.getSelectedToggle.getUserData.toString
+        }
+        else
+          null
+      } else {
+        Boot.addToPlatform(
+          WarningDialog.initWarningDialog("请选择一名新主持人！")
+        )
+        null
+      }
+    )
+    var changeHostOpt: Option[Long] = None
+    val rst = dialog.showAndWait()
+    rst.ifPresent { a =>
+      if (a != null)
+        changeHostOpt = Some(a.toLong)
+      else
+        None
+    }
+    changeHostOpt
+  }
+
+
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
       case msg: HeatBeat =>
@@ -189,6 +258,26 @@ class MeetingController(
           meetingScene.meetingDesValue.setText(msg.roomDec)
         }
 
+      case msg: changeHostRsp =>
+        log.info(s"rcv changeHostRsp from rm: $msg")
+        if(msg.errCode == 0){
+          Boot.addToPlatform{
+            meetingScene.meetingHostValue.setText(msg.userName)
+          }
+
+        } else {
+          rmManager ! TurnToHost
+        }
+
+      case msg: ChangeHost2Client =>
+        log.info(s"rcv ChangeHost2Client from rm: $msg")
+        if(msg.userId == RmManager.userInfo.get.userId){
+          rmManager ! TurnToHost
+        } else {
+          Boot.addToPlatform{
+            meetingScene.meetingHostValue.setText(msg.userName)
+          }
+        }
 
 
       case x =>
