@@ -139,7 +139,7 @@ class MeetingScene(stage: Stage){
   editMeetingDesBtn.setOnAction(_ => listener.modifyRoom(roomDes = Some(meetingDesField.getText)))
 
 
-  def genMeetingInfoBox: VBox = {
+  def genMeetingInfoBox(): VBox = {
     val isHost: Boolean =
       if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
 
@@ -397,15 +397,35 @@ class MeetingScene(stage: Stage){
     *
     **/
   val borderPane = new BorderPane()
-  val leftArea = new VBox(20, genMeetingInfoBox, genSpeakInfoBox())
+  var meetingInfoBox = genMeetingInfoBox()
+  var speakInfoBox = genSpeakInfoBox()
+  var middleBox = genMiddleBox()
+  val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)
   borderPane.setLeft(leftArea)
-  borderPane.setCenter(genMiddleBox())
+  borderPane.setCenter(middleBox)
   borderPane.setRight(rightArea)
 
 
 
 
   group.getChildren.addAll(background, borderPane)
+
+
+  /**
+    * refresh Func
+    *
+    **/
+  def refreshScene(): Unit = {
+    meetingInfoBox.getChildren.removeAll()
+    meetingInfoBox = genMeetingInfoBox()
+
+    speakInfoBox.getChildren.removeAll()
+    speakInfoBox = genSpeakInfoBox()
+
+    middleBox.getChildren.removeAll()
+    middleBox = genMiddleBox()
+
+  }
 
 
 }
