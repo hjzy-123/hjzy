@@ -174,6 +174,7 @@ object UserActor {
                           ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId,hostId))
 
                         case x =>
+                          log.info(s"收到webSocket消息$req")
                           roomManager ! ActorProtocol.WebSocketMsgWithActor(userId,roomId,x)
                           ctx.self ! SwitchBehavior("host",host(userId,clientActor,roomId, hostId))
 

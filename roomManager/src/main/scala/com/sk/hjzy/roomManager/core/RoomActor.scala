@@ -203,8 +203,10 @@ object RoomActor {
             val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl),
               wholeRoomInfo.liveInfoMap,wholeRoomInfo.userInfoList)
             idle(roomId, subscribers,newRoomInfo, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
-          } else
+          } else {
+            log.info("主持人离开，房间内无人委派，房间废弃")
             idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = ""), wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList))
+          }
         //todo  主持人离开房间时没有人时， 相当于结束会议，要删除房间信息，及对应的Actor
 
 
