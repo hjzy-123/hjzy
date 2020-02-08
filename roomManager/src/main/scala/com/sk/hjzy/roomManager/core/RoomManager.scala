@@ -67,7 +67,6 @@ object RoomManager {
         case r@ActorProtocol.UpdateSubscriber(join,roomId,userId,userActor) =>
           getRoomActorOpt(roomId,ctx)match{
             case Some(actor) =>
-              log.info(s"${ctx.self.path}更新用户信息，房间id=$roomId,用户id=$userId")
               actor ! r
             case None =>log.debug(s"${ctx.self.path}更新用户信息失败，房间不存在，有可能该用户是主持人等待房间开启，房间id=$roomId,用户id=$userId")
           }
@@ -78,16 +77,22 @@ object RoomManager {
           Behaviors.same
 
         case r@ActorProtocol.HostCloseRoom(roomId)=>
-          //如果断开websocket的用户的id能够和已经开的房间里面的信息匹配上，就说明是主播
+          //主持人结束会议
           getRoomActorOpt(roomId, ctx) match{
             case Some(roomActor) => roomActor ! r
             case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")
           }
           Behaviors.same
 
+        case r@ActorProtocol.HostLeaveRoom(roomId)=>
+          //主持人webSocket断开
+          getRoomActorOpt(roomId, ctx) match{
+            case Some(roomActor) => roomActor ! r
+            case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")
+          }
+          Behaviors.same
 
         case r@ActorProtocol.WebSocketMsgWithActor(userId,roomId,req) =>
-          log.info(s"roomManager收到ws消息$req")
           getRoomActorOpt(roomId,ctx) match{
             case Some(actor) => actor ! r
             case None => log.debug(s"${ctx.self.path}请求错误，该房间还不存在，房间id=$roomId，用户id=$userId")

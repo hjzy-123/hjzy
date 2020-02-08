@@ -26,6 +26,8 @@ object ActorProtocol {
 
   case class HostCloseRoom(roomId:Long) extends RoomCommand   //主持人结束会议
 
+  case class HostLeaveRoom(roomId:Long) extends RoomCommand   //主持人结束会议
+
   case class StartMeeting(userId:Long,roomId:Long,actor:ActorRef[UserActor.Command]) extends RoomCommand
 
 

@@ -337,9 +337,10 @@ trait UserService extends CirceSupport with ServiceUtils with SessionBase{
     parameter(
       'userId.as[Long],
       'token.as[String],
-      'roomId.as[Long]
-    ) { (uid, token, roomId) =>
-      val setWsFutureRsp: Future[Option[Flow[Message, Message, Any]]] = userManager ? (SetupWs(uid, token, roomId, _))
+      'roomId.as[Long],
+      'hostId.as[Long]
+    ) { (uid, token, roomId, hostId) =>
+      val setWsFutureRsp: Future[Option[Flow[Message, Message, Any]]] = userManager ? (SetupWs(uid, token, roomId,hostId, _))
       dealFutureResult(
         setWsFutureRsp.map {
           case Some(rsp) => handleWebSocketMessages(rsp)
