@@ -192,6 +192,8 @@ object RoomActor {
         case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host close the room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
+
+          // todo
           val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
           dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))
           dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
@@ -300,17 +302,17 @@ object RoomActor {
                 val info = WholeRoomInfo(roomInfo, wholeRoomInfo.liveInfoMap, wholeRoomInfo.userInfoList)
                 userManager ! ActorProtocol.ChangeBehaviorToParticipant(oldHost, newHost)
                 userManager ! ActorProtocol.ChangeBehaviorToHost(newHost, newHost)
-                dispatchTo(subscribers.filter(r => r._1 != oldHost).keys.toList, ChangeHost2Client(userId, v.userName))
-                dispatchTo(List(oldHost), changeHostRsp(userId, v.userName))
+                dispatchTo(subscribers.filter(r => r._1 != oldHost).keys.toList, ChangeHost2Client(newHost, v.userName))
+                dispatchTo(List(oldHost), changeHostRsp(newHost, v.userName))
                 dispatch(RcvComment(-1, "", s"${v.userName}被指派为新的主持人"))
                 ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,info, userInfoListOpt))
               case None =>
-                dispatchTo(List(oldHost), changeHostRsp(userId, "", 10002 ,"此用户不存在"))
+                dispatchTo(List(oldHost), changeHostRsp(newHost, "", 10002 ,"此用户不存在"))
                 log.info(s"${ctx.self.path.name} the database doesn't have the user")
                 ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,userInfoListOpt))
             }
           case Failure(e) =>
-            dispatchTo(List(oldHost), changeHostRsp(userId, "", 10002 ,"查询失败"))
+            dispatchTo(List(oldHost), changeHostRsp(newHost, "", 10002 ,"查询失败"))
             log.info(s"s${ctx.self.path.name} the search by userId error:$e")
             ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, userInfoListOpt))
         }
