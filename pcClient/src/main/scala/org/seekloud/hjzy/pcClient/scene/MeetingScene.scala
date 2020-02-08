@@ -230,7 +230,7 @@ class MeetingScene(stage: Stage){
 
   val speakStateBox = new HBox(5)
   speakStateBox.setAlignment(Pos.CENTER_LEFT)
-  def addToSpeakStateBox(speakStateBox: HBox, isHost: Boolean) = {
+  def addToSpeakStateBox(speakStateBox: HBox, isHost: Boolean): Boolean = {
     speakStateBox.getChildren.removeAll()
     if(isHost){
       speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, appointSpeakBtn)
