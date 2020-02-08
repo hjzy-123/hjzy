@@ -82,6 +82,8 @@ object RmManager {
 
   final case class TurnToAudience(newHostId: Long) extends RmCommand
 
+  final case object StartMeeting extends RmCommand
+
   final case class KickSbOut(userId: Long) extends RmCommand
 
   /*普通观众*/
@@ -315,6 +317,10 @@ object RmManager {
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
+      case StartMeeting =>
+        //todo
+        sender.foreach(_ ! StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
+        Behaviors.same
 
       case StopSelf =>
         log.info(s"rmManager stopped in host.")

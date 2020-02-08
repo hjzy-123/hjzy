@@ -39,7 +39,7 @@ class MeetingController(
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
-
+      rmManager ! StartMeeting
     }
 
     override def stopLive(): Unit = {
