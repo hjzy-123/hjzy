@@ -5,7 +5,8 @@ import com.sk.hjzy.protocol.ptcl.CommonProtocol.RoomInfo
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeetingRsp, NewMeetingRsp}
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.WsMsgClient
 import com.sk.hjzy.roomManager.core.RoomManager.Command
-import com.sk.hjzy.roomManager.core.{RoomActor, RoomManager, UserActor}
+import com.sk.hjzy.roomManager.core.UserActor.Command
+import com.sk.hjzy.roomManager.core.{RoomActor, RoomManager, UserActor, UserManager}
 
 /**
   * created by benyafang on 2019.9.6 16:34
@@ -29,6 +30,13 @@ object ActorProtocol {
   case class HostLeaveRoom(roomId:Long) extends RoomCommand   //主持人结束会议
 
   case class StartMeeting(userId:Long,roomId:Long,actor:ActorRef[UserActor.Command]) extends RoomCommand
+
+
+  trait UserCommand extends UserManager.Command with UserActor.Command
+
+  final case class ChangeBehaviorToHost(userId:Long, hostId: Long) extends UserCommand
+
+  final case class ChangeBehaviorToParticipant(userId:Long, hostId: Long) extends UserCommand
 
 
 }

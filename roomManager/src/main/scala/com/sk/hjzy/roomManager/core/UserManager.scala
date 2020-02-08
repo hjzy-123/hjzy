@@ -13,7 +13,9 @@ import com.sk.hjzy.roomManager.core.UserActor.ChildDead
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.Boot.{executor, roomManager, scheduler, timeout}
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{ChangeBehaviorToHost, ChangeBehaviorToParticipant}
 import org.slf4j.LoggerFactory
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
@@ -21,6 +23,7 @@ import scala.util.{Failure, Success}
 /**
  * 由Boot创建
  * 建立webSocket流
+ * 管理UserActor
  */
 object UserManager {
   private val log = LoggerFactory.getLogger(this.getClass)
@@ -84,6 +87,24 @@ object UserManager {
 
         case ChildDead(userId,actor) =>
           log.debug(s"${ctx.self.path} the child = ${ctx.children}")
+          Behaviors.same
+
+        case r@ChangeBehaviorToHost(userId, hostId) =>
+          getUserActorOpt(userId, ctx) match {
+            case Some(actor) =>
+              actor ! r
+            case None =>
+              log.info(s"${userId}-userActor不存在")
+          }
+          Behaviors.same
+
+        case r@ChangeBehaviorToParticipant(userId, hostId) =>
+          getUserActorOpt(userId, ctx) match {
+            case Some(actor) =>
+              actor ! r
+            case None =>
+              log.info(s"${userId}-userActor不存在")
+          }
           Behaviors.same
 
         case x =>
