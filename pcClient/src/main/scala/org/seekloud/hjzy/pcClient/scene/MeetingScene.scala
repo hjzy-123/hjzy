@@ -478,7 +478,6 @@ class MeetingScene(stage: Stage){
     addToMeetingDesBox(meetingDesBox, isHost)
     addToSpeakStateBox(speakStateBox, isHost)
     addToControlBox(controlBox, isHost)
-
   }
 
 
