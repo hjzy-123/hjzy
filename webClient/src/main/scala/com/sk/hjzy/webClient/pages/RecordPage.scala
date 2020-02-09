@@ -315,7 +315,10 @@ object RecordPage extends Index{
           {
             otherRecordInfo.map{ records =>
               records.map{ record =>
-                <div style="height:150px;display:flex;justify-content:flex-start;align-items:flex-start;cursor:pointer" onclick={() => {dom.window.location.href = s"/hjzy/webClient#/record/${record.id}"} }>
+                <div style="height:150px;display:flex;justify-content:flex-start;align-items:flex-start;cursor:pointer" onclick={() => {
+                  val re = dom.window.location.hash.split("/").reverse(1)
+                  dom.window.location.href = s"/hjzy/webClient#/$re/${record.id}"}
+                }>
                   <img src={record.cover_img} style="width:100px;height:100px;border-radius:4px;border:1px solid #ccc;margin-top:50px"></img>
                   <div style="font-size:14px;margin-left:15px;font-weight:500;color:#212121;word-break:break-all;margin-top:50px" class="recordTitle">{record.record_name}</div>
                 </div>
