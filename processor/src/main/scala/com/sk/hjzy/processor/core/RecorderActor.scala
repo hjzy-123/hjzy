@@ -234,7 +234,6 @@ object RecorderActor {
           }
           Behaviors.same
 
-          //todo
         case msg: UpdateRoomInfo =>
           log.info(s"$roomId got msg: $msg in work.")
           if (msg.num != num) {
