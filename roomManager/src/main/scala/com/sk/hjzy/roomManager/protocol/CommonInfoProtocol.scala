@@ -12,8 +12,7 @@ object CommonInfoProtocol {
   final case class WholeRoomInfo(
                                 var roomInfo:RoomInfo,
                                 //var recordStartTime: Option[Long] = None,
-                                liveInfoMap: Option[mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]]= None, //"audience"/"anchor"->Map(userId->LiveInfo)
-                                userInfoList:  Option[List[PartUserInfo]] = None
+                                var isStart: Int = 0
                                 )
 
 }

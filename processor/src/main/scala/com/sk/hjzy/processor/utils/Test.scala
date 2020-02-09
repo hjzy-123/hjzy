@@ -7,6 +7,7 @@ import com.sk.hjzy.processor.protocol.SharedProtocol.CloseRoom
 import com.sk.hjzy.processor.utils.SecureUtil.genPostEnvelope
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
 import scala.concurrent.Future
 /**
   * created by byf on 2019.7.17 13:09
@@ -164,13 +165,36 @@ object ProcessorClient extends HttpUtil{
 
   def main(args: Array[String]): Unit = {
 
-    deleteFile()
-    updateRoomInfo(8888,List("liveIdTest-1111"),1,0).map{
-      a=>
-        println(a)
+//    deleteFile()
+//    updateRoomInfo(8888,List("liveIdTest-1111"),1,0).map{
+//      a=>
+//        println(a)
+//    }
+
+    val list = List(1,2,3,4,5,6)
+    val map = mutable.HashMap[Int, Int]()
+
+    val l = list.length
+    var n = 0
+
+    list.foreach{ i =>
+      Future {
+        Thread.sleep(2000);
+        i
+      }.map{ j =>
+        map.put(i,i)
+        n += 1
+      }
     }
+
+    if(n == l)
+    list.foreach{ i =>
+      println(i, map)
+    }
+    else
+    println("未完成")
 //
-//    Thread.sleep(30000)
+    Thread.sleep(30000)
 //
 //    closeRoom(8888).map{
 //      a =>
