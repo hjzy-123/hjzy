@@ -16,27 +16,29 @@ object DBUtil {
 
   private def createDataSource() = {
 
-    val dataSource = new org.postgresql.ds.PGSimpleDataSource()
-
-    //val dataSource = new MysqlDataSource()
-
-    log.info(s"connect to db: $slickUrl")
-    dataSource.setUrl(slickUrl)
-    dataSource.setUser(slickUser)
-    dataSource.setPassword(slickPassword)
-
-    val hikariDS = new HikariDataSource()
-    hikariDS.setDataSource(dataSource)
-    hikariDS.setMaximumPoolSize(slickMaximumPoolSize)
-    hikariDS.setConnectionTimeout(slickConnectTimeout)
-    hikariDS.setIdleTimeout(slickIdleTimeout)
-    hikariDS.setMaxLifetime(slickMaxLifetime)
-    hikariDS.setAutoCommit(true)
-    hikariDS
   }
 
-
-  val db = Database.forDataSource(dataSource, Some(slickMaximumPoolSize))
+//    val dataSource = new org.postgresql.ds.PGSimpleDataSource()
+//
+//    //val dataSource = new MysqlDataSource()
+//
+//    log.info(s"connect to db: $slickUrl")
+//    dataSource.setUrl(slickUrl)
+//    dataSource.setUser(slickUser)
+//    dataSource.setPassword(slickPassword)
+//
+//    val hikariDS = new HikariDataSource()
+//    hikariDS.setDataSource(dataSource)
+//    hikariDS.setMaximumPoolSize(slickMaximumPoolSize)
+//    hikariDS.setConnectionTimeout(slickConnectTimeout)
+//    hikariDS.setIdleTimeout(slickIdleTimeout)
+//    hikariDS.setMaxLifetime(slickMaxLifetime)
+//    hikariDS.setAutoCommit(true)
+//    hikariDS
+//  }
+//
+//
+//  val db = Database.forDataSource(dataSource, Some(slickMaximumPoolSize))
 
 
 
