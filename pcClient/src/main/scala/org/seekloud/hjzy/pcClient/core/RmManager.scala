@@ -84,7 +84,7 @@ object RmManager {
 
   final case object StartMeetingReq extends RmCommand
 
-  final case class StartMeeting(liveInfo: LiveInfo, pullLiveList: List[(Long, Option[String])])extends RmCommand
+  final case class StartMeeting(pushLiveInfo: Option[LiveInfo], pullLiveIdList: List[(Long, String)])extends RmCommand
 
   final case class KickSbOut(userId: Long) extends RmCommand
 
@@ -312,7 +312,7 @@ object RmManager {
 
       case TurnToAudience(newHostId) =>
         log.info(s"rcv TurnToAudience from meetingScene: newHostId == $newHostId")
-        sender.foreach(_ ! changeHost(newHostId))
+        sender.foreach(_ ! ChangeHost(newHostId))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
           meetingScene.refreshScene(false)

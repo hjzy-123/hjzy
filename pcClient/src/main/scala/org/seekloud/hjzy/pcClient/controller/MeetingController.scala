@@ -256,7 +256,7 @@ class MeetingController(
           meetingScene.meetingDesValue.setText(msg.roomDec)
         }
 
-      case msg: changeHostRsp =>
+      case msg: ChangeHostRsp =>
         log.info(s"rcv changeHostRsp from rm: $msg")
         if(msg.errCode == 0){
           Boot.addToPlatform{
@@ -277,7 +277,9 @@ class MeetingController(
 
       case msg: StartMeetingRsp =>
         if(msg.errCode == 0){
-          rmManager ! StartMeeting()
+//          val pushLiveInfo = msg.pushLiveInfo
+//          val pullLiveIdList = msg.pullLiveIdList
+          rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
         } else {
           Boot.addToPlatform{
             WarningDialog.initWarningDialog(s"${msg.msg}")
