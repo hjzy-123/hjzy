@@ -146,15 +146,15 @@ object RoomActor {
               pipeMap.put(id._1, pullPipe4Live)
 
               val grabber4Live = getGrabberActor(ctx,roomId, id._1, pullInput4Live, recorderMap(roomId))
-              //fixme 能否开始拉流
-              grabber4Live ! GrabberActor.Recorder(recorderMap(roomId))
+
               if(grabberMap.get(roomId).nonEmpty)
                 grabberMap(roomId) = grabberMap(roomId) ::: List((id._1, grabber4Live))
               else
                 grabberMap.put(roomId, List((id._1,grabber4Live)))
-
               val pullPipe4live = getPullPipe(ctx, roomId,id._1, pullOut4Live)
               pullPipeMap.put(id._1, pullPipe4live)
+              //fixme 能否开始拉流
+              grabber4Live ! GrabberActor.Recorder(recorderMap(roomId))
             } else if(id._2 == -1){
 
               if(grabberMap.get(roomId).nonEmpty){
