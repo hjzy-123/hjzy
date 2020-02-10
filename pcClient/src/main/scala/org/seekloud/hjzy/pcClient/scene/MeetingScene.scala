@@ -485,7 +485,6 @@ class MeetingScene(stage: Stage){
     *
     **/
   def refreshScene(isHost: Boolean): Unit = {
-    log.info(s" ==================== refreshScene, isHost: $isHost ================================")
     addToMeetingHostBox(isHost)
     addToMeetingNameBox(isHost)
     addToMeetingDesBox(isHost)

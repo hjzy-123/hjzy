@@ -73,11 +73,11 @@ object WsProtocol {
   val ModifyRoomError = ModifyRoomRsp(errCode = 200010, msg = "modify room error.")
 
   /*指派主持人*/
-  case class changeHost(
+  case class ChangeHost(
                          userId: Long
                        ) extends WsMsgHost
 
-  case class changeHostRsp(userId: Long, userName: String,errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
+  case class ChangeHostRsp(userId: Long, userName: String,errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
 
 
   /**
@@ -141,29 +141,25 @@ object WsProtocol {
                          extension: Option[String] = None
                        ) extends WsMsgRm
 
-  case class PushLiveInfo(userId:Long, liveInfo:Option[LiveInfo] = None)
-
-  case class PullLiveList(LiveIdList: List[(Long, String)])
-
   case class StartMeetingRsp(
-                              pushLiveInfo: PushLiveInfo,
-                              pullLiveList: PullLiveList,
+                              pushLiveInfo: Option[LiveInfo] = None,
+                              pullLiveIdList: List[(Long, String)], //(userId, liveId)
                               errCode: Int = 0,
                               msg: String = "ok"
                             ) extends WsMsgRm
 
   //单独申请LiveInfo
-  case class getLiveInfoReq(
+  case class GetLiveInfoReq(
                               userId: Long
                             ) extends WsMsgClient
 
-  case class getLiveInfoRsp(
-                             pushLiveInfo: PushLiveInfo,
+  case class GetLiveInfoRsp(
+                             pushLiveInfo: Option[LiveInfo] = None,
                              errCode: Int = 0,
                              msg: String = "ok"
                            ) extends WsMsgRm
 
-  case class getLiveId4Other(
+  case class GetLiveId4Other(
                         userId: Long,
                         liveId: String
                       ) extends WsMsgRm

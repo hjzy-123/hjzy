@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.{ByteString, ByteStringBuilder}
 import com.sk.hjzy.protocol.ptcl.CommonInfo.AudienceInfo
-import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo, UserInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import org.seekloud.byteobject.MiddleBufferInJvm
@@ -81,6 +81,10 @@ object RmManager {
   final case class ModifyRoomFailed(previousName: String, previousDes: String) extends RmCommand
 
   final case class TurnToAudience(newHostId: Long) extends RmCommand
+
+  final case object StartMeetingReq extends RmCommand
+
+  final case class StartMeeting(pushLiveInfo: Option[LiveInfo], pullLiveIdList: List[(Long, String)])extends RmCommand
 
   final case class KickSbOut(userId: Long) extends RmCommand
 
@@ -308,13 +312,18 @@ object RmManager {
 
       case TurnToAudience(newHostId) =>
         log.info(s"rcv TurnToAudience from meetingScene: newHostId == $newHostId")
-        sender.foreach(_ ! changeHost(newHostId))
+        sender.foreach(_ ! ChangeHost(newHostId))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
           meetingScene.refreshScene(false)
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
+      case StartMeetingReq =>
+        //todo
+        assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
+        sender.foreach(_ ! StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
+        Behaviors.same
 
       case StopSelf =>
         log.info(s"rmManager stopped in host.")
@@ -421,41 +430,6 @@ object RmManager {
 //        meetingScene.finalize()
         System.gc()
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
-
-
-//      case HostClosedRoom =>
-//        log.info("host close room.")
-//        timer.cancel(HeartBeat)
-//        timer.cancel(PingTimeOut)
-//        sender.foreach(_ ! CompleteMsgClient)
-//
-//        if(meetingStatus == MeetingStatus.LIVE){
-//          assert(userInfo.nonEmpty)
-//          val userId = userInfo.get.userId
-//          liveManager ! LiveManager.StopPull
-//
-//          joinAudienceList.foreach{ audList =>
-//            audList.foreach{ audInfo =>
-//              val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, audInfo.userId)
-//              //              mediaPlayer.stop(playId, meetingScene.resetBack)
-//              mediaPlayer.stop(playId, () => ())
-//            }
-//          }
-//
-//          liveManager ! LiveManager.StopPush
-//        }
-//
-//        liveManager ! LiveManager.DeviceOff
-//
-//        Boot.addToPlatform {
-//          //          meetingScene.stopPackageLoss()
-//          homeController.foreach(_.showScene())
-//          WarningDialog.initWarningDialog("主持人离开，会议结束，房间已关闭！")
-//        }
-//        //        meetingScene.stopPackageLoss()
-//        //        meetingScene.finalize()
-//        System.gc()
-//        switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
 
       case SendComment(userId, roomId, comment) =>

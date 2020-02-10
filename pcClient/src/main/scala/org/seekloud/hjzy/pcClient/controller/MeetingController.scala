@@ -13,7 +13,7 @@ import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
-import org.seekloud.hjzy.pcClient.core.RmManager._
+import org.seekloud.hjzy.pcClient.core.RmManager.{StartMeetingReq, _}
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -39,7 +39,7 @@ class MeetingController(
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
-
+      rmManager ! StartMeetingReq
     }
 
     override def stopLive(): Unit = {
@@ -218,10 +218,6 @@ class MeetingController(
         log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
-//      case HostCloseRoom =>
-//        log.info(s"rcv HostCloseRoom from rm")
-//        rmManager ! HostClosedRoom
-
       case msg: UserInfoListRsp =>
         log.info(s"rcv UserInfoListRsp from rm: $msg")
         val addPartListOpt = msg.UserInfoList
@@ -260,7 +256,7 @@ class MeetingController(
           meetingScene.meetingDesValue.setText(msg.roomDec)
         }
 
-      case msg: changeHostRsp =>
+      case msg: ChangeHostRsp =>
         log.info(s"rcv changeHostRsp from rm: $msg")
         if(msg.errCode == 0){
           Boot.addToPlatform{
@@ -276,8 +272,18 @@ class MeetingController(
           meetingScene.meetingHostValue.setText(msg.userName)
         }
         if(msg.userId == RmManager.userInfo.get.userId){
-          log.info("=============================")
           rmManager ! TurnToHost
+        }
+
+      case msg: StartMeetingRsp =>
+        if(msg.errCode == 0){
+//          val pushLiveInfo = msg.pushLiveInfo
+//          val pullLiveIdList = msg.pullLiveIdList
+          rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
+        } else {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog(s"${msg.msg}")
+          }
         }
 
 
