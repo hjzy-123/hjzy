@@ -141,9 +141,6 @@ object WsProtocol {
                          extension: Option[String] = None
                        ) extends WsMsgRm
 
-  case class PushLiveInfo(userId:Long, liveInfo:Option[LiveInfo] = None)
-
-
   case class StartMeetingRsp(
                               pushLiveInfo: Option[LiveInfo] = None,
                               pullLiveIdList: List[(Long, String)], //(userId, liveId)
