@@ -143,7 +143,7 @@ object WsProtocol {
 
   case class PushLiveInfo(userId:Long, liveInfo:Option[LiveInfo] = None)
 
-  case class PullLiveList(LiveIdList: List[(Long, Option[String])])
+  case class PullLiveList(LiveIdList: List[(Long, String)])
 
   case class StartMeetingRsp(
                               pushLiveInfo: PushLiveInfo,
@@ -152,5 +152,20 @@ object WsProtocol {
                               msg: String = "ok"
                             ) extends WsMsgRm
 
+  //单独申请LiveInfo
+  case class getLiveInfoReq(
+                              userId: Long
+                            ) extends WsMsgClient
+
+  case class getLiveInfoRsp(
+                             pushLiveInfo: PushLiveInfo,
+                             errCode: Int = 0,
+                             msg: String = "ok"
+                           ) extends WsMsgRm
+
+  case class getLiveId4Other(
+                        userId: Long,
+                        liveId: String
+                      ) extends WsMsgRm
 
 }
