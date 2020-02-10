@@ -341,8 +341,9 @@ object RmManager {
             liveManager ! LiveManager.PullStream(l._2, VideoInfo(this.meetingRoomInfo.get.roomId, l._1, gc), Some(meetingScene))
           }
         }
-        //todo
-        Behaviors.same
+        val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
+        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+          MeetingStatus.LIVE, Some(audInfo))
 
       case StopSelf =>
         log.info(s"rmManager stopped in host.")
@@ -485,8 +486,9 @@ object RmManager {
             liveManager ! LiveManager.PullStream(l._2, VideoInfo(this.meetingRoomInfo.get.roomId, l._1, gc), Some(meetingScene))
           }
         }
-        //todo
-        Behaviors.same
+        val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
+        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+          MeetingStatus.LIVE, Some(audInfo))
 
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")

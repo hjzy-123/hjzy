@@ -96,7 +96,6 @@ object CommonInfo {
   /*连线者信息*/
   case class AudienceInfo(
     userId: Long,
-    userName: String,
     liveId: String
   )
 
