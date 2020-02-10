@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akka.util.{ByteString, ByteStringBuilder}
 import com.sk.hjzy.protocol.ptcl.CommonInfo.AudienceInfo
-import com.sk.hjzy.protocol.ptcl.CommonProtocol.{RoomInfo, UserInfo}
+import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo, UserInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol._
 import org.seekloud.byteobject.MiddleBufferInJvm
@@ -82,7 +82,9 @@ object RmManager {
 
   final case class TurnToAudience(newHostId: Long) extends RmCommand
 
-  final case object StartMeeting extends RmCommand
+  final case object StartMeetingReq extends RmCommand
+
+  final case class StartMeeting(liveInfo: LiveInfo, pullLiveList: List[(Long, Option[String])])extends RmCommand
 
   final case class KickSbOut(userId: Long) extends RmCommand
 
@@ -317,8 +319,9 @@ object RmManager {
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
-      case StartMeeting =>
+      case StartMeetingReq =>
         //todo
+        assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
         sender.foreach(_ ! StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
         Behaviors.same
 

@@ -13,7 +13,7 @@ import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
-import org.seekloud.hjzy.pcClient.core.RmManager._
+import org.seekloud.hjzy.pcClient.core.RmManager.{StartMeetingReq, _}
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -39,7 +39,7 @@ class MeetingController(
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
-      rmManager ! StartMeeting
+      rmManager ! StartMeetingReq
     }
 
     override def stopLive(): Unit = {
@@ -272,8 +272,16 @@ class MeetingController(
           meetingScene.meetingHostValue.setText(msg.userName)
         }
         if(msg.userId == RmManager.userInfo.get.userId){
-          log.info("=============================")
           rmManager ! TurnToHost
+        }
+
+      case msg: StartMeetingRsp =>
+        if(msg.errCode == 0){
+          rmManager ! StartMeeting()
+        } else {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog(s"${msg.msg}")
+          }
         }
 
 
