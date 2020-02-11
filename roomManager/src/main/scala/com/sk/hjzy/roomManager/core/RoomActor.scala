@@ -169,6 +169,7 @@ object RoomActor {
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
             subscribers.remove(userId)
+            liveInfoMap.remove(userId)
             ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,Some(userInfoListOpt.get.filter(_.userId != userId))))
           }
 
@@ -182,7 +183,8 @@ object RoomActor {
         case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host leave room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
-
+          liveInfoMap.remove(wholeRoomInfo.roomInfo.userId)
+          //todo  离开房间 删除liveInfoMap中的信息
           if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId)){
             val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
             dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))

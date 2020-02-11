@@ -43,8 +43,12 @@ object RoomManager {
       msg match {
 
         case r@NewRoom(userId:Long, roomId, roomName: String, roomDes: String, password: String,replyTo: ActorRef[NewMeetingRsp]) =>
-          val roomActor = getRoomActor(roomId, ctx)
-          roomActor ! r
+          getRoomActorOpt(roomId,ctx) match{
+            case Some(actor) => replyTo ! NewMeetingRsp(None, 100020, "此房间已存在，无法再次创建")
+            case None =>
+              val roomActor = getRoomActor(roomId, ctx)
+              roomActor ! r
+          }
           Behaviors.same
 
         case r@JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
