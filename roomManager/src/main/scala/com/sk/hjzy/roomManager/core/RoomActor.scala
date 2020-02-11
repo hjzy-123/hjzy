@@ -147,6 +147,7 @@ object RoomActor {
                 val partUserInfo = PartUserInfo(userTableOpt.get.uid, userTableOpt.get.userName,UserInfoDao.getHeadImg(userTableOpt.get.headImg))
                 liveInfo match {
                   case Right(rsp) =>
+                    log.info(s"获取新的liveInfo$liveInfo")
                     liveInfoMap.put(userId, rsp.liveInfo)
                     if(userInfoListOpt.nonEmpty)
                       ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, Some(userInfoListOpt.get :+ partUserInfo)))
@@ -315,7 +316,7 @@ object RoomActor {
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
       case StartMeetingReq(`userId`,token) =>
-        log.debug(s"${ctx.self.path} 开始会议，roomId=$roomId")
+        log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
         var liveInfo4mix = LiveInfo("","")
         val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList
