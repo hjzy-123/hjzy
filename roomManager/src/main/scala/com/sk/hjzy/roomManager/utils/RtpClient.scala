@@ -57,4 +57,14 @@ object RtpClient extends HttpUtil{
     }
   }
 
+
+//  def main(args: Array[String]):Unit ={
+//    getLiveInfoFunc().map {
+//      case Left(value) =>
+//      case Right(value) =>
+//        println(value)
+//    }
+//
+//  }
+
 }

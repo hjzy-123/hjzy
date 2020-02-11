@@ -234,7 +234,6 @@ object RecorderActor {
           }
           Behaviors.same
 
-          //todo
         case msg: UpdateRoomInfo =>
           log.info(s"$roomId got msg: $msg in work.")
           if (msg.num != num) {
@@ -245,10 +244,14 @@ object RecorderActor {
           }
           ctx.self ! RestartRecord
 
-          //todo  新加或者去掉 liveId
+          var newliveIdList = liveIdList
+          msg.liveIdList.foreach{ id =>
+            if(id._2 == 1)
+              newliveIdList = liveIdList :+ id._1
+            else
+              newliveIdList = liveIdList.filter( _ != id._1)
+          }
 
-          msg.liveIdList
-          val newliveIdList = liveIdList
           work(roomId,  newliveIdList, msg.num, msg.speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
 
         case m@RestartRecord =>

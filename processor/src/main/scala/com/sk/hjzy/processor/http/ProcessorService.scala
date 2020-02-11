@@ -66,7 +66,6 @@ trait ProcessorService extends ServiceUtils {
         log.info(s"post method updateRoomInfo.")
         roomManager ! RoomManager.UpdateRoomInfo(req.roomId, req.liveIdList, req.num, req.speaker)
         complete(UpdateRsp())
-
       case Left(e) =>
         complete(parseJsonError)
     }
