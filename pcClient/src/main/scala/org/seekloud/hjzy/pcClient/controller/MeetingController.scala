@@ -288,10 +288,15 @@ class MeetingController(
 
       case msg: GetLiveInfoRsp =>
         log.info(s"rcv GetLiveInfoRsp from rm: $msg")
-
+        if(msg.errCode == 0){
+          rmManager ! ToPush(msg.pushLiveInfo.get)
+        } else {
+          rmManager ! GetLiveInfoReq
+        }
 
       case msg: GetLiveId4Other =>
         log.info(s"rcv GetLiveInd4Other from rm: $msg")
+        rmManager ! ToPull(msg.userId, msg.liveId)
 
 
       case x =>
