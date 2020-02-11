@@ -79,6 +79,7 @@ class MeetingScene(stage: Stage){
     addToMeetingNameBox(isHost)
     addToMeetingDesBox(isHost)
     addToSpeakStateBox(isHost)
+    addToControlBox(isHost)
     this.scene
   }
 
