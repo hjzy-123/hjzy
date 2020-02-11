@@ -131,6 +131,16 @@ object RoomActor {
             val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
             dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
+
+            val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
+            if(wholeRoomInfo.isStart == 1 && liveInfoMap.get(userId).nonEmpty){
+              if(liveInfoMap.get(userId).nonEmpty){
+                dispatchTo(subscribers)(List((userId)),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
+                dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
+              }else
+                dispatchTo(subscribers)(List((userId)),StartMeetingRsp(None, liveIdList, 100002,"无liveInfo"))
+            }
+
           } else
             dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
           Behaviors.same
@@ -184,8 +194,7 @@ object RoomActor {
           log.info(s"${ctx.self.path} host leave room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
           liveInfoMap.remove(wholeRoomInfo.roomInfo.userId)
-          //todo  离开房间 删除liveInfoMap中的信息
-          if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId)){
+          if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId) && userInfoListOpt.nonEmpty){
             val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
             dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName))
             dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
@@ -321,7 +330,7 @@ object RoomActor {
         log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
         var liveInfo4mix = LiveInfo("","")
-        val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList
+        val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
         userIdList.foreach{ id =>
           if(liveInfoMap.get(id).nonEmpty)
             dispatchTo(List(id), StartMeetingRsp(Some(liveInfoMap(id)), liveIdList))
