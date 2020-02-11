@@ -133,7 +133,7 @@ object RoomActor {
             dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
 
             val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
-            if(wholeRoomInfo.isStart == 1 && liveInfoMap.get(userId).nonEmpty){
+            if(wholeRoomInfo.isStart == 1){
               if(liveInfoMap.get(userId).nonEmpty){
                 dispatchTo(subscribers)(List((userId)),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
                 dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
