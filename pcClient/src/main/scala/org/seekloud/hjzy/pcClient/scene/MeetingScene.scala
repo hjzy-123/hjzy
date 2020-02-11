@@ -273,7 +273,7 @@ class MeetingScene(stage: Stage){
   liveToggleButton.getStyleClass.add("liveBtn")
   liveToggleButton.setDisable(true)
   Tooltip.install(liveToggleButton, new Tooltip("设备准备中"))
-  val meetingStateLabel = new Label(s"会议未开始")
+  val meetingStateLabel = new Label(s"设备准备中")
   meetingStateLabel.setFont(Font.font(15))
 
   val controlBox = new HBox(5)
@@ -284,11 +284,12 @@ class MeetingScene(stage: Stage){
       controlBox.getChildren.addAll(liveToggleButton, meetingStateLabel)
     } else {
       controlBox.getChildren.addAll(meetingStateLabel)
-
     }
   }
 
   def changeToggleAction(): Unit = {
+    log.info(s"changeToggleAction")
+    meetingStateLabel.setText("会议未开始")
     liveToggleButton.setDisable(false)
     liveToggleButton.setOnAction {
       _ =>
