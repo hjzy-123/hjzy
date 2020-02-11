@@ -13,7 +13,7 @@ import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.StageContext
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
-import org.seekloud.hjzy.pcClient.core.RmManager.{StartMeetingReq, _}
+import org.seekloud.hjzy.pcClient.core.RmManager.{GetLiveInfoReq, StartMeetingReq, _}
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
@@ -257,7 +257,7 @@ class MeetingController(
         }
 
       case msg: ChangeHostRsp =>
-        log.info(s"rcv changeHostRsp from rm: $msg")
+        log.info(s"rcv ChangeHostRsp from rm: $msg")
         if(msg.errCode == 0){
           Boot.addToPlatform{
             meetingScene.meetingHostValue.setText(msg.userName)
@@ -276,15 +276,22 @@ class MeetingController(
         }
 
       case msg: StartMeetingRsp =>
+        log.info(s"rcv StartMeetingRsp from rm: $msg")
         if(msg.errCode == 0){
-//          val pushLiveInfo = msg.pushLiveInfo
-//          val pullLiveIdList = msg.pullLiveIdList
           rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
         } else {
-          Boot.addToPlatform{
-            WarningDialog.initWarningDialog(s"${msg.msg}")
-          }
+//          Boot.addToPlatform{
+//            WarningDialog.initWarningDialog(s"${msg.msg}")
+//          }
+          rmManager ! GetLiveInfoReq
         }
+
+      case msg: GetLiveInfoRsp =>
+        log.info(s"rcv GetLiveInfoRsp from rm: $msg")
+
+
+      case msg: GetLiveId4Other =>
+        log.info(s"rcv GetLiveInd4Other from rm: $msg")
 
 
       case x =>

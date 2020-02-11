@@ -7,6 +7,8 @@ import java.nio.channels.{Channels, Pipe}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
 import org.seekloud.hjzy.pcClient.Boot
+import org.seekloud.hjzy.pcClient.common.Ids
+import org.seekloud.hjzy.pcClient.core.stream.LiveManager.VideoInfo
 //import org.seekloud.hjzy.pcClient.common.Constants.AudienceStatus
 //import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.component.WarningDialog
@@ -77,8 +79,9 @@ object StreamPuller {
     liveId: String,
     parent: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
-    joinInfo: Option[JoinInfo],
-    watchInfo: Option[WatchInfo],
+    videoInfo: VideoInfo,
+//    joinInfo: Option[JoinInfo],
+//    watchInfo: Option[WatchInfo],
     meetingScene: Option[MeetingScene],
 //    audienceScene: Option[AudienceScene],
 //    hostScene: Option[HostScene]
@@ -87,7 +90,7 @@ object StreamPuller {
       log.info(s"StreamPuller-$liveId is starting.")
       implicit val stashBuffer: StashBuffer[PullCommand] = StashBuffer[PullCommand](Int.MaxValue)
       Behaviors.withTimers[PullCommand] { implicit timer =>
-        init(liveId, parent, mediaPlayer, joinInfo, watchInfo, meetingScene, None)
+        init(liveId, parent, mediaPlayer, videoInfo, meetingScene, None)
       }
 
     }
@@ -96,8 +99,9 @@ object StreamPuller {
     liveId: String,
     parent: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
-    joinInfo: Option[JoinInfo],
-    watchInfo: Option[WatchInfo],
+    videoInfo: VideoInfo,
+//    joinInfo: Option[JoinInfo],
+//    watchInfo: Option[WatchInfo],
     meetingScene: Option[MeetingScene],
 //    audienceScene: Option[AudienceScene],
 //    hostScene: Option[HostScene],
@@ -114,7 +118,7 @@ object StreamPuller {
           timer.startSingleTimer(PullStartTimeOut, PullStartTimeOut, 5.seconds)
           //todo
 //          meetingScene.foreach(_.startPackageLoss())
-          init(liveId, parent, mediaPlayer, joinInfo, watchInfo, meetingScene, Some(msg.pullClient))
+          init(liveId, parent, mediaPlayer, videoInfo, meetingScene, Some(msg.pullClient))
 
         case PullStreamReady =>
           log.info(s"StreamPuller-$liveId ready for pull.")
@@ -147,7 +151,14 @@ object StreamPuller {
           sink.configureBlocking(false)
 
           val inputStream = Channels.newInputStream(source)
+
           //todo
+//          meetingScene.foreach(_.autoReset())
+          val playId = Ids.getPlayId(videoInfo.roomId, videoInfo.pusherId)
+          mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
+          val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer-$playId")
+          mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(videoInfo.gc), None)
+
 //          if (joinInfo.nonEmpty) {
 //            audienceScene.foreach(_.autoReset())
 //            hostScene.foreach(_.resetBack())

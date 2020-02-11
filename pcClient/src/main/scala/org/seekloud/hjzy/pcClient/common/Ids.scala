@@ -12,8 +12,8 @@ object Ids {
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
 
-  def getPlayId(roomId: Long, userId: Long): String = {
-    s"room$roomId-user$userId"
+  def getPlayId(roomId: Long, pusherId: Long): String = {
+    s"room$roomId-pusher-$pusherId"
   }
 
 //  def getCameraOption(position: String): Int = {
