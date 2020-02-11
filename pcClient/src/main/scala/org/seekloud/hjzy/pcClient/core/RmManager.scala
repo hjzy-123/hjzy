@@ -76,6 +76,11 @@ object RmManager {
 
   final case class StartMeeting(pushLiveInfo: Option[LiveInfo], pullLiveIdList: List[(Long, String)])extends RmCommand
 
+  final case object GetLiveInfoReq extends RmCommand
+
+  final case class ToPush(pushLiveInfo: LiveInfo) extends RmCommand
+
+  final case class ToPull(userId: Long, liveId: String) extends RmCommand
 
   /*主持人*/
   final case object HostWsEstablish extends RmCommand
@@ -329,6 +334,7 @@ object RmManager {
 
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
         log.info(s"rcv StartMeeting from meetingScene: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
+        assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
         //to push
         if(pushLiveInfo.nonEmpty){
           liveManager ! LiveManager.PushStream(pushLiveInfo.get.liveId, pushLiveInfo.get.liveCode)
@@ -344,6 +350,33 @@ object RmManager {
         val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audInfo))
+
+      case ToPush(pushLiveInfo) =>
+        log.info(s"rcv ToPush from meetingScene: pushLiveInfo = $pushLiveInfo")
+        assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
+        liveManager ! LiveManager.PushStream(pushLiveInfo.liveId, pushLiveInfo.liveCode)
+        Behaviors.same
+
+      case ToPull(userId, liveId) =>
+        log.info(s"rcv ToPull from meetingScene: userId = $userId, liveId = $liveId")
+        assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
+        val canvasIdOpt = meetingController.partUserMap.find(user => user._2 == userId).map(_._1)
+        if(canvasIdOpt.nonEmpty){
+          val gc = meetingScene.canvasMap(canvasIdOpt.get)._2
+          liveManager ! LiveManager.PullStream(liveId, VideoInfo(this.meetingRoomInfo.get.roomId, userId, gc), Some(meetingScene))
+        }
+        val audienceList = if(joinAudienceList.nonEmpty){
+          AudienceInfo(userId, liveId) :: joinAudienceList.get
+        } else {
+          List(AudienceInfo(userId, liveId))
+        }
+        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+          MeetingStatus.LIVE, Some(audienceList))
+
+      case GetLiveInfoReq =>
+        assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
+        sender.foreach(_ ! WsProtocol.GetLiveInfoReq(this.userInfo.get.userId))
+        Behaviors.same
 
       case StopSelf =>
         log.info(s"rmManager stopped in host.")
@@ -489,6 +522,30 @@ object RmManager {
         val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audInfo))
+
+
+      case ToPush(pushLiveInfo) =>
+        log.info(s"rcv ToPush from meetingScene: pushLiveInfo = $pushLiveInfo")
+        liveManager ! LiveManager.PushStream(pushLiveInfo.liveId, pushLiveInfo.liveCode)
+        Behaviors.same
+
+      case ToPull(userId, liveId) =>
+        log.info(s"rcv ToPull from meetingScene: userId = $userId, liveId = $liveId")
+        assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
+        val canvasIdOpt = meetingController.partUserMap.find(user => user._2 == userId).map(_._1)
+        if(canvasIdOpt.nonEmpty){
+          val gc = meetingScene.canvasMap(canvasIdOpt.get)._2
+          liveManager ! LiveManager.PullStream(liveId, VideoInfo(this.meetingRoomInfo.get.roomId, userId, gc), Some(meetingScene))
+        }
+        val audienceList = if(joinAudienceList.nonEmpty){
+          AudienceInfo(userId, liveId) :: joinAudienceList.get
+        } else {
+          List(AudienceInfo(userId, liveId))
+        }
+        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+          MeetingStatus.LIVE, Some(audienceList))
+
+
 
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")
