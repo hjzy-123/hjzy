@@ -329,7 +329,7 @@ object RmManager {
 
       case StartMeetingReq =>
         assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
-        sender.foreach(_ ! StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
+        sender.foreach(_ ! WsProtocol.StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
         Behaviors.same
 
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
