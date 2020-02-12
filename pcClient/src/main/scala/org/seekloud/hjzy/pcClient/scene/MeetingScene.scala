@@ -7,7 +7,7 @@ import javafx.scene.image.{Image, ImageView}
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 import javafx.scene.text.Font
-import javafx.scene.{Group, Scene}
+import javafx.scene.{Group, Node, Scene}
 import javafx.stage.Stage
 import org.seekloud.hjzy.pcClient.common.Constants
 import org.seekloud.hjzy.pcClient.common.Constants.AppWindow
@@ -31,19 +31,23 @@ object MeetingScene {
 
     def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None)
 
-    def stopSelfImage()
+    def controlSelfImage(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
 
-    def stopSelfSound()
+    def controlSelfSound(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
 
-    def stopOnesImage()
+    def controlOnesImage(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
 
-    def stopOnesSound()
+    def controlOnesSound(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
 
     def fullScreen()
 
     def exitFullScreen()
 
+    def applyForSpeak()
+
     def allowSbSpeak()
+
+    def appointSbSpeak()
 
     def refuseSbSpeak()
 
@@ -184,40 +188,6 @@ class MeetingScene(stage: Stage){
   meetingInfoBox.setPadding(new Insets(10,30,20,30))
 
 
-//  def genMeetingInfoBox(): VBox = {
-//    val isHost: Boolean =
-//      if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-//
-//    val meetingHostBox = if(isHost){
-//      new HBox(5, meetingHostLabel, meetingHostValue, changeHostBtn)
-//    } else {
-//      new HBox(5, meetingHostLabel, meetingHostValue)
-//    }
-//    meetingHostBox.setAlignment(Pos.CENTER_LEFT)
-//
-//
-//    val meetingNameBox = if(isHost){
-//      val vBox = new VBox(5, meetingNameLabel, meetingNameField)
-//      val hBox = new HBox(5, vBox, editMeetingNameBtn)
-//      hBox.setAlignment(Pos.BOTTOM_LEFT)
-//      hBox
-//    } else {
-//      new HBox(5, meetingNameLabel, meetingNameValue)
-//    }
-//
-//    val meetingDesBox = if(isHost){
-//      val vBox = new VBox(5, meetingDesLabel, meetingDesField)
-//      val hBox = new HBox(5, vBox, editMeetingDesBtn)
-//      hBox.setAlignment(Pos.BOTTOM_LEFT)
-//      hBox
-//    } else {
-//      new HBox(5, meetingDesLabel, meetingDesValue)
-//    }
-//
-//    val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-//    meetingInfoBox.setPadding(new Insets(10,30,20,30))
-//    meetingInfoBox
-//  }
 
   /*speakInfo*/
   val speakInfoLabel = new Label(s"发言信息")
@@ -226,35 +196,28 @@ class MeetingScene(stage: Stage){
   val speakStateLabel = new Label(s"当前发言者：")
   val speakStateValue = new Label(s"无")
   speakStateValue.setPrefWidth(85)
-  val appointSpeakBtn = new Button(s"指派")
-  appointSpeakBtn.getStyleClass.add("confirmBtn")
+
+  val controlSpeakBtn = new Button(s"指派")
+  controlSpeakBtn.getStyleClass.add("confirmBtn")
+  controlSpeakBtn.setOnAction(_ => listener.appointSbSpeak())
+
+  val applyForSpeakBtn = new Button(s"申请")
+  applyForSpeakBtn.getStyleClass.add("confirmBtn")
+  applyForSpeakBtn.setOnAction(_ => listener.applyForSpeak())
 
   val speakStateBox = new HBox(5)
   speakStateBox.setAlignment(Pos.CENTER_LEFT)
   def addToSpeakStateBox(isHost: Boolean): Boolean = {
     speakStateBox.getChildren.clear()
     if(isHost){
-      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, appointSpeakBtn)
+      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, controlSpeakBtn)
     } else {
-      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue)
+      speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, applyForSpeakBtn)
     }
   }
   val speakInfoBox = new VBox(15, speakInfoLabel, speakStateBox)
   speakInfoBox.setPadding(new Insets(10,30,20,30))
 
-//  def genSpeakInfoBox(): VBox = {
-//    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-//    val stateBox = if(isHost){
-//      new HBox(5, speakStateLabel, speakStateValue, appointSpeakBtn)
-//    } else {
-//      new HBox(5, speakStateLabel, speakStateValue)
-//    }
-//    stateBox.setAlignment(Pos.CENTER_LEFT)
-//    val speakInfoBox = new VBox(15, speakInfoLabel, stateBox)
-//    speakInfoBox.setPadding(new Insets(10,30,20,30))
-//    speakInfoBox
-//
-//  }
 
   val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)
   leftArea.setPrefWidth(275)
@@ -319,14 +282,24 @@ class MeetingScene(stage: Stage){
   val selfSoundToggleBtn: ToggleButton = selfCanvasBar.soundToggleButton
   val selfLiveBar: HBox = selfCanvasBar.liveBarBox
 
-  selfImageToggleBtn.setOnAction {
-    _ =>
-
+  selfImageToggleBtn.setOnAction { _ =>
+    if (selfImageToggleBtn.isSelected) {
+      listener.controlSelfImage(toClose = Some(true))
+      Tooltip.install(selfImageToggleBtn, new Tooltip("点击打开画面"))
+    } else {
+      listener.controlSelfImage(toOpen = Some(true))
+      Tooltip.install(liveToggleButton, new Tooltip("点击关闭画面"))
+    }
   }
 
-  selfSoundToggleBtn.setOnAction {
-    _ =>
-
+  selfSoundToggleBtn.setOnAction { _ =>
+    if (selfSoundToggleBtn.isSelected) {
+      listener.controlSelfSound(toClose = Some(true))
+      Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
+    } else {
+      listener.controlSelfSound(toOpen = Some(true))
+      Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
+    }
   }
 
   /*self livePane*/
@@ -344,13 +317,16 @@ class MeetingScene(stage: Stage){
 
 
   /*others' canvas*/
-  val canvasMap: Map[Int, (Canvas, GraphicsContext)] = List(1,2,3,4,5,6).map{ i =>
+  val canvasMap: Map[Int, (Canvas, GraphicsContext, StackPane)] = List(1,2,3,4,5,6).map{ i =>
     val imageCanvas = new Canvas(Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
     val imageGc: GraphicsContext = imageCanvas.getGraphicsContext2D
     val imageCanvasBg = new Image("img/picture/background.jpg")
     imageGc.drawImage(imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+    val stackPane = new StackPane()
+    stackPane.getChildren.add(imageCanvas)
+    stackPane.setAlignment(Pos.BOTTOM_CENTER)
 
-    i -> (imageCanvas, imageGc)
+    i -> (imageCanvas, imageGc, stackPane)
   }.toMap
 
   /*others' nameLabel*/
@@ -362,34 +338,67 @@ class MeetingScene(stage: Stage){
     i -> nameLabel
   }.toMap
 
-//  /*others' liveBar*/
-//  val liveBarMap: List[(Int, HBox)] = List(1,2,3,4,5,6).map{ i =>
-//    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
-//    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
-//    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
-//    val liveBar: HBox = canvasBar.liveBarBox
-//
-//    imageToggleBtn.setOnAction {
-//      _ =>
-//
-//    }
-//
-//    soundToggleBtn.setOnAction {
-//      _ =>
-//
-//    }
-//    i -> liveBar
-//  }
+  /*others' liveBar*/
+  def addLiveBarToCanvas(orderNum: Int) = {
+    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
+    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
+    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
+    val liveBar: HBox = canvasBar.liveBarBox
+
+    imageToggleBtn.setOnAction { _ =>
+      if (imageToggleBtn.isSelected) {
+        listener.controlOnesImage(orderNum = orderNum, toClose = Some(true))
+        Tooltip.install(imageToggleBtn, new Tooltip("点击打开画面"))
+      } else {
+        listener.controlOnesImage(orderNum = orderNum, toOpen = Some(true))
+        Tooltip.install(imageToggleBtn, new Tooltip("点击关闭画面"))
+      }
+    }
+
+    soundToggleBtn.setOnAction { _ =>
+      if (selfSoundToggleBtn.isSelected) {
+        listener.controlOnesSound(orderNum = orderNum, toClose = Some(true))
+        Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
+      } else {
+        listener.controlOnesSound(orderNum = orderNum, toOpen = Some(true))
+        Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
+      }
+    }
+    canvasMap(orderNum)._3.getChildren.add(liveBar)
+  }
+
+  def removeLiveBarFromCanvas(orderNum: Int) = {
+    canvasMap(orderNum)._3.getChildren.clear()
+    canvasMap(orderNum)._3.getChildren.add(canvasMap(orderNum)._1)
+  }
+
+  val liveBarMap: List[(Int, HBox)] = List(1,2,3,4,5,6).map{ i =>
+    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
+    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
+    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
+    val liveBar: HBox = canvasBar.liveBarBox
+
+    imageToggleBtn.setOnAction {
+      _ =>
+
+    }
+
+    soundToggleBtn.setOnAction {
+      _ =>
+
+    }
+    i -> liveBar
+  }
 
   val box1 = new HBox(
-    new VBox(nameLabelMap(1),canvasMap(1)._1),
-    new VBox(nameLabelMap(2),canvasMap(2)._1),
-    new VBox(nameLabelMap(3),canvasMap(3)._1)
+    new VBox(nameLabelMap(1),canvasMap(1)._3),
+    new VBox(nameLabelMap(2),canvasMap(2)._3),
+    new VBox(nameLabelMap(3),canvasMap(3)._3)
   )
   val box2 = new HBox(
-    new VBox(nameLabelMap(4),canvasMap(4)._1),
-    new VBox(nameLabelMap(5),canvasMap(5)._1),
-    new VBox(nameLabelMap(6),canvasMap(6)._1)
+    new VBox(nameLabelMap(4),canvasMap(4)._3),
+    new VBox(nameLabelMap(5),canvasMap(5)._3),
+    new VBox(nameLabelMap(6),canvasMap(6)._3)
   )
   val othersCanvasBox = new VBox(box1, box2)
   val canvasBox = new VBox(5, selfLivePane, othersCanvasBox)
@@ -397,22 +406,6 @@ class MeetingScene(stage: Stage){
   val middleBox = new VBox(10, controlBox, canvasBox)
   middleBox.setAlignment(Pos.TOP_CENTER)
   middleBox.setPadding(new Insets(20,0,0,0))
-
-//  def genMiddleBox(): VBox = {
-//    val isHost = if(RmManager.userInfo.get.userId == RmManager.meetingRoomInfo.get.userId) true else false
-//    val topBox = if(isHost){
-//      new HBox(5,liveToggleButton, meetingStateLabel)
-//    } else {
-//      new HBox(meetingStateLabel)
-//    }
-//    topBox.setAlignment(Pos.CENTER)
-//
-//    val middleBox = new VBox(10, topBox, canvasBox)
-//    middleBox.setAlignment(Pos.TOP_CENTER)
-//    middleBox.setPadding(new Insets(20,0,0,0))
-//    middleBox
-//  }
-
 
 
 

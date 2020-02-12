@@ -157,7 +157,7 @@ object RmManager {
         log.debug(s"create meeting success.")
         this.meetingRoomInfo = roomInfo
         val meetingScene = new MeetingScene(stageCtx.getStage)
-        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
+        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, true)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
         liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))
@@ -173,7 +173,7 @@ object RmManager {
         log.debug(s"join meeting success.")
         this.meetingRoomInfo = roomInfo
         val meetingScene = new MeetingScene(stageCtx.getStage)
-        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
+        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, false)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
         liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))

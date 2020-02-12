@@ -27,9 +27,12 @@ import org.slf4j.LoggerFactory
 class MeetingController(
   context: StageContext,
   meetingScene: MeetingScene,
-  rmManager: ActorRef[RmManager.RmCommand]) {
+  rmManager: ActorRef[RmManager.RmCommand],
+  ifHostWhenCreate: Boolean) {
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)
+
+  var isHost: Boolean = this.ifHostWhenCreate
 
   var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
   var partInfoList: List[(Long, String)] = List() // (userId, userName)
@@ -43,10 +46,6 @@ class MeetingController(
     }
 
     override def stopLive(): Unit = {
-
-    }
-
-    override def allowSbSpeak(): Unit = {
 
     }
 
@@ -80,7 +79,23 @@ class MeetingController(
 
     }
 
+    override def applyForSpeak(): Unit = {
+
+    }
+
+    override def allowSbSpeak(): Unit = {
+
+    }
+
+    override def appointSbSpeak(): Unit = {
+
+    }
+
     override def refuseSbSpeak(): Unit = {
+
+    }
+
+    override def stopSbSpeak(): Unit = {
 
     }
 
@@ -90,23 +105,19 @@ class MeetingController(
 
     }
 
-    override def stopOnesImage(): Unit = {
+    override def controlOnesImage(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
 
     }
 
-    override def stopOnesSound(): Unit = {
+    override def controlOnesSound(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
 
     }
 
-    override def stopSbSpeak(): Unit = {
+    override def controlSelfImage(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
 
     }
 
-    override def stopSelfImage(): Unit = {
-
-    }
-
-    override def stopSelfSound(): Unit = {
+    override def controlSelfSound(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
 
     }
 
@@ -140,6 +151,8 @@ class MeetingController(
       partUserMap = partUserMap.updated(num, userId)
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText(userName)
+        if(isHost) meetingScene.addLiveBarToCanvas(num)
+
       }
 
     }
@@ -153,8 +166,8 @@ class MeetingController(
       partUserMap = partUserMap - num
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText("")
+        if(isHost) meetingScene.removeLiveBarFromCanvas(num)
       }
-
     }
   }
 
@@ -262,6 +275,7 @@ class MeetingController(
           Boot.addToPlatform{
             meetingScene.meetingHostValue.setText(msg.userName)
           }
+          isHost = false
         } else {
           rmManager ! TurnToHost
         }
@@ -273,6 +287,7 @@ class MeetingController(
         }
         if(msg.userId == RmManager.userInfo.get.userId){
           rmManager ! TurnToHost
+          isHost = true
         }
 
       case msg: StartMeetingRsp =>
