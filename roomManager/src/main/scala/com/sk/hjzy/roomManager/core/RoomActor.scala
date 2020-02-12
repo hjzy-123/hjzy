@@ -330,8 +330,9 @@ object RoomActor {
         log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
         var liveInfo4mix = LiveInfo("","")
-        val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
+
         userIdList.foreach{ id =>
+          val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != id)
           if(liveInfoMap.get(id).nonEmpty)
             dispatchTo(List(id), StartMeetingRsp(Some(liveInfoMap(id)), liveIdList))
           else
