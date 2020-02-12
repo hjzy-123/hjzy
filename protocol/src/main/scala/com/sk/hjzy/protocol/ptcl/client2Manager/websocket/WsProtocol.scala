@@ -50,8 +50,6 @@ object WsProtocol {
 
   case object NoAuthor extends WsMsgRm
 
-
-  //todo 开始会议
   case class StartMeetingReq(
                               userId: Long,
                               token: String
@@ -79,7 +77,31 @@ object WsProtocol {
 
   case class ChangeHostRsp(userId: Long, userName: String,errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
 
+  /*主持人屏蔽用户的声音或图像*/
+  case class CloseSoundFrame(
+                         userId: Long,
+                         sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
+                         frame: Int = 0
+                       ) extends WsMsgHost
 
+  case class CloseSoundFrameRsp(
+                                 errCode: Int = 0,
+                                 msg: String = "ok"
+                               ) extends WsMsgRm2Host
+
+  /*主持人强制某人退出会议*/
+  case class ForceOut(
+                       userId: Long,
+                     ) extends WsMsgHost
+
+  case class ForceOutRsp(
+                          errCode: Int = 0,
+                          msg: String = "ok"
+                        ) extends WsMsgRm2Host
+
+  case class ApplySpeakHost(
+                             userId: Long
+                           ) extends WsMsgRm2Audience
   /**
    *
    * 观众端
@@ -105,6 +127,25 @@ object WsProtocol {
                                  userId: Long,
                                  userName: String
                                ) extends WsMsgRm2Audience
+
+  case class CloseSoundFrame2Client(
+                              sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
+                              frame: Int = 0
+                            ) extends WsMsgRm2Audience
+
+  case class ForceOut2Client(
+                              userId: Long
+                            ) extends WsMsgRm2Audience
+
+  /*申请发言*/
+  case class ApplySpeak(
+                         userId: Long
+                       ) extends WsMsgAudience
+
+  case class ApplySpeakRsp(
+                            errCode: Int = 0,
+                            msg: String = "ok"
+                          ) extends WsMsgRm2Audience
 
   /**
    * 所有用户  群发消息
