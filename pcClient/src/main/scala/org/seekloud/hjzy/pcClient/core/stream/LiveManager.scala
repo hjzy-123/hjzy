@@ -281,11 +281,11 @@ object LiveManager {
     liveId: String,
     mediaPlayer: MediaPlayer,
     videoInfo: VideoInfo,
-//    joinInfo: Option[JoinInfo],
-//    watchInfo: Option[WatchInfo],
+    //    joinInfo: Option[JoinInfo],
+    //    watchInfo: Option[WatchInfo],
     meetingScene: Option[MeetingScene],
-//    audienceScene : Option[AudienceScene],
-//    hostScene: Option[HostScene]
+    //    audienceScene : Option[AudienceScene],
+    //    hostScene: Option[HostScene]
   ) = {
     val childName = s"streamPuller-$liveId"
     ctx.child(childName).getOrElse {
