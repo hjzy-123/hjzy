@@ -1,5 +1,6 @@
 package org.seekloud.hjzy.capture.core
 
+import java.awt.Color
 import java.awt.image.BufferedImage
 import java.nio.ShortBuffer
 import java.text.SimpleDateFormat
@@ -16,7 +17,8 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
+import org.bytedeco.javacv.Frame
+import org.seekloud.hjzy.capture.core.CaptureManager.MediaSettings
 /**
   * User: TangYaruo
   * Date: 2019/8/28
@@ -28,6 +30,8 @@ object EncodeActor {
   private val log = LoggerFactory.getLogger(this.getClass)
   var debug: Boolean = true
   private var needTimeMark: Boolean = false
+
+  private var savedFrame: Option[Frame] = None
 
   def debug(msg: String): Unit = {
     if (debug) log.debug(msg)
@@ -43,14 +47,16 @@ object EncodeActor {
 
   final case object StopEncode extends Command
 
+  final case object PauseEncode extends Command
+
+  final case object StartEncode extends Command
 
   def create(
     replyTo: ActorRef[Messages.ReplyToCommand],
     encodeType: EncoderType.Value,
     encoder: FFmpegFrameRecorder,
     imageCache: LinkedBlockingDeque[Messages.LatestFrame],
-    needImage: Boolean,
-    needSound: Boolean,
+    mediaSettings: MediaSettings,
     isDebug: Boolean,
     needTimestamp: Boolean
   ): Behavior[Command] =
@@ -80,7 +86,7 @@ object EncodeActor {
           }
 
       }
-      working(replyTo, encodeType, encoder, imageCache, new Java2DFrameConverter(), needImage, needSound)
+      working(replyTo, encodeType, encoder, imageCache, new Java2DFrameConverter(), mediaSettings)
     }
 
 
@@ -90,11 +96,11 @@ object EncodeActor {
     encoder: FFmpegFrameRecorder,
     imageCache: LinkedBlockingDeque[Messages.LatestFrame],
     imageConverter: Java2DFrameConverter,
-    needImage: Boolean,
-    needSound: Boolean,
+    mediaSettings: MediaSettings,
     encodeLoop: Option[ScheduledFuture[_]] = None,
     encodeExecutor: Option[ScheduledThreadPoolExecutor] = None,
-    frameNumber: Int = 0
+    frameNumber: Int = 0,
+    pauseEncode: Boolean = false
   ): Behavior[Command] =
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
@@ -111,36 +117,74 @@ object EncodeActor {
             TimeUnit.MICROSECONDS
           )
 
-          working(replyTo, encodeType, encoder, imageCache, imageConverter, needImage, needSound, Some(loop), Some(encodeLoopExecutor), frameNumber)
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, Some(loop), Some(encodeLoopExecutor), frameNumber)
+
+        case PauseEncode =>
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber, true)
+
+        case StartEncode =>
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber, false)
 
         case EncodeLoop =>
-          if (needImage) {
-            try {
-              val latestImage = imageCache.peek()
-              if (latestImage != null) {
-                encoder.setTimestamp((frameNumber * (1000.0 / encoder.getFrameRate) * 1000).toLong)
-                if (!needTimeMark) {
-                  encoder.record(latestImage.frame)
-                } else {
-                  val iw = latestImage.frame.imageWidth
-                  val ih = latestImage.frame.imageHeight
-                  val bImg = imageConverter.convert(latestImage.frame)
-                  val ts = if (CaptureManager.timeGetter != null) CaptureManager.timeGetter() else System.currentTimeMillis()
-                  val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:S").format(ts)
-                  bImg.getGraphics.drawString(date, iw / 10, ih / 10)
-                  encoder.record(imageConverter.convert(bImg))
+          if(!pauseEncode){
+            if (mediaSettings.needImage) {
+              try {
+                val latestImage = imageCache.peek()
+                if (latestImage != null) {
+                  if(savedFrame.isDefined){
+                    savedFrame = Some(latestImage.frame)
+                  }
+                  encoder.setTimestamp((frameNumber * (1000.0 / encoder.getFrameRate) * 1000).toLong)
+                  if (!needTimeMark) {
+                    encoder.record(latestImage.frame)
+                  } else {
+                    val iw = latestImage.frame.imageWidth
+                    val ih = latestImage.frame.imageHeight
+                    val bImg = imageConverter.convert(latestImage.frame)
+                    val ts = if (CaptureManager.timeGetter != null) CaptureManager.timeGetter() else System.currentTimeMillis()
+                    val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:S").format(ts)
+                    bImg.getGraphics.drawString(date, iw / 10, ih / 10)
+                    encoder.record(imageConverter.convert(bImg))
+                    log.info("record frame")
+                  }
                 }
+              } catch {
+                case ex: Exception =>
+                  log.error(s"[$encodeType] encode image frame error: $ex")
+                  if(ex.getMessage.startsWith("av_interleaved_write_frame() error")){
+                    replyTo ! EncodeException(ex)
+                    ctx.self ! StopEncode
+                  }
               }
+            }
+          }else {
+            val blackFrame: Frame =
+              if (savedFrame.isDefined) {
+                savedFrame.get
+              } else {
+                val f = new Frame()
+                f.imageWidth = mediaSettings.imageWidth
+                f.imageHeight = mediaSettings.imageHeight
+                savedFrame = Some(f)
+                f
+              }
+            try {
+              val bImg = imageConverter.convert(blackFrame)
+              val gra = bImg.getGraphics
+              gra.setColor(Color.BLACK)
+              gra.fillRect(0, 0, mediaSettings.imageWidth, mediaSettings.imageHeight)
+              encoder.record(imageConverter.convert(bImg))
+              log.info("record black frame")
             } catch {
               case ex: Exception =>
                 log.error(s"[$encodeType] encode image frame error: $ex")
-                if(ex.getMessage.startsWith("av_interleaved_write_frame() error")){
+                if (ex.getMessage.startsWith("av_interleaved_write_frame() error")) {
                   replyTo ! EncodeException(ex)
                   ctx.self ! StopEncode
                 }
             }
           }
-          working(replyTo, encodeType, encoder, imageCache, imageConverter, needImage, needSound, encodeLoop, encodeExecutor, frameNumber + 1)
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber + 1)
 
         case msg: EncodeSamples =>
           if (encodeLoop.nonEmpty) {

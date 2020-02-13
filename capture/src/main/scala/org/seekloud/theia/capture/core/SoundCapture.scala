@@ -36,6 +36,10 @@ object SoundCapture {
 
   final case object AskSamples extends Command
 
+  final case object PauseSamples extends Command
+
+  final case object ReStartSample extends Command
+
 
   def create(
     replyTo: ActorRef[Messages.ReplyToCommand],
@@ -69,6 +73,7 @@ object SoundCapture {
     audioExecutor: Option[ScheduledThreadPoolExecutor] = None,
     audioLoop: Option[ScheduledFuture[_]] = None,
     askFlag: Boolean = false,
+    pauseSamples: Boolean = false
   ): Behavior[Command] =
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
@@ -84,36 +89,46 @@ object SoundCapture {
               0,
               ((1000 / frameRate) * 1000).toLong,
               TimeUnit.MICROSECONDS)
-          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, Some(audioExecutor), Some(audioLoop), askFlag)
+          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, Some(audioExecutor), Some(audioLoop), askFlag, pauseSamples)
 
         case Sample =>
-          try {
-            val nBytesRead = line.read(audioBytes, 0, line.available)
-            val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
-            val samples = new Array[Short](nSamplesRead)
-            sampleSize match {
-              case 8 =>
-                val shortBuff = ShortBuffer.wrap(audioBytes.map(_.toShort))
-                debug(s"8-bit sample order: ${shortBuff.order()}")
-                shortBuff.get(samples)
-              case 16 =>
-                ByteBuffer.wrap(audioBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer.get(samples)
-              case _ => //invalid
+          if(!pauseSamples){
+            log.info("encode sound")
+            try {
+              val nBytesRead = line.read(audioBytes, 0, line.available)
+              val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
+              val samples = new Array[Short](nSamplesRead)
+              sampleSize match {
+                case 8 =>
+                  val shortBuff = ShortBuffer.wrap(audioBytes.map(_.toShort))
+                  debug(s"8-bit sample order: ${shortBuff.order()}")
+                  shortBuff.get(samples)
+                case 16 =>
+                  ByteBuffer.wrap(audioBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer.get(samples)
+                case _ => //invalid
+              }
+
+              val sp = ShortBuffer.wrap(samples, 0, nSamplesRead)
+              if (askFlag) replyTo ! Messages.SoundRsp(LatestSound(sp, System.currentTimeMillis()))
+              encoders.foreach(_._2 ! EncodeActor.EncodeSamples(sampleRate.toInt, channels, sp))
+            } catch {
+              case ex: Exception =>
+
+                log.warn(s"sample sound error: $ex")
             }
-
-            val sp = ShortBuffer.wrap(samples, 0, nSamplesRead)
-            if (askFlag) replyTo ! Messages.SoundRsp(LatestSound(sp, System.currentTimeMillis()))
-            encoders.foreach(_._2 ! EncodeActor.EncodeSamples(sampleRate.toInt, channels, sp))
-          } catch {
-            case ex: Exception =>
-
-              log.warn(s"sample sound error: $ex")
+          }else{
+            log.info("no encode sound")
           }
-          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = false)
+          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = false, pauseSamples)
 
         case AskSamples =>
-          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = true)
+          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = true, pauseSamples)
 
+        case PauseSamples =>
+          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag, pauseSamples = true)
+
+        case ReStartSample =>
+          working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag, pauseSamples = false)
 
         case StopSample =>
           log.info(s"Media microphone stopped.")

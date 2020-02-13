@@ -1,14 +1,19 @@
 package org.seekloud.hjzy.capture.core
 
+import java.awt.Color
 import java.io.{File, OutputStream}
 import java.util.concurrent.LinkedBlockingDeque
+import java.awt.image.BufferedImage
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerScheduler}
+import javafx.scene.image.Image
 import javax.sound.sampled._
 import org.bytedeco.ffmpeg.global.avcodec
 import org.bytedeco.ffmpeg.global.avcodec._
-import org.bytedeco.javacv.{FFmpegFrameGrabber, FFmpegFrameRecorder, JavaFXFrameConverter1, OpenCVFrameGrabber}
+import org.bytedeco.javacv.{FFmpegFrameGrabber, FFmpegFrameRecorder, Frame, Java2DFrameConverter, JavaFXFrameConverter1, OpenCVFrameGrabber}
+import org.seekloud.hjzy.capture.core.EncodeActor.{PauseEncode, StartEncode}
+import org.seekloud.hjzy.capture.core.SoundCapture.{PauseSamples, ReStartSample}
 import org.seekloud.hjzy.capture.processor.ImageConverter
 import org.seekloud.hjzy.capture.protocol.Messages
 import org.seekloud.hjzy.capture.protocol.Messages._
@@ -32,6 +37,7 @@ object CaptureManager {
   private var debug: Boolean = true
   private var needTimeMark: Boolean = false
   var timeGetter: () => Long = _
+  var savedFrame: Option[Frame] = None
 
   private def debug(msg: String): Unit = {
     if (debug) log.debug(msg)
@@ -95,6 +101,14 @@ object CaptureManager {
   final case object ShowPerson extends Command
 
   final case object ShowBoth extends Command
+
+  final case object StopCamera extends Command
+
+  final case object StartCamera extends Command
+
+  final case object StopSound extends Command
+
+  final case object StartSound extends Command
 
   private object STOP_DELAY_TIMER_KEY
 
@@ -304,15 +318,21 @@ object CaptureManager {
           Behaviors.same
 
         case AskImage =>
-          val targetImage = latestFrame.peek()
-          if (targetImage != null) {
-            val image = imageConverter.convert(targetImage.frame.clone())
-            replyTo ! Messages.ImageRsp(LatestImage(image, System.currentTimeMillis()))
-          } else {
-//            log.info(s"No image captured yet.")
-            replyTo ! Messages.NoImage
+          if(imageCaptureOpt.nonEmpty){
+            val targetImage = latestFrame.peek()
+            if (targetImage != null) {
+              if(savedFrame.isEmpty){
+                savedFrame = Some(targetImage.frame.clone())
+              }
+              val image = imageConverter.convert(targetImage.frame.clone())
+              replyTo ! Messages.ImageRsp(LatestImage(image, System.currentTimeMillis()))
+            } else {
+              //            log.info(s"No image captured yet.")
+              replyTo ! Messages.NoImage
+            }
+          }else{
+            replyTo ! Messages.ImagePause
           }
-
           Behaviors.same
 
         case AskFrame =>
@@ -379,6 +399,12 @@ object CaptureManager {
 
 
         case CameraGrabberStarted(grabber1, only) =>
+          val encoderType = EncoderType.STREAM
+          val childName = s"EncodeActor-$encoderType"
+          if(ctx.child(childName).nonEmpty){
+            val encode = ctx.child(childName).get.unsafeUpcast[EncodeActor.Command]
+            encode ! StartEncode
+          }
           if(only){
             if(desktopCaptureOpt.nonEmpty){
               desktopCaptureOpt.foreach(_ ! DesktopCapture.StopGrab)
@@ -433,7 +459,7 @@ object CaptureManager {
           replyTo ! Messages.CannotAccessDesktop(ctx.self)
           Behaviors.same
 
-        case ShowPerson =>
+        case StartCamera =>
           if(imageCaptureOpt.nonEmpty){
             if(desktopCaptureOpt.nonEmpty){
               desktopCaptureOpt.foreach(_ ! DesktopCapture.StopGrab)
@@ -467,38 +493,48 @@ object CaptureManager {
             Behaviors.same
           }
 
-        case ShowDesktop =>
-          if(desktopCaptureOpt.nonEmpty) {
-            if (imageCaptureOpt.nonEmpty) {
-              imageCaptureOpt.foreach(_ ! ImageCapture.StopCamera)
-            }
-            montageActor ! MontageActor.ShowDesktop
-            idle(
-              replyTo,
-              mediaSettings,
-              grabber,
-              line,
-              None,
-              desktopCaptureOpt,
-              montageActor,
-              soundCaptureOpt,
-              encodeActorMap)
-          }else{
-            if (mediaSettings.needImage){
-              Future{
-                val desktopGrabber = new FFmpegFrameGrabber("desktop")
-                desktopGrabber.setFormat("gdigrab")
-                debug(s"desktopGrabber is starting...")
-                desktopGrabber.start()
-                debug(s"desktopGrabber started.")
-                desktopGrabber
-              }.onComplete{
-                case Success(grabber) => ctx.self ! DesktopGrabberStarted(grabber, true)
-                case Failure(ex) => ctx.self ! StartedDesktopFailed(ex)
-              }
-            }
-            Behaviors.same
+        case StartSound =>
+          val childName = "SoundCapture"
+          val soundChild = ctx.child(childName)
+          if(soundChild.nonEmpty){
+            val soundActor = soundChild.get.unsafeUpcast[SoundCapture.Command]
+            soundActor ! ReStartSample
           }
+          Behaviors.same
+
+        case StopSound =>
+          val childName = "SoundCapture"
+          val soundChild = ctx.child(childName)
+          if(soundChild.nonEmpty){
+            val soundActor = soundChild.get.unsafeUpcast[SoundCapture.Command]
+            soundActor ! PauseSamples
+          }
+          Behaviors.same
+
+        case StopCamera =>
+          val encoderType = EncoderType.STREAM
+          val childName = s"EncodeActor-$encoderType"
+          if(ctx.child(childName).nonEmpty){
+            val encode = ctx.child(childName).get.unsafeUpcast[EncodeActor.Command]
+            encode ! PauseEncode
+          }
+          latestFrame.clear()
+          log.info("stop camera !!!!!")
+          if (imageCaptureOpt.nonEmpty) {
+            imageCaptureOpt.foreach(_ ! ImageCapture.StopCamera)
+          }
+
+          idle(
+            replyTo,
+            mediaSettings,
+            grabber,
+            line,
+            None,
+            desktopCaptureOpt,
+            montageActor,
+            soundCaptureOpt,
+            encodeActorMap)
+
 
 
         case ShowBoth =>
@@ -622,16 +658,16 @@ object CaptureManager {
     encoderType match {
       case EncoderType.STREAM =>
         log.info(s"streamEncoder start success.")
-        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.STREAM, encoder, latestFrame, mediaSettings.needImage, mediaSettings.needSound, debug)
+        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.STREAM, encoder, latestFrame, mediaSettings, debug)
         encodeActorMap.put(EncoderType.STREAM, encodeActor)
       case EncoderType.FILE =>
         log.info(s"fileEncoder start success.")
-        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.FILE, encoder, latestFrame, mediaSettings.needImage, mediaSettings.needSound, debug)
+        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.FILE, encoder, latestFrame, mediaSettings, debug)
         encodeActorMap.put(EncoderType.FILE, encodeActor)
 
       case EncoderType.BILIBILI =>
         log.info(s"bilibiliEncoder start success.")
-        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.BILIBILI, encoder, latestFrame, mediaSettings.needImage, mediaSettings.needSound, debug)
+        val encodeActor = getEncodeActor(ctx, replyTo, EncoderType.BILIBILI, encoder, latestFrame, mediaSettings, debug)
         encodeActorMap.put(EncoderType.BILIBILI, encodeActor)
     }
   }
@@ -709,13 +745,12 @@ object CaptureManager {
     encoder: FFmpegFrameRecorder,
     imageCache: LinkedBlockingDeque[LatestFrame],
     //    soundCache: LinkedBlockingDeque[LatestSound],
-    needImage: Boolean,
-    needSound: Boolean,
+    mediaSetting: MediaSettings,
     debug: Boolean
   ) = {
     val childName = s"EncodeActor-$encodeType"
     ctx.child(childName).getOrElse {
-      val actor = ctx.spawn(EncodeActor.create(replyTo, encodeType, encoder, imageCache, needImage, needSound, debug, needTimeMark), childName, blockingDispatcher)
+      val actor = ctx.spawn(EncodeActor.create(replyTo, encodeType, encoder, imageCache, mediaSetting, debug, needTimeMark), childName, blockingDispatcher)
       ctx.watchWith(actor, ChildDead(childName, actor))
       actor
     }.unsafeUpcast[EncodeActor.Command]
