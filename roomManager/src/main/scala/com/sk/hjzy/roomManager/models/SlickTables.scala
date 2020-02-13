@@ -141,7 +141,7 @@ trait SlickTables {
     *  @param duration Database column duration SqlType(VARCHAR), Length(100,true)
     *  @param recordAddr Database column record_addr SqlType(VARCHAR), Length(100,true)
     *  @param allowUser Database column allow_user SqlType(TEXT), Length(65535,true) */
-  case class rRecord(id: Long, roomid: Long = 0L, starttime: Long = 0L, coverImg: String = "", recordname: String = "", recorddes: String = "", viewNum: Int = 0, likeNum: Int = 0, duration: String = "", recordAddr: String = "", allowUser: String)
+  case class rRecord(id: Long, roomid: Long = 0L, starttime: Long = 0L, coverImg: String = "", recordname: String = "", recorddes: String = "", viewNum: Int = 0, likeNum: Int = 0, duration: String = "", recordAddr: String = "", allowUser: String = "")
   /** GetResult implicit for fetching rRecord objects using plain SQL queries */
   implicit def GetResultrRecord(implicit e0: GR[Long], e1: GR[String], e2: GR[Int]): GR[rRecord] = GR{
     prs => import prs._

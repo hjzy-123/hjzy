@@ -4,12 +4,19 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{JoinMeetingRsp, NewMeetingRsp}
+import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.PartUserInfo
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.{RecordDao, UserInfoDao}
 import com.sk.hjzy.roomManager.core.RoomActor._
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom}
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom, Stop}
+import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
+import com.sk.hjzy.roomManager.utils.ProcessorClient
 import org.slf4j.LoggerFactory
+
+import scala.util.{Failure, Success}
+import scala.concurrent.duration.{FiniteDuration, _}
+import com.sk.hjzy.roomManager.Boot.executor
 
 /**
  * 由Boot创建
@@ -20,6 +27,14 @@ object RoomManager {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   trait Command
+
+  case class DelaySeekRecord(wholeRoomInfo:WholeRoomInfo,  roomId:Long, startTime:Long , userInfoList: List[PartUserInfo]) extends Command
+
+  case class OnSeekRecord(wholeRoomInfo:WholeRoomInfo,  roomId:Long, startTime:Long , userInfoList: List[PartUserInfo]) extends Command
+
+  private final case object DelaySeekRecordKey
+
+  private final case object Timer4Stop
 
   def create():Behavior[Command] = {
     Behaviors.setup[Command]{ctx =>
@@ -76,12 +91,50 @@ object RoomManager {
           }
           Behaviors.same
 
-        case r@ActorProtocol.StartMeeting(userId,roomId,actor) =>
-          getRoomActor(roomId,ctx) ! r
+//        case r@ActorProtocol.StartMeeting(userId,roomId,actor) =>
+//          getRoomActor(roomId,ctx) ! r
+//          Behaviors.same
+
+//        case r@ActorProtocol.HostCloseRoom(roomId)=>
+//          //主持人结束会议
+//          getRoomActorOpt(roomId, ctx) match{
+//            case Some(roomActor) => roomActor ! r
+//            case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")
+//          }
+//          Behaviors.same
+
+        case DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoList) =>
+          log.info("---- wait seconds to seek record ----")
+          timer.startSingleTimer(DelaySeekRecordKey + roomId.toString + startTime, OnSeekRecord(wholeRoomInfo, roomId, startTime, userInfoList), 5.seconds)
           Behaviors.same
 
-        case r@ActorProtocol.HostCloseRoom(roomId)=>
-          //主持人结束会议
+        //延时请求获取录像
+        case OnSeekRecord(wholeRoomInfo, roomId, startTime, userInfoList) =>
+          timer.cancel(DelaySeekRecordKey + roomId.toString + startTime)
+          ProcessorClient.seekRecord(roomId,startTime).onComplete{
+            case Success(v) =>
+              v match{
+                case Right(rsp) =>
+                  log.debug(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
+                  var userNameList = ""
+                  userInfoList.foreach{ u =>
+                    userNameList = userNameList + "@" + u.userName
+                  }
+                  RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
+                    wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
+                    UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, rsp.duration, userNameList)
+
+                case Left(err) =>
+                  log.debug(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
+              }
+
+            case Failure(error) =>
+              log.debug(s"${ctx.self.path} 查询录像文件失败,error:$error")
+          }
+          timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
+          Behaviors.same
+
+        case r@Stop(roomId) =>
           getRoomActorOpt(roomId, ctx) match{
             case Some(roomActor) => roomActor ! r
             case None =>log.debug(s"${ctx.self.path}关闭房间失败，房间不存在，id=$roomId")

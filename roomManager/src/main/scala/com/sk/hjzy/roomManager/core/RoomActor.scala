@@ -6,13 +6,13 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.sk.hjzy.protocol.ptcl.CommonInfo
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.{LiveInfo, RoomInfo}
 import com.sk.hjzy.protocol.ptcl.client2Manager.http.Common.{GetLiveInfoRsp, JoinMeetingRsp, NewMeetingRsp}
-import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom}
+import com.sk.hjzy.roomManager.protocol.ActorProtocol.{GetUserInfoList, JoinRoom, NewRoom, Stop}
 import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
-import com.sk.hjzy.roomManager.Boot.{executor, userManager}
+import com.sk.hjzy.roomManager.Boot.{executor, roomManager, userManager}
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
 import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
@@ -33,7 +33,6 @@ import scala.util.{Failure, Success}
  */
 object RoomActor {
 
-
   private val log = LoggerFactory.getLogger(this.getClass)
 
   trait Command
@@ -48,6 +47,8 @@ object RoomActor {
   ) extends Command
 
   private case class TimeOut(msg: String) extends Command
+
+  private final case object Timer4Stop
 
   private final case object BehaviorChangeKey
 
@@ -79,7 +80,7 @@ object RoomActor {
         val subscribers = mutable.HashMap.empty[Long, ActorRef[UserActor.Command]]
         val liveInfoMap = mutable.HashMap.empty[Long, LiveInfo]
         val wholeRoomInfo = WholeRoomInfo(RoomInfo(roomId,"","",-1,"","",""))
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap)
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, -1)
       }
     }
   }
@@ -89,6 +90,7 @@ object RoomActor {
                   subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]],
                   wholeRoomInfo: WholeRoomInfo,
                   liveInfoMap: mutable.HashMap[Long, LiveInfo],
+                  startTime: Long,
                   userInfoListOpt: Option[List[PartUserInfo]] = None,
                   )
     (
@@ -105,10 +107,10 @@ object RoomActor {
                 UserInfoDao.getHeadImg(userTableOpt.get.headImg),
                 UserInfoDao.getHeadImg(userTableOpt.get.coverImg),Some(password), None)
               replyTo ! NewMeetingRsp(Some(partRoomInfo))
-              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap))
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
-              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo,liveInfoMap))
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo,liveInfoMap, startTime))
             }
           }
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
@@ -159,17 +161,17 @@ object RoomActor {
                     log.info(s"获取新的liveInfo$liveInfo")
                     liveInfoMap.put(userId, rsp.liveInfo)
                     if(userInfoListOpt.nonEmpty)
-                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, Some(userInfoListOpt.get :+ partUserInfo)))
+                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get :+ partUserInfo)))
                     else
-                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, Some(List(partUserInfo))))
+                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(List(partUserInfo))))
                   case Left(value) =>
                     if(userInfoListOpt.nonEmpty)
-                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, Some(userInfoListOpt.get :+ partUserInfo)))
+                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get :+ partUserInfo)))
                     else
-                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, Some(List(partUserInfo))))
+                      ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, startTime, Some(List(partUserInfo))))
                 }
               }else{
-                ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap))
+                ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap, startTime))
               }
             }
           }else if(join == Common.Subscriber.left){
@@ -179,7 +181,7 @@ object RoomActor {
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
             subscribers.remove(userId)
             liveInfoMap.remove(userId)
-            ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,Some(userInfoListOpt.get.filter(_.userId != userId))))
+            ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
           }
 
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
@@ -200,16 +202,19 @@ object RoomActor {
             dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
             userManager ! ActorProtocol.ChangeBehaviorToHost(newHost.userId, newHost.userId)
             val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl))
-            idle(roomId, subscribers,newRoomInfo, liveInfoMap, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+            idle(roomId, subscribers,newRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
           } else {
             log.info("主持人离开，房间内无人委派，房间废弃")
-            idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = "")), liveInfoMap)
+            timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
+            idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = "")), liveInfoMap, startTime)
           }
-        //todo  主持人离开房间时没有人时， 相当于结束会议，要删除房间信息，及对应的Actor
 
+        case Stop(roomId) =>
+          log.info(s"${ctx.self}---$roomId stopped ------")
+          Behaviors.stopped
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,liveInfoMap,userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
+          handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,liveInfoMap,startTime, userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in idle state...")
@@ -252,6 +257,7 @@ object RoomActor {
     wholeRoomInfo: WholeRoomInfo,
     subscribers: mutable.HashMap[Long, ActorRef[UserActor.Command]], //包括主播在内的所有用户
     liveInfoMap: mutable.HashMap[Long, LiveInfo],
+    startTime :Long,
     userInfoListOpt: Option[List[PartUserInfo]] = None,
     dispatch: WsMsgRm => Unit,
     dispatchTo: (List[Long], WsMsgRm) => Unit
@@ -278,7 +284,7 @@ object RoomActor {
         log.info(s"${ctx.self.path} modify the room info$wholeRoomInfo")
         dispatch(UpdateRoomInfo2Client(roomInfo.roomName, roomInfo.roomDes))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
-        idle(roomId,subscribers,info, liveInfoMap, userInfoListOpt)
+        idle(roomId,subscribers,info, liveInfoMap, startTime, userInfoListOpt)
 
       case Comment(`userId`, `roomId`, comment, color, extension) =>
         log.info(s"收到留言$comment")
@@ -290,10 +296,10 @@ object RoomActor {
               case None =>
                 log.info(s"${ctx.self.path.name} the database doesn't have the user")
             }
-            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,liveInfoMap,userInfoListOpt))
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,liveInfoMap, startTime, userInfoListOpt))
           case Failure(e) =>
             log.info(s"s${ctx.self.path.name} the search by userId error:$e")
-            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, userInfoListOpt))
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt))
         }
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
@@ -311,16 +317,16 @@ object RoomActor {
                 dispatchTo(subscribers.filter(r => r._1 != oldHost).keys.toList, ChangeHost2Client(newHost, v.userName))
                 dispatchTo(List(oldHost), ChangeHostRsp(newHost, v.userName))
                 dispatch(RcvComment(-1, "", s"${v.userName}被指派为新的主持人"))
-                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,info, liveInfoMap, userInfoListOpt))
+                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,info, liveInfoMap, startTime, userInfoListOpt))
               case None =>
                 dispatchTo(List(oldHost), ChangeHostRsp(newHost, "", 10002 ,"此用户不存在"))
                 log.info(s"${ctx.self.path.name} the database doesn't have the user")
-                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,liveInfoMap,userInfoListOpt))
+                ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo ,liveInfoMap,startTime, userInfoListOpt))
             }
           case Failure(e) =>
             dispatchTo(List(oldHost), ChangeHostRsp(newHost, "", 10002 ,"查询失败"))
             log.info(s"s${ctx.self.path.name} the search by userId error:$e")
-            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, userInfoListOpt))
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
         }
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
@@ -337,13 +343,16 @@ object RoomActor {
         }
         dispatch(RcvComment(-1, "", s"会议开始了~"))
 
+        //todo processor newConnnet
 //        RtpClient.getLiveInfoFunc().map {
 //          case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
 //            liveInfo4mix = liveInfo4Mix
 //          case _ =>
 //        }
 //        ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
-        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1), liveInfoMap, userInfoListOpt)
+
+        val startTime = -1
+        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1), liveInfoMap, startTime , userInfoListOpt)
 
       case GetLiveInfoReq(userId) =>
         RtpClient.getLiveInfoFunc().map {
@@ -351,10 +360,10 @@ object RoomActor {
             liveInfoMap.put(userId, rsp.liveInfo)
             dispatchTo(subscribers.filter(_._1 != userId).keys.toList, GetLiveId4Other(userId, rsp.liveInfo.liveId ))
             dispatchTo(List(userId), WsProtocol.GetLiveInfoRsp(Some(rsp.liveInfo)))
-            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, userInfoListOpt))
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
           case _ =>
             dispatchTo(List(userId), WsProtocol.GetLiveInfoRsp(None, 100002, "无LiveInfo"))
-            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, userInfoListOpt))
+            ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
         }
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
@@ -366,18 +375,13 @@ object RoomActor {
         dispatchTo(List(userId), CloseSoundFrame2Client(sound ,frame))
         Behaviors.same
 
-      case CloseSoundFrame2ClientRsp( userId, errCode , msg) =>
-        log.info(s"${ctx.self.path} $userId 关闭声音或画面，$errCode")
-        dispatchTo(List(wholeRoomInfo.roomInfo.userId), CloseSoundFrameRsp(errCode ,msg))
-        Behaviors.same
-
         //todo 强制某人退出会议后， 某人可以看到后续的会议吗？还是直接断开ws连接,然后是某人离开会议的操作
       case ForceOut(userId) =>
         log.info(s"${ctx.self.path} 强制$userId 退出会议")
         dispatchTo(List(userId), ForceOut2Client(userId))
         dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, userInfoListOpt)
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case ApplySpeak(userId, userName) =>
         log.info(s"${ctx.self.path} $userName 请求发言")
@@ -402,6 +406,14 @@ object RoomActor {
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
+        Behaviors.same
+
+      case StopMeetingReq(userId) =>
+        //todo  processor停止录像
+        if(userInfoListOpt.get.nonEmpty)
+        roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
+        dispatch(RcvComment(-1,"","会议结束了~"))
+        dispatch(StopMeetingRsp())
         Behaviors.same
 
       case x =>

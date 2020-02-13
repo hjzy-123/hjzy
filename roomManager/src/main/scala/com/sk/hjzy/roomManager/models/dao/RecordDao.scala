@@ -16,8 +16,8 @@ import scala.concurrent.Future
 
 object RecordDao {
 
-  def addRecord(roomId:Long, recordName:String, recordDes:String, startTime:Long, coverImg:String, viewNum:Int, likeNum:Int,duration:String) = {
-    db.run(tRecord += rRecord(1, roomId, startTime, coverImg, recordName, recordDes, viewNum, likeNum,duration, allowUser = ""))
+  def addRecord(roomId:Long, recordName:String, recordDes:String, startTime:Long, coverImg:String, viewNum:Int, likeNum:Int,duration:String, allowUser:String) = {
+    db.run(tRecord += rRecord(1, roomId, startTime, coverImg, recordName, recordDes, viewNum, likeNum,duration, allowUser))
   }
 
   def searchRecord(roomId:Long, startTime:Long):Future[Option[RecordInfo]] = {

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import com.sk.hjzy.roomManager.Boot.{executor, scheduler, system, timeout}
 import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor
 import com.sk.hjzy.protocol.ptcl.processer2Manager.Processor.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, UpdateRsp}
+import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{RecordInfoRsp, SeekRecord}
 import com.sk.hjzy.roomManager.common.AppSettings
 import com.sk.hjzy.roomManager.common.AppSettings.distributorDomain
 import com.sk.hjzy.roomManager.http.ServiceUtils.CommonRsp
@@ -23,7 +24,6 @@ object ProcessorClient extends HttpUtil{
   private val log = LoggerFactory.getLogger(this.getClass)
 
   val processorBaseUrl = s"http://${AppSettings.processorIp}:${AppSettings.processorPort}/theia/processor"
-  val distributorBaseUrl = s"https://$distributorDomain/theia/distributor"
 
   def newConnect(roomId:Long, liveId4host: String, liveId4client: String, liveId4push: String, liveCode4push: String, layout: Int):Future[Either[String,NewConnectRsp]] = {
     val url = processorBaseUrl + "/newConnect"
@@ -79,7 +79,30 @@ object ProcessorClient extends HttpUtil{
         log.error(s"closeRoom postJsonRequestSend error : $error")
         Left("Error")
     }
+  }
 
+  def seekRecord(roomId:Long, startTime:Long):Future[Either[String,RecordInfoRsp]] = {
+    val url = processorBaseUrl + "/seekRecord"
+    val jsonString = SeekRecord(roomId, startTime).asJson.noSpaces
+    postJsonRequestSend("seekRecord",url,List(),jsonString,timeOut = 60 * 1000,needLogRsp = false).map{
+      case Right(v) =>
+        decode[RecordInfoRsp](v) match{
+          case Right(data) =>
+            log.debug(s"$data")
+            if(data.errCode == 0){
+              Right(data)
+            }else{
+              log.error(s"seekRecord decode error1 : ${data.msg}")
+              Left(s"seekRecord decode error1 :${data.msg}")
+            }
+          case Left(e) =>
+            log.error(s"seekRecord decode error : $e")
+            Left(s"seekRecord decode error : $e")
+        }
+      case Left(error) =>
+        log.error(s"seekRecord postJsonRequestSend error : $error")
+        Left(s"seekRecord postJsonRequestSend error : $error")
+    }
   }
 
 
