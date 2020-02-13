@@ -13,7 +13,7 @@ object Ids {
 
 
   def getPlayId(roomId: Long, pusherId: Long): String = {
-    s"room$roomId-pusher-$pusherId"
+    s"room$roomId-pusher$pusherId"
   }
 
 //  def getCameraOption(position: String): Int = {

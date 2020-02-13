@@ -53,7 +53,7 @@ object MeetingScene {
 
     def stopSbSpeak()
 
-    def kickSbOut()
+    def kickSbOut(canvasId: Int)
 
     def sendComment(comment: String)
 

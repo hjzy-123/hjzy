@@ -34,6 +34,8 @@ class MeetingController(
 
   var isHost: Boolean = this.ifHostWhenCreate
 
+//  var isLiving: Boolean = false
+
   var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
   var partInfoList: List[(Long, String)] = List() // (userId, userName)
 
@@ -75,8 +77,10 @@ class MeetingController(
 
     }
 
-    override def kickSbOut(): Unit = {
-
+    override def kickSbOut(canvasId: Int): Unit = {
+      log.info(s"点击强制某人退出房间，canvasId = $canvasId")
+      val userId = partUserMap.get(userId)
+      if(userId.nonEmpty) rmManager ! KickSbOut(userId.get)
     }
 
     override def applyForSpeak(): Unit = {
@@ -242,8 +246,8 @@ class MeetingController(
 
       case msg: LeftUserRsp =>
         log.info(s"rcv LeftUserRsp from rm: $msg")
-        val userId = msg.UserId
-        reducePartUser(userId)
+        rmManager ! SomeoneLeft(msg.UserId)
+        reducePartUser(msg.UserId)
 
       case msg: RcvComment =>
         log.info(s"rcv RcvComment from rm: $msg")
@@ -295,9 +299,6 @@ class MeetingController(
         if(msg.errCode == 0){
           rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
         } else {
-//          Boot.addToPlatform{
-//            WarningDialog.initWarningDialog(s"${msg.msg}")
-//          }
           rmManager ! GetLiveInfoReq
         }
 
@@ -313,6 +314,14 @@ class MeetingController(
         log.info(s"rcv GetLiveInd4Other from rm: $msg")
         rmManager ! ToPull(msg.userId, msg.liveId)
 
+
+      case msg: ForceOut2Client =>
+        log.info(s"rcv ForceOut2Client from rm: $msg")
+        rmManager ! LeaveRoom
+
+      case msg: CloseSoundFrame2Client =>
+        log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
+        rmManager ! ControlSelfImageAndSound(msg.frame, msg.sound)
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")

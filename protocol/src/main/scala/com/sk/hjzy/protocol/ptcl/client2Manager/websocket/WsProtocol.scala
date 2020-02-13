@@ -84,20 +84,18 @@ object WsProtocol {
                          frame: Int = 0
                        ) extends WsMsgHost
 
-  case class CloseSoundFrameRsp(
-                                 errCode: Int = 0,
-                                 msg: String = "ok"
-                               ) extends WsMsgRm2Host
+//  case class CloseSoundFrameRsp(
+//                                 errCode: Int = 0,
+//                                 msg: String = "ok"
+//                               ) extends WsMsgRm2Host
 
   /*主持人强制某人退出会议*/
-  case class ForceOut(
-                       userId: Long,
-                     ) extends WsMsgHost
+  case class ForceOut(userId: Long) extends WsMsgHost
 
-  case class ForceOutRsp(
-                          errCode: Int = 0,
-                          msg: String = "ok"
-                        ) extends WsMsgRm2Host
+//  case class ForceOutRsp(
+//                          errCode: Int = 0,
+//                          msg: String = "ok"
+//                        ) extends WsMsgRm2Host
 
   /*主持人审批某人发言请求*/
   case class ApplySpeak2Host( userId: Long, userName: String ) extends WsMsgRm2Host   //申请发言用户id
@@ -142,11 +140,11 @@ object WsProtocol {
                               frame: Int = 0
                             ) extends WsMsgRm2Audience
 
-  case class CloseSoundFrame2ClientRsp(
-                                        userId: Long,
-                                        errCode: Int = 0,
-                                        msg: String = "ok"
-                                      ) extends WsMsgAudience     //客户端是否成功关闭声音或画面
+//  case class CloseSoundFrame2ClientRsp(
+//                                        userId: Long,
+//                                        errCode: Int = 0,
+//                                        msg: String = "ok"
+//                                      ) extends WsMsgAudience     //客户端是否成功关闭声音或画面
 
   case class ForceOut2Client(
                               userId: Long
