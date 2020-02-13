@@ -99,9 +99,18 @@ object WsProtocol {
                           msg: String = "ok"
                         ) extends WsMsgRm2Host
 
-  case class ApplySpeakHost(
-                             userId: Long
-                           ) extends WsMsgRm2Audience
+  /*主持人审批某人发言请求*/
+  case class ApplySpeak2Host( userId: Long, userName: String ) extends WsMsgRm2Host   //申请发言用户id
+
+  case class ApplySpeakAccept( userId: Long, userName: String, accept: Boolean) extends WsMsgHost //审批某个用户发言请求
+
+  case class SpeakAcceptRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+
+  /*主持人制定某人发言*/
+  case class AppointSpeak(userId: Long, userName: String) extends WsMsgHost
+
+  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+
   /**
    *
    * 观众端
@@ -133,13 +142,20 @@ object WsProtocol {
                               frame: Int = 0
                             ) extends WsMsgRm2Audience
 
+  case class CloseSoundFrame2ClientRsp(
+                                        userId: Long,
+                                        errCode: Int = 0,
+                                        msg: String = "ok"
+                                      ) extends WsMsgAudience     //客户端是否成功关闭声音或画面
+
   case class ForceOut2Client(
                               userId: Long
                             ) extends WsMsgRm2Audience
 
-  /*申请发言*/
+  /*申请发言*/   //todo
   case class ApplySpeak(
-                         userId: Long
+                         userId: Long,
+                         userName: String
                        ) extends WsMsgAudience
 
   case class ApplySpeakRsp(
