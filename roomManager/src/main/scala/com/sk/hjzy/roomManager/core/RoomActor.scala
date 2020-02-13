@@ -11,7 +11,6 @@ import org.seekloud.byteobject.MiddleBufferInJvm
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol
 import com.sk.hjzy.protocol.ptcl.client2Manager.websocket.WsProtocol.{HostCloseRoom, _}
 import com.sk.hjzy.roomManager.common.Common
-import com.sk.hjzy.roomManager.common.Common.Role
 import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.Boot.{executor, userManager}
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
@@ -127,7 +126,7 @@ object RoomActor {
 
         case GetUserInfoList(roomId, userId) =>
           if(userInfoListOpt.nonEmpty) {
-            dispatchTo(subscribers)(List((userId)),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
+            dispatchTo(subscribers)(List(userId),UserInfoListRsp(Some(userInfoListOpt.get.filter(_.userId != userId))))
             val oldUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(oldUserList,UserInfoListRsp(Some(List(userInfoListOpt.get.last))))
             dispatchTo(subscribers)(oldUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}加入房间"))
@@ -135,10 +134,10 @@ object RoomActor {
             val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
             if(wholeRoomInfo.isStart == 1){
               if(liveInfoMap.get(userId).nonEmpty){
-                dispatchTo(subscribers)(List((userId)),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
+                dispatchTo(subscribers)(List(userId),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
                 dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
               }else
-                dispatchTo(subscribers)(List((userId)),StartMeetingRsp(None, liveIdList, 100002,"无liveInfo"))
+                dispatchTo(subscribers)(List(userId),StartMeetingRsp(None, liveIdList, 100002,"无liveInfo"))
             }
 
           } else
@@ -281,7 +280,6 @@ object RoomActor {
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ModifyRoomRsp())
         idle(roomId,subscribers,info, liveInfoMap, userInfoListOpt)
 
-
       case Comment(`userId`, `roomId`, comment, color, extension) =>
         log.info(s"收到留言$comment")
         UserInfoDao.searchById(userId).onComplete {
@@ -330,7 +328,6 @@ object RoomActor {
         log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
         var liveInfo4mix = LiveInfo("","")
-
         userIdList.foreach{ id =>
           val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != id)
           if(liveInfoMap.get(id).nonEmpty)
@@ -362,6 +359,49 @@ object RoomActor {
         switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
       case PingPackage =>
+        Behaviors.same
+
+      case CloseSoundFrame(userId, sound, frame) =>
+        log.info(s"${ctx.self.path} 主持人屏蔽$userId")
+        dispatchTo(List(userId), CloseSoundFrame2Client(sound ,frame))
+        Behaviors.same
+
+      case CloseSoundFrame2ClientRsp( userId, errCode , msg) =>
+        log.info(s"${ctx.self.path} $userId 关闭声音或画面，$errCode")
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), CloseSoundFrameRsp(errCode ,msg))
+        Behaviors.same
+
+        //todo 强制某人退出会议后， 某人可以看到后续的会议吗？还是直接断开ws连接,然后是某人离开会议的操作
+      case ForceOut(userId) =>
+        log.info(s"${ctx.self.path} 强制$userId 退出会议")
+        dispatchTo(List(userId), ForceOut2Client(userId))
+        dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, userInfoListOpt)
+
+      case ApplySpeak(userId, userName) =>
+        log.info(s"${ctx.self.path} $userName 请求发言")
+        dispatch(RcvComment(-1,"",s"$userName 请求发言"))
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ApplySpeak2Host(userId, userName))
+        Behaviors.same
+
+      case ApplySpeakAccept(userId, userName, accept) =>
+        if(accept) {
+          dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}同意了 $userName 的发言请求"))
+          dispatchTo(List(userId), ApplySpeakRsp())
+          dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
+        } else {
+          dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}拒绝了 $userName 的发言请求"))
+          dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
+        }
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
+        Behaviors.same
+
+      case AppointSpeak(userId, userName) =>
+        dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
+        dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
+        dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
         Behaviors.same
 
       case x =>
