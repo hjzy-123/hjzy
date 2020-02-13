@@ -85,6 +85,14 @@ object EmailManager {
             actor ! EmailWorker.Verify4Password(msg.code, msg.replyTo)
           }
           Behaviors.same
+
+        case msg: ChildDead =>
+          log.info(s"${msg.childName} dead")
+          Behaviors.same
+
+        case unhandle =>
+          log.info(s"receive unknown message:${unhandle}")
+          Behaviors.same
       }
     }
 

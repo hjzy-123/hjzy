@@ -47,6 +47,8 @@ object Messages {
 
   final case class ImageRsp(latestImage: LatestImage) extends ReplyToCommand
 
+  final case object ImagePause extends ReplyToCommand
+
   final case class FrameRsp(latestFrame: LatestFrame) extends ReplyToCommand
 
   final case class DesktopFrameRsp(latestFrame: LatestFrame) extends ReplyToCommand

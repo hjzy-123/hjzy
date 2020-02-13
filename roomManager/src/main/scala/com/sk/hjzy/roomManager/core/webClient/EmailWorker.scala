@@ -159,6 +159,14 @@ object EmailWorker {
             msg.replyTo ! false
             Behaviors.same
           }
+
+        case StopWork =>
+          log.info(s"${ctx.self.path} stopped")
+          Behaviors.stopped
+
+        case unknown =>
+          log.info(s"receive unknown message:${unknown}")
+          Behaviors.same
       }
     }
 
