@@ -106,12 +106,12 @@ object WsProtocol {
 
   case class ApplySpeakAccept( userId: Long, userName: String, accept: Boolean) extends WsMsgHost //审批某个用户发言请求
 
-  case class SpeakAcceptRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+//  case class SpeakAcceptRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
 
   /*主持人制定某人发言*/
   case class AppointSpeak(userId: Long, userName: String) extends WsMsgHost
 
-  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+//  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
 
   /**
    *

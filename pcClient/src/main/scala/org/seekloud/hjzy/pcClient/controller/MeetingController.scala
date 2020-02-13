@@ -34,7 +34,7 @@ class MeetingController(
 
   var isHost: Boolean = this.ifHostWhenCreate
 
-//  var isLiving: Boolean = false
+  var isLiving: Boolean = false
 
   var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
   var partInfoList: List[(Long, String)] = List() // (userId, userName)
@@ -48,12 +48,12 @@ class MeetingController(
     }
 
     override def stopLive(): Unit = {
-
+      rmManager ! RmManager.StopMeetingReq
     }
 
     override def changeHost(): Unit = {
       if(partInfoList.nonEmpty){
-        val newHostId = changeHostDialog()
+        val newHostId = chooseAudienceDialog(toChangeHost = Some(true))
         newHostId.foreach(rmManager ! TurnToAudience(_))
       } else {
         Boot.addToPlatform{
@@ -79,7 +79,7 @@ class MeetingController(
 
     override def kickSbOut(canvasId: Int): Unit = {
       log.info(s"点击强制某人退出房间，canvasId = $canvasId")
-      val userId = partUserMap.get(userId)
+      val userId = partUserMap.get(canvasId)
       if(userId.nonEmpty) rmManager ! KickSbOut(userId.get)
     }
 
@@ -92,7 +92,20 @@ class MeetingController(
     }
 
     override def appointSbSpeak(): Unit = {
-
+      if(isLiving){
+        if(partInfoList.nonEmpty){
+          val speakerId = chooseAudienceDialog(toAppointSpeak = Some(true))
+          speakerId.foreach(rmManager ! AppointSpeaker(_))
+        } else {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog("当前会议无其他人！")
+          }
+        }
+      } else {
+        Boot.addToPlatform{
+          WarningDialog.initWarningDialog("会议未开始！")
+        }
+      }
     }
 
     override def refuseSbSpeak(): Unit = {
@@ -109,28 +122,31 @@ class MeetingController(
 
     }
 
-    override def controlOnesImage(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
-
+    override def controlOnesImage(orderNum: Int, targetStatus: Int): Unit = {
+      log.info(s"点击控制某观众画面，canvasId = $orderNum, targetStatus = $targetStatus")
+      val userId = partUserMap.get(orderNum)
+      if(userId.nonEmpty) rmManager ! RmManager.ControlOthersImageAndSound(userId.get, targetStatus, 0)
     }
 
-    override def controlOnesSound(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
-
+    override def controlOnesSound(orderNum: Int, targetStatus: Int): Unit = {
+      log.info(s"点击控制某观众声音，canvasId = $orderNum, targetStatus = $targetStatus")
+      val userId = partUserMap.get(orderNum)
+      if(userId.nonEmpty) rmManager ! RmManager.ControlOthersImageAndSound(userId.get, 0, targetStatus)
     }
 
-    override def controlSelfImage(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
-
+    override def controlSelfImage(targetStatus: Int): Unit = {
+      log.info(s"点击控制自己画面，targetStatus: $targetStatus")
+      rmManager ! RmManager.ControlSelfImageAndSound(targetStatus, 0)
     }
 
-    override def controlSelfSound(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None): Unit = {
-
+    override def controlSelfSound(targetStatus: Int): Unit = {
+      log.info(s"点击控制自己声音，targetStatus: $targetStatus")
+      rmManager ! RmManager.ControlSelfImageAndSound(0, targetStatus)
     }
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom
-//      Boot.addToPlatform{
-//        meetingScene.refreshScene(false)
-//      }
 
     }
 
@@ -176,11 +192,12 @@ class MeetingController(
   }
 
   //变更主持人弹窗
-  def changeHostDialog(): Option[Long] = {
+  def chooseAudienceDialog(toChangeHost: Option[Boolean] = None, toAppointSpeak: Option[Boolean] = None): Option[Long] = {
     val dialog = new Dialog[String]()
-    dialog.setTitle("变更主持人")
+    if(toChangeHost.nonEmpty) dialog.setTitle("变更主持人")
+    if(toAppointSpeak.nonEmpty) dialog.setTitle("指派发言人")
 
-    val changeHostLabel = new Label(s"请选择新的会议主持人：")
+    val changeHostLabel = if(toChangeHost.nonEmpty) new Label(s"请选择新的会议主持人：") else new Label(s"请选择发言人：")
 
     val btnBox = new VBox(5)
 
@@ -212,7 +229,7 @@ class MeetingController(
           null
       } else {
         Boot.addToPlatform(
-          WarningDialog.initWarningDialog("请选择一名新主持人！")
+          WarningDialog.initWarningDialog("请选择一名参会者！")
         )
         null
       }
@@ -321,6 +338,20 @@ class MeetingController(
 
       case msg: CloseSoundFrame2Client =>
         log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
+        Boot.addToPlatform{
+          msg.frame match{
+            case 1 => meetingScene.selfImageToggleBtn.setSelected(false)
+            case -1 => meetingScene.selfImageToggleBtn.setSelected(true)
+            case x => //do nothing
+          }
+        }
+        Boot.addToPlatform{
+          msg.sound match{
+            case 1 => meetingScene.selfSoundToggleBtn.setSelected(false)
+            case -1 => meetingScene.selfSoundToggleBtn.setSelected(true)
+            case x => //do nothing
+          }
+        }
         rmManager ! ControlSelfImageAndSound(msg.frame, msg.sound)
 
       case x =>

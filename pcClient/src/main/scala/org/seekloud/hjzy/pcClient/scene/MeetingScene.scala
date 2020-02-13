@@ -31,13 +31,13 @@ object MeetingScene {
 
     def modifyRoom(roomName: Option[String] = None, roomDes: Option[String] = None)
 
-    def controlSelfImage(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
+    def controlSelfImage(targetStatus: Int) //1 -> open, -1-> close
 
-    def controlSelfSound(toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
+    def controlSelfSound(targetStatus: Int) //1 -> open, -1-> close
 
-    def controlOnesImage(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
+    def controlOnesImage(orderNum: Int, targetStatus: Int) //1 -> open, -1-> close
 
-    def controlOnesSound(orderNum: Int, toOpen: Option[Boolean] = None, toClose: Option[Boolean] = None)
+    def controlOnesSound(orderNum: Int, targetStatus: Int) //1 -> open, -1-> close
 
     def fullScreen()
 
@@ -284,20 +284,20 @@ class MeetingScene(stage: Stage){
 
   selfImageToggleBtn.setOnAction { _ =>
     if (selfImageToggleBtn.isSelected) {
-      listener.controlSelfImage(toClose = Some(true))
+      listener.controlSelfImage(-1)
       Tooltip.install(selfImageToggleBtn, new Tooltip("点击打开画面"))
     } else {
-      listener.controlSelfImage(toOpen = Some(true))
+      listener.controlSelfImage(1)
       Tooltip.install(liveToggleButton, new Tooltip("点击关闭画面"))
     }
   }
 
   selfSoundToggleBtn.setOnAction { _ =>
     if (selfSoundToggleBtn.isSelected) {
-      listener.controlSelfSound(toClose = Some(true))
+      listener.controlSelfSound(-1)
       Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
     } else {
-      listener.controlSelfSound(toOpen = Some(true))
+      listener.controlSelfSound(1)
       Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
     }
   }
@@ -347,20 +347,20 @@ class MeetingScene(stage: Stage){
 
     imageToggleBtn.setOnAction { _ =>
       if (imageToggleBtn.isSelected) {
-        listener.controlOnesImage(orderNum = orderNum, toClose = Some(true))
+        listener.controlOnesImage(orderNum = orderNum, -1)
         Tooltip.install(imageToggleBtn, new Tooltip("点击打开画面"))
       } else {
-        listener.controlOnesImage(orderNum = orderNum, toOpen = Some(true))
+        listener.controlOnesImage(orderNum = orderNum, 1)
         Tooltip.install(imageToggleBtn, new Tooltip("点击关闭画面"))
       }
     }
 
     soundToggleBtn.setOnAction { _ =>
       if (selfSoundToggleBtn.isSelected) {
-        listener.controlOnesSound(orderNum = orderNum, toClose = Some(true))
+        listener.controlOnesSound(orderNum = orderNum, -1)
         Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
       } else {
-        listener.controlOnesSound(orderNum = orderNum, toOpen = Some(true))
+        listener.controlOnesSound(orderNum = orderNum, 1)
         Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
       }
     }
