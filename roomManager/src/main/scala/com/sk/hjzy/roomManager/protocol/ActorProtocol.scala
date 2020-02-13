@@ -25,12 +25,12 @@ object ActorProtocol {
 
   case class WebSocketMsgWithActor(userId:Long,roomId:Long,msg:WsMsgClient) extends RoomCommand
 
-  case class HostCloseRoom(roomId:Long) extends RoomCommand   //主持人结束会议
+//  case class HostCloseRoom(roomId:Long) extends RoomCommand   //主持人结束会议
 
   case class HostLeaveRoom(roomId:Long) extends RoomCommand   //主持人结束会议
 
-  case class StartMeeting(userId:Long,roomId:Long,actor:ActorRef[UserActor.Command]) extends RoomCommand
-
+  case class Stop(roomId: Long) extends RoomCommand
+//  case class StartMeeting(userId:Long,roomId:Long,actor:ActorRef[UserActor.Command]) extends RoomCommand
 
   trait UserCommand extends UserManager.Command with UserActor.Command
 

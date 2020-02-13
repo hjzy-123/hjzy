@@ -55,6 +55,10 @@ object WsProtocol {
                               token: String
                             ) extends WsMsgHost
 
+  case class StopMeetingReq(
+                             userId: Long,
+                           ) extends WsMsgHost
+
 
 //  val StartMeetingRefused = StartMeetingRsp(errCode = 200001, msg = "start live refused.")
 //  val StartMeetingRefused4LiveInfoError = StartMeetingRsp(errCode = 200001, msg = "start live refused because of getting live info from distributor error.")
@@ -220,5 +224,10 @@ object WsProtocol {
                         userId: Long,
                         liveId: String
                       ) extends WsMsgRm
+
+  case class StopMeetingRsp(
+                             errCode: Int = 0,
+                             msg: String = "ok"
+                           ) extends WsMsgRm
 
 }
