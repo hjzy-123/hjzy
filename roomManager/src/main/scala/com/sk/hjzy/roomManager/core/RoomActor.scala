@@ -389,7 +389,7 @@ object RoomActor {
         if(accept) {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}同意了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp())
-          dispatchTo(List(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList), CloseSoundFrame2Client(-1))
+          dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         } else {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}拒绝了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
@@ -398,9 +398,9 @@ object RoomActor {
         Behaviors.same
 
       case AppointSpeak(userId, userName) =>
-        dispatchTo(List(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList), RcvComment(-1,"",s"主持人指定 $userName 发言"))
+        dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
-        dispatchTo(List(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList), CloseSoundFrame2Client(-1))
+        dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
         Behaviors.same
 
