@@ -88,10 +88,10 @@ object WsProtocol {
                          frame: Int = 0
                        ) extends WsMsgHost
 
-  case class CloseSoundFrameRsp(
-                                 errCode: Int = 0,
-                                 msg: String = "ok"
-                               ) extends WsMsgRm2Host
+//  case class CloseSoundFrameRsp(
+//                                 errCode: Int = 0,
+//                                 msg: String = "ok"
+//                               ) extends WsMsgRm2Host
 
   /*主持人强制某人退出会议*/
   case class ForceOut(
@@ -108,12 +108,19 @@ object WsProtocol {
 
   case class ApplySpeakAccept( userId: Long, userName: String, accept: Boolean) extends WsMsgHost //审批某个用户发言请求
 
-  case class SpeakAcceptRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+//  case class SpeakAcceptRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
 
-  /*主持人制定某人发言*/
+  /*主持人指定某人发言*/
   case class AppointSpeak(userId: Long, userName: String) extends WsMsgHost
 
-  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+//  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
+
+  /*主持人指定某人发言*/
+  case class ClientCloseSoundFrame(
+                                 userId: Long,
+                                 sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
+                                 frame: Int = 0
+                               ) extends WsMsgRm2Host
 
   /**
    *
@@ -146,11 +153,11 @@ object WsProtocol {
                               frame: Int = 0
                             ) extends WsMsgRm2Audience
 
-  case class CloseSoundFrame2ClientRsp(
-                                        userId: Long,
-                                        errCode: Int = 0,
-                                        msg: String = "ok"
-                                      ) extends WsMsgAudience     //客户端是否成功关闭声音或画面
+//  case class CloseSoundFrame2ClientRsp(
+//                                        userId: Long,
+//                                        errCode: Int = 0,
+//                                        msg: String = "ok"
+//                                      ) extends WsMsgAudience     //客户端是否成功关闭声音或画面
 
   case class ForceOut2Client(
                               userId: Long
@@ -159,13 +166,19 @@ object WsProtocol {
   /*申请发言*/   //todo
   case class ApplySpeak(
                          userId: Long,
-                         userName: String
                        ) extends WsMsgAudience
 
   case class ApplySpeakRsp(
                             errCode: Int = 0,
                             msg: String = "ok"
                           ) extends WsMsgRm2Audience
+
+  /*观众关闭自己的声音或图像*/
+  case class CloseOwnSoundFrame(
+                                 userId: Long,
+                                 sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
+                                 frame: Int = 0
+                               ) extends WsMsgAudience
 
   /**
    * 所有用户  群发消息

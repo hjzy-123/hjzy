@@ -375,7 +375,11 @@ object RoomActor {
         dispatchTo(List(userId), CloseSoundFrame2Client(sound ,frame))
         Behaviors.same
 
-        //todo 强制某人退出会议后， 某人可以看到后续的会议吗？还是直接断开ws连接,然后是某人离开会议的操作
+      case CloseOwnSoundFrame(userId, sound, frame) =>
+        log.info(s"${ctx.self.path} $userId 关闭或打开自己的声音或图像")
+        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ClientCloseSoundFrame( userId, sound, frame))
+        Behaviors.same
+
       case ForceOut(userId) =>
         log.info(s"${ctx.self.path} 强制$userId 退出会议")
         dispatchTo(List(userId), ForceOut2Client(userId))
@@ -383,7 +387,8 @@ object RoomActor {
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
         idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
-      case ApplySpeak(userId, userName) =>
+      case ApplySpeak(userId) =>
+        val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
         log.info(s"${ctx.self.path} $userName 请求发言")
         dispatch(RcvComment(-1,"",s"$userName 请求发言"))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ApplySpeak2Host(userId, userName))
@@ -398,14 +403,14 @@ object RoomActor {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}拒绝了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
         }
-        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
+//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
         Behaviors.same
 
       case AppointSpeak(userId, userName) =>
         dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
-        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
+//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
         Behaviors.same
 
       case StopMeetingReq(userId) =>
