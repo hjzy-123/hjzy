@@ -45,7 +45,7 @@ object ProcessorProtocol {
                              roomId: Long,
                              liveIdList: List[(String,Int)],
                              num: Int,
-                             speaker: String,
+                             speaker: String
                            )
 
   case class UpdateRsp(
