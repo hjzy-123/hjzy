@@ -254,6 +254,8 @@ object CaptureActor {
           if (needImage) Boot.addToPlatform {
             gc.setFill(Color.BLACK)
             gc.fillRect(0.0, 0.0, sWidth, sHeight)
+            gc.setFill(Color.WHITE)
+            gc.fillText("摄像头已关闭",10,20)
           }
           Behaviors.same
 
