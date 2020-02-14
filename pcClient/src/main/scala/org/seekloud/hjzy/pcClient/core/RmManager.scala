@@ -413,8 +413,7 @@ object RmManager {
         Behaviors.same
 
       case AppointSpeaker(userId) =>
-        //todo
-
+        sender.foreach(_ ! WsProtocol.AppointSpeak(userId))
         Behaviors.same
 
       case StopSelf =>
