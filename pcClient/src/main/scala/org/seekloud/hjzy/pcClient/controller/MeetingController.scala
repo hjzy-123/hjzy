@@ -379,15 +379,15 @@ class MeetingController(
         log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
         Boot.addToPlatform{
           msg.frame match{
-            case 1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(false)
-            case -1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(true)
+            case 1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(true)
+            case -1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(false)
             case x => //do nothing
           }
         }
         Boot.addToPlatform{
           msg.sound match{
-            case 1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(false)
-            case -1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(true)
+            case 1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(true)
+            case -1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(false)
             case x => //do nothing
           }
         }
@@ -403,13 +403,13 @@ class MeetingController(
           Boot.addToPlatform{
             msg.sound match{
               case 1 =>
-                meetingScene.liveBarMap(canvasId.get)._3.setSelected(false)
+                meetingScene.liveBarMap(canvasId.get)._3.setSelected(true)
                 if(userInfo.nonEmpty){
                   partInfoMap.update(userId,
                     mutable.Set(PartInfo(userInfo.get._2.head.userName, 1, userInfo.get._2.head.soundStatus)))
                 }
               case -1 =>
-                meetingScene.liveBarMap(canvasId.get)._3.setSelected(true)
+                meetingScene.liveBarMap(canvasId.get)._3.setSelected(false)
                 if(userInfo.nonEmpty){
                   partInfoMap.update(userId,
                     mutable.Set(PartInfo(userInfo.get._2.head.userName, -1, userInfo.get._2.head.soundStatus)))
@@ -418,13 +418,13 @@ class MeetingController(
             }
             msg.frame match{
               case 1 =>
-                meetingScene.liveBarMap(canvasId.get)._2.setSelected(false)
+                meetingScene.liveBarMap(canvasId.get)._2.setSelected(true)
                 if(userInfo.nonEmpty){
                   partInfoMap.update(userId,
                     mutable.Set(PartInfo(userInfo.get._2.head.userName, userInfo.get._2.head.imageStatus, 1)))
                 }
               case -1 =>
-                meetingScene.liveBarMap(canvasId.get)._2.setSelected(true)
+                meetingScene.liveBarMap(canvasId.get)._2.setSelected(false)
                 if(userInfo.nonEmpty){
                   partInfoMap.update(userId,
                     mutable.Set(PartInfo(userInfo.get._2.head.userName, userInfo.get._2.head.imageStatus, -1)))

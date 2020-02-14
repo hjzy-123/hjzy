@@ -368,21 +368,21 @@ class MeetingScene(stage: Stage){
 
   selfCanvasBar.imageToggleButton.setOnAction { _ =>
     if (selfCanvasBar.imageToggleButton.isSelected) {
-      listener.controlSelfImage(-1)
-      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击打开画面"))
-    } else {
       listener.controlSelfImage(1)
-      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
+//      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
+    } else {
+      listener.controlSelfImage(-1)
+//      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击打开画面"))
     }
   }
 
   selfCanvasBar.soundToggleButton.setOnAction { _ =>
     if (selfCanvasBar.soundToggleButton.isSelected) {
-      listener.controlSelfSound(-1)
-      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击打开声音"))
-    } else {
       listener.controlSelfSound(1)
-      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
+//      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
+    } else {
+      listener.controlSelfSound(-1)
+//      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击打开声音"))
     }
   }
 
@@ -429,21 +429,21 @@ class MeetingScene(stage: Stage){
 
     canvasBar.imageToggleButton.setOnAction { _ =>
       if (canvasBar.imageToggleButton.isSelected) {
-        listener.controlOnesImage(orderNum = i, -1)
-        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击打开画面"))
-      } else {
         listener.controlOnesImage(orderNum = i, 1)
-        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
+//        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
+      } else {
+        listener.controlOnesImage(orderNum = i, -1)
+//        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击打开画面"))
       }
     }
 
     canvasBar.soundToggleButton.setOnAction { _ =>
       if (canvasBar.soundToggleButton.isSelected) {
-        listener.controlOnesSound(orderNum = i, -1)
-        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击打开声音"))
-      } else {
         listener.controlOnesSound(orderNum = i, 1)
-        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
+//        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
+      } else {
+        listener.controlOnesSound(orderNum = i, -1)
+//        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击打开声音"))
       }
     }
 

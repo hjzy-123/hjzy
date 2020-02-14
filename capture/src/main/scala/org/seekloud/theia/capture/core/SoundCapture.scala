@@ -93,7 +93,7 @@ object SoundCapture {
 
         case Sample =>
           if(!pauseSamples){
-            log.info("encode sound")
+//            log.info("encode sound")
             try {
               val nBytesRead = line.read(audioBytes, 0, line.available)
               val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
@@ -117,7 +117,7 @@ object SoundCapture {
                 log.warn(s"sample sound error: $ex")
             }
           }else{
-            log.info("no encode sound")
+//            log.info("no encode sound")
           }
           working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = false, pauseSamples)
 

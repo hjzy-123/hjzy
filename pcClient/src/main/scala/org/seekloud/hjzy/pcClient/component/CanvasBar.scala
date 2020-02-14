@@ -20,14 +20,14 @@ class CanvasBar(width: Double, height: Double, isSelf: Boolean) {
   soundToggleButton.getStyleClass.add("soundBtn")
   soundToggleButton.setSelected(true)
   soundToggleButton.setDisable(false)
-  Tooltip.install(soundToggleButton, new Tooltip("点击关闭直播声音"))
+//  Tooltip.install(soundToggleButton, new Tooltip("点击关闭声音"))
 
 
   val imageToggleButton = new ToggleButton("")
   imageToggleButton.getStyleClass.add("imageBtn")
   imageToggleButton.setSelected(true)
   imageToggleButton.setDisable(false)
-  Tooltip.install(imageToggleButton, new Tooltip("点击关闭直播画面"))
+//  Tooltip.install(imageToggleButton, new Tooltip("点击关闭画面"))
 
 //  val fullScreenIcon = new Button("", new ImageView("img/button/full-screen.png"))
 //  fullScreenIcon.setPrefSize(32, 32)
