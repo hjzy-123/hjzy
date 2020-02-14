@@ -65,3 +65,9 @@
 .user_comment_text{
     -fx-text-fill: black;
 }
+
+.tableBtn{
+    -fx-background-color: #00000000;
+    -fx-border-color: #00000000;
+    -fx-cursor: hand;
+}

@@ -1,8 +1,12 @@
 package org.seekloud.hjzy.pcClient.scene
 
+import javafx.beans.property.{ObjectProperty, SimpleObjectProperty, SimpleStringProperty, StringProperty}
+import javafx.collections.{FXCollections, ObservableList}
 import javafx.geometry.{Insets, Pos}
 import javafx.scene.canvas.{Canvas, GraphicsContext}
 import javafx.scene.control._
+import javafx.scene.control.cell.PropertyValueFactory
+import javafx.scene.effect.Glow
 import javafx.scene.image.{Image, ImageView}
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
@@ -21,6 +25,26 @@ import org.slf4j.LoggerFactory
   * Time: 22:45
   */
 object MeetingScene {
+
+  case class ApplySpeakListInfo(
+    userInfo: StringProperty,
+    agreeBtn: ObjectProperty[Button],
+    refuseBtn: ObjectProperty[Button]
+  ) {
+    def getUserInfo: String = userInfo.get()
+
+    def setUserInfo(info: String): Unit = userInfo.set(info)
+
+    def getAgreeBtn: Button = agreeBtn.get()
+
+    def setAgreeBtn(btn: Button): Unit = agreeBtn.set(btn)
+
+    def getRefuseBtn: Button = refuseBtn.get()
+
+    def setRefuseBtn(btn: Button): Unit = refuseBtn.set(btn)
+
+  }
+
   trait MeetingSceneListener{
 
     def startLive()
@@ -45,13 +69,11 @@ object MeetingScene {
 
     def applyForSpeak()
 
-    def allowSbSpeak()
+    def handleSpeakApply(userId: Long, userName: String, accept: Boolean, newRequest: ApplySpeakListInfo)
 
     def appointSbSpeak()
 
-    def refuseSbSpeak()
-
-    def stopSbSpeak()
+    def stopSbSpeak(userId: Long)
 
     def kickSbOut(canvasId: Int)
 
@@ -201,6 +223,17 @@ class MeetingScene(stage: Stage){
   controlSpeakBtn.getStyleClass.add("confirmBtn")
   controlSpeakBtn.setOnAction(_ => listener.appointSbSpeak())
 
+  def editControlSpeakBtn(toAppoint: Boolean = false, toStop: Boolean = false, userId: Option[Long] = None) = {
+    if(toAppoint){
+      controlSpeakBtn.setText(s"指派")
+      controlSpeakBtn.setOnAction(_ => listener.appointSbSpeak())
+    }
+    if(toStop && userId.nonEmpty){
+      controlSpeakBtn.setText(s"结束")
+      controlSpeakBtn.setOnAction(_ => listener.stopSbSpeak(userId.get))
+    }
+  }
+
   val applyForSpeakBtn = new Button(s"申请")
   applyForSpeakBtn.getStyleClass.add("confirmBtn")
   applyForSpeakBtn.setOnAction(_ => listener.applyForSpeak())
@@ -215,8 +248,62 @@ class MeetingScene(stage: Stage){
       speakStateBox.getChildren.addAll(speakStateLabel, speakStateValue, applyForSpeakBtn)
     }
   }
-  val speakInfoBox = new VBox(15, speakInfoLabel, speakStateBox)
+
+  val applySpeakTable = new TableView[ApplySpeakListInfo]()
+  applySpeakTable.getStyleClass.add("table-view")
+  val audObservableList: ObservableList[ApplySpeakListInfo] = FXCollections.observableArrayList()
+
+  val userInfoCol = new TableColumn[ApplySpeakListInfo, String]("申请用户")
+  userInfoCol.setPrefWidth(width * 0.15)
+  userInfoCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, String]("userInfo"))
+
+  val agreeBtnCol = new TableColumn[ApplySpeakListInfo, Button]("同意")
+  agreeBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("agreeBtn"))
+  agreeBtnCol.setPrefWidth(width * 0.05)
+
+  val refuseBtnCol = new TableColumn[ApplySpeakListInfo, Button]("拒绝")
+  refuseBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("refuseBtn"))
+  refuseBtnCol.setPrefWidth(width * 0.05)
+
+  applySpeakTable.setItems(audObservableList)
+  applySpeakTable.getColumns.addAll(userInfoCol, agreeBtnCol, refuseBtnCol)
+  applySpeakTable.setPrefHeight(200)
+
+
+  def updateSpeakApplier(userId: Long, userName: String): Unit = {
+    val agreeBtn = new Button("", new ImageView("img/button/agreeBtn.png"))
+    val refuseBtn = new Button("", new ImageView("img/button/refuseBtn.png"))
+    agreeBtn.getStyleClass.add("tableBtn")
+    refuseBtn.getStyleClass.add("tableBtn")
+    val glow = new Glow()
+    agreeBtn.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
+      agreeBtn.setEffect(glow)
+    })
+    agreeBtn.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
+      agreeBtn.setEffect(null)
+    })
+    refuseBtn.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
+      refuseBtn.setEffect(glow)
+    })
+    refuseBtn.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
+      refuseBtn.setEffect(null)
+    })
+    val newRequest = ApplySpeakListInfo(
+      new SimpleStringProperty(s"$userName($userId)"),
+      new SimpleObjectProperty[Button](agreeBtn),
+      new SimpleObjectProperty[Button](refuseBtn)
+    )
+    audObservableList.add(newRequest)
+
+    agreeBtn.setOnAction { _ =>listener.handleSpeakApply(userId = userId, userName = userName, accept = true, newRequest)}
+    refuseBtn.setOnAction { _ =>listener.handleSpeakApply(userId = userId, userName = userName, accept = false, newRequest)}
+
+  }
+
+
+  val speakInfoBox = new VBox(15, speakInfoLabel, speakStateBox, applySpeakTable)
   speakInfoBox.setPadding(new Insets(10,30,20,30))
+
 
 
   val leftArea = new VBox(20, meetingInfoBox, speakInfoBox)

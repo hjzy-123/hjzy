@@ -16,7 +16,7 @@ import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.core.RmManager.{GetLiveInfoReq, StartMeetingReq, _}
 import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
-import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
+import org.seekloud.hjzy.pcClient.scene.MeetingScene.{ApplySpeakListInfo, MeetingSceneListener}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -40,6 +40,8 @@ class MeetingController(
   var isHost: Boolean = this.ifHostWhenCreate
 
   var isLiving: Boolean = false
+
+  var someoneSpeaking: Boolean = false
 
   var partUserMap: Map[Int, Long] = Map() // canvasId -> userId
   var partInfoMap: mutable.MultiMap[Long, this.PartInfo] = _ // userId -> PartInfo(userName, imageStatus, soundStatus)
@@ -89,17 +91,15 @@ class MeetingController(
     }
 
     override def applyForSpeak(): Unit = {
-
-    }
-
-    override def allowSbSpeak(): Unit = {
-
+      log.info(s"点击申请发言")
+      rmManager ! ApplyForSpeak
     }
 
     override def appointSbSpeak(): Unit = {
       if(isLiving){
         if(partInfoMap.nonEmpty){
           val speakerId = chooseAudienceDialog(toAppointSpeak = Some(true))
+          log.info(s"点击指派某人发言，userId = $speakerId")
           speakerId.foreach(rmManager ! AppointSpeaker(_))
         } else {
           Boot.addToPlatform{
@@ -113,8 +113,20 @@ class MeetingController(
       }
     }
 
-    override def refuseSbSpeak(): Unit = {
-
+    override def handleSpeakApply(userId: Long, userName: String, accept: Boolean, newRequest: ApplySpeakListInfo): Unit = {
+      if (!someoneSpeaking) {
+        rmManager ! RmManager.SpeakAcceptance(userId, userName, accept)
+        meetingScene.audObservableList.remove(newRequest)
+      } else {
+        if (someoneSpeaking && !accept) {
+          rmManager ! RmManager.SpeakAcceptance(userId, userName, accept)
+          meetingScene.audObservableList.remove(newRequest)
+        } else {
+          Boot.addToPlatform {
+            WarningDialog.initWarningDialog(s"两人无法同时发言，请先结束当前发言!")
+          }
+        }
+      }
     }
 
     override def stopSbSpeak(): Unit = {
@@ -382,6 +394,7 @@ class MeetingController(
 
         //通知主持人：某观众关闭/打开了声音/画面
       case msg: CloseOwnSoundFrame =>
+        log.info(s"rcv CloseOwnSoundFrame from rm: $msg")
         val userId = msg.userId
         val userInfo = partInfoMap.find(_._1 == userId)
         val canvasId = partUserMap.find(l => l._2 == userId).map(_._1)
@@ -419,6 +432,14 @@ class MeetingController(
             }
           }
         }
+
+        //通知主持人：某观众申请发言
+      case msg: ApplySpeak2Host =>
+        log.info(s"rcv ApplySpeak2Host from rm: $msg")
+        Boot.addToPlatform{
+          meetingScene.updateSpeakApplier(msg.userId, msg.userName)
+        }
+
 
 
       case x =>

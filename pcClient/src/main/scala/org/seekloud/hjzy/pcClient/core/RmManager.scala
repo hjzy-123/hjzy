@@ -105,8 +105,12 @@ object RmManager {
 
   final case class AppointSpeaker(userId: Long) extends RmCommand
 
+  final case class SpeakAcceptance(userId: Long, userName: String, accept: Boolean) extends RmCommand
+
   /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
+
+  final case object ApplyForSpeak extends RmCommand
 
 
 
@@ -420,6 +424,10 @@ object RmManager {
         log.info(s"rmManager stopped in host.")
         Behaviors.stopped
 
+      case SpeakAcceptance(userId, userName, accept) =>
+        sender.foreach(_ ! WsProtocol.ApplySpeakAccept(userId, userName, accept))
+        Behaviors.same
+
       case x =>
         log.warn(s"unknown msg in hostBehavior: $x")
         stashBuffer.stash(x)
@@ -608,6 +616,11 @@ object RmManager {
         assert(this.userInfo.nonEmpty)
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
         sender.foreach(_ ! WsProtocol.CloseOwnSoundFrame(this.userInfo.get.userId, sound, image))
+        Behaviors.same
+
+      case ApplyForSpeak =>
+        assert(this.userInfo.nonEmpty)
+        sender.foreach(_ ! WsProtocol.ApplySpeak(this.userInfo.get.userId))
         Behaviors.same
 
       case StopSelf =>
