@@ -7,6 +7,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.image.Image
+import javafx.scene.paint.Color
 import org.seekloud.hjzy.capture.core.CaptureManager
 import org.seekloud.hjzy.capture.protocol.Messages
 import org.seekloud.hjzy.capture.protocol.Messages._
@@ -43,6 +44,8 @@ object CaptureActor {
   sealed trait DrawCommand
 
   final case class DrawImage(image: Image) extends DrawCommand
+
+  final case object DrawBlack extends DrawCommand
 
   final case class SwitchMode(isJoin: Boolean, reset: () => Unit) extends DrawCommand with CaptureCommand
 
@@ -128,6 +131,10 @@ object CaptureActor {
           drawActor.foreach(_ ! DrawImage(msg.latestImage.image))
           Behaviors.same
 
+        case ImagePause =>
+          drawActor.foreach(_ ! DrawBlack)
+          Behaviors.same
+
         case msg: SoundRsp => //no need yet
           Behaviors.same
 
@@ -190,15 +197,15 @@ object CaptureActor {
           idle(frameRate, gc, isJoin, callBackFunc, Some(msg.reset), mediaCapture, reqActor, loopExecutor, imageLoop, drawActor)
 
         case ControlImageAndSound(image, sound) =>
-          //todo
+          log.info(s"rcv ControlImageAndSound: image = $image, sound = $sound")
           image match {
-//            case 1 => reqActor.foreach(_ ! )
-//            case -1 => reqActor.foreach(_ ! )
+            case 1 => mediaCapture.foreach(_.startCamera)
+            case -1 => mediaCapture.foreach(_.stopCamera)
             case x => //do nothing
           }
           sound match{
-//            case 1 => reqActor.foreach(_ ! )
-//            case -1 => reqActor.foreach(_ ! )
+            case 1 => mediaCapture.foreach(_.startSound)
+            case -1 => mediaCapture.foreach(_.stopSound)
             case x => //do nothing
           }
           Behaviors.same
@@ -238,6 +245,15 @@ object CaptureActor {
                 gc.drawImage(msg.image, 0.0, sHeight / 4, sWidth / 2, sHeight / 2)
               }
             }
+          }
+          Behaviors.same
+
+        case DrawBlack =>
+          val sWidth = gc.getCanvas.getWidth
+          val sHeight = gc.getCanvas.getHeight
+          if (needImage) Boot.addToPlatform {
+            gc.setFill(Color.BLACK)
+            gc.fillRect(0.0, 0.0, sWidth, sHeight)
           }
           Behaviors.same
 

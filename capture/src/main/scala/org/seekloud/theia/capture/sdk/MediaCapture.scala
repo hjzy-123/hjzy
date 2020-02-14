@@ -12,7 +12,7 @@ import akka.util.Timeout
 import org.bytedeco.ffmpeg.global.avcodec
 import org.seekloud.hjzy.capture.common.AppSettings
 import org.seekloud.hjzy.capture.core.CaptureManager
-import org.seekloud.hjzy.capture.core.CaptureManager.MediaSettings
+import org.seekloud.hjzy.capture.core.CaptureManager._
 import org.seekloud.hjzy.capture.protocol.Messages
 import org.slf4j.LoggerFactory
 
@@ -280,6 +280,26 @@ class MediaCapture(
       c ! CaptureManager.StopCapture
     }
     if (captureManager.isDefined) captureManager = None
+
+  }
+
+  def stopCamera = {
+    captureManager.foreach(_ ! StopCamera)
+
+  }
+
+  def startCamera = {
+    captureManager.foreach(_ ! StartCamera)
+
+  }
+
+  def stopSound = {
+    captureManager.foreach(_ ! StopSound)
+
+  }
+
+  def startSound = {
+    captureManager.foreach(_ ! StartSound)
 
   }
 
