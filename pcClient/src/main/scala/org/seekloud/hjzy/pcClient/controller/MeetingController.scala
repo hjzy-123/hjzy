@@ -129,8 +129,9 @@ class MeetingController(
       }
     }
 
-    override def stopSbSpeak(): Unit = {
-
+    override def stopSbSpeak(userId: Long): Unit = {
+      log.info(s"点击结束某人发言，userId：$userId")
+      rmManager ! StopSbSpeak(userId)
     }
 
     override def sendComment(comment: String): Unit = {
@@ -373,7 +374,7 @@ class MeetingController(
         log.info(s"rcv ForceOut2Client from rm: $msg")
         rmManager ! LeaveRoom(true)
 
-        //通知某观众：你被主持人关闭/打开了声音/画面
+        //通知某观众：你被关闭/打开了声音/画面
       case msg: CloseSoundFrame2Client =>
         log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
         Boot.addToPlatform{
@@ -440,7 +441,23 @@ class MeetingController(
           meetingScene.updateSpeakApplier(msg.userId, msg.userName)
         }
 
+        //通知所有人：某观众开始发言
+      case msg: SpeakingUser =>
+        log.info(s"rcv SpeakingUser from rm: $msg")
+        this.someoneSpeaking = true
+        Boot.addToPlatform{
+          meetingScene.speakStateValue.setText(s"${msg.userName}")
+          meetingScene.editControlSpeakBtn(toStop = true, userId = Some(msg.userId))
+        }
 
+        //通知所有人：某观众结束发言
+      case msg: StopSpeakingUser =>
+        log.info(s"rcv SpeakingUser from rm: $msg")
+        this.someoneSpeaking = false
+        Boot.addToPlatform{
+          meetingScene.speakStateValue.setText(s"无")
+          meetingScene.editControlSpeakBtn(toAppoint = true)
+        }
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")

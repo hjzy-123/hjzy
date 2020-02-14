@@ -107,6 +107,8 @@ object RmManager {
 
   final case class SpeakAcceptance(userId: Long, userName: String, accept: Boolean) extends RmCommand
 
+  final case class StopSbSpeak(userId: Long) extends RmCommand
+
   /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
 
@@ -426,6 +428,10 @@ object RmManager {
 
       case SpeakAcceptance(userId, userName, accept) =>
         sender.foreach(_ ! WsProtocol.ApplySpeakAccept(userId, userName, accept))
+        Behaviors.same
+
+      case StopSbSpeak(userId) =>
+        sender.foreach(_ ! WsProtocol.StopSpeak(userId))
         Behaviors.same
 
       case x =>
