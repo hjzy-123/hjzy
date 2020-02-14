@@ -6,11 +6,11 @@ import javafx.geometry.{Insets, Pos}
 import javafx.scene.Group
 import javafx.scene.control.ButtonBar.ButtonData
 import javafx.scene.control._
-import javafx.scene.image.ImageView
+import javafx.scene.image.{Image, ImageView}
 import javafx.scene.layout.{GridPane, HBox, VBox}
 import javafx.scene.text.{Font, Text}
 import org.seekloud.hjzy.pcClient.Boot
-import org.seekloud.hjzy.pcClient.common.StageContext
+import org.seekloud.hjzy.pcClient.common.{Constants, StageContext}
 import org.seekloud.hjzy.pcClient.component.WarningDialog
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.seekloud.hjzy.pcClient.core.RmManager.{GetLiveInfoReq, StartMeetingReq, _}
@@ -18,6 +18,9 @@ import org.seekloud.hjzy.pcClient.scene.HomeScene.HomeSceneListener
 import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.MeetingSceneListener
 import org.slf4j.LoggerFactory
+
+import scala.collection.mutable
+
 
 /**
   * Author: zwq
@@ -27,12 +30,19 @@ import org.slf4j.LoggerFactory
 class MeetingController(
   context: StageContext,
   meetingScene: MeetingScene,
-  rmManager: ActorRef[RmManager.RmCommand]) {
+  rmManager: ActorRef[RmManager.RmCommand],
+  ifHostWhenCreate: Boolean) {
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
-  var partUserMap: Map[Int, Long] = Map() // canvas序号 -> userId
-  var partInfoList: List[(Long, String)] = List() // (userId, userName)
+  case class PartInfo(userName: String, imageStatus: Int, soundStatus: Int) //1->open,-1->close
+
+  var isHost: Boolean = this.ifHostWhenCreate
+
+  var isLiving: Boolean = false
+
+  var partUserMap: Map[Int, Long] = Map() // canvasId -> userId
+  var partInfoMap: mutable.MultiMap[Long, this.PartInfo] = _ // userId -> PartInfo(userName, imageStatus, soundStatus)
 
   var previousMeetingName = ""
   var previousMeetingDes = ""
@@ -43,16 +53,12 @@ class MeetingController(
     }
 
     override def stopLive(): Unit = {
-
-    }
-
-    override def allowSbSpeak(): Unit = {
-
+      rmManager ! RmManager.StopMeetingReq
     }
 
     override def changeHost(): Unit = {
-      if(partInfoList.nonEmpty){
-        val newHostId = changeHostDialog()
+      if(partInfoMap.nonEmpty){
+        val newHostId = chooseAudienceDialog(toChangeHost = Some(true))
         newHostId.foreach(rmManager ! TurnToAudience(_))
       } else {
         Boot.addToPlatform{
@@ -76,11 +82,42 @@ class MeetingController(
 
     }
 
-    override def kickSbOut(): Unit = {
+    override def kickSbOut(canvasId: Int): Unit = {
+      log.info(s"点击强制某人退出房间，canvasId = $canvasId")
+      val userId = partUserMap.get(canvasId)
+      if(userId.nonEmpty) rmManager ! KickSbOut(userId.get)
+    }
+
+    override def applyForSpeak(): Unit = {
 
     }
 
+    override def allowSbSpeak(): Unit = {
+
+    }
+
+    override def appointSbSpeak(): Unit = {
+      if(isLiving){
+        if(partInfoMap.nonEmpty){
+          val speakerId = chooseAudienceDialog(toAppointSpeak = Some(true))
+          speakerId.foreach(rmManager ! AppointSpeaker(_))
+        } else {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog("当前会议无其他人！")
+          }
+        }
+      } else {
+        Boot.addToPlatform{
+          WarningDialog.initWarningDialog("会议未开始！")
+        }
+      }
+    }
+
     override def refuseSbSpeak(): Unit = {
+
+    }
+
+    override def stopSbSpeak(): Unit = {
 
     }
 
@@ -90,32 +127,31 @@ class MeetingController(
 
     }
 
-    override def stopOnesImage(): Unit = {
-
+    override def controlOnesImage(orderNum: Int, targetStatus: Int): Unit = {
+      log.info(s"点击控制某观众画面，canvasId = $orderNum, targetStatus = $targetStatus")
+      val userId = partUserMap.get(orderNum)
+      if(userId.nonEmpty) rmManager ! RmManager.ControlOthersImageAndSound(userId.get, targetStatus, 0)
     }
 
-    override def stopOnesSound(): Unit = {
-
+    override def controlOnesSound(orderNum: Int, targetStatus: Int): Unit = {
+      log.info(s"点击控制某观众声音，canvasId = $orderNum, targetStatus = $targetStatus")
+      val userId = partUserMap.get(orderNum)
+      if(userId.nonEmpty) rmManager ! RmManager.ControlOthersImageAndSound(userId.get, 0, targetStatus)
     }
 
-    override def stopSbSpeak(): Unit = {
-
+    override def controlSelfImage(targetStatus: Int): Unit = {
+      log.info(s"点击控制自己画面，targetStatus: $targetStatus")
+      rmManager ! RmManager.ControlSelfImageAndSound(targetStatus, 0)
     }
 
-    override def stopSelfImage(): Unit = {
-
-    }
-
-    override def stopSelfSound(): Unit = {
-
+    override def controlSelfSound(targetStatus: Int): Unit = {
+      log.info(s"点击控制自己声音，targetStatus: $targetStatus")
+      rmManager ! RmManager.ControlSelfImageAndSound(0, targetStatus)
     }
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
-      rmManager ! LeaveRoom
-//      Boot.addToPlatform{
-//        meetingScene.refreshScene(false)
-//      }
+      rmManager ! LeaveRoom(false)
 
     }
 
@@ -135,11 +171,13 @@ class MeetingController(
 
   def addPartUser(userId: Long, userName: String): Unit = {
     if(partUserMap.keys.toList.length < 6){
-      partInfoList = (userId, userName) :: partInfoList
+      partInfoMap.update(userId, mutable.Set(PartInfo(userName, 1, 1)))
       val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
       partUserMap = partUserMap.updated(num, userId)
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText(userName)
+        if(isHost) meetingScene.addLiveBarToCanvas(num)
+
       }
 
     }
@@ -148,29 +186,30 @@ class MeetingController(
   def reducePartUser(userId: Long): Unit = {
     val userReduced = partUserMap.find(_._2 == userId)
     if(userReduced.nonEmpty){
-      partInfoList = partInfoList.filterNot(_._1 == userId)
+      partInfoMap.remove(userId)
       val num = userReduced.get._1
       partUserMap = partUserMap - num
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText("")
+        if(isHost) meetingScene.removeLiveBarFromCanvas(num)
       }
-
     }
   }
 
-  //变更主持人弹窗
-  def changeHostDialog(): Option[Long] = {
+  //选择一名参会者弹窗
+  def chooseAudienceDialog(toChangeHost: Option[Boolean] = None, toAppointSpeak: Option[Boolean] = None): Option[Long] = {
     val dialog = new Dialog[String]()
-    dialog.setTitle("变更主持人")
+    if(toChangeHost.nonEmpty) dialog.setTitle("变更主持人")
+    if(toAppointSpeak.nonEmpty) dialog.setTitle("指派发言人")
 
-    val changeHostLabel = new Label(s"请选择新的会议主持人：")
+    val changeHostLabel = if(toChangeHost.nonEmpty) new Label(s"请选择新的会议主持人：") else new Label(s"请选择发言人：")
 
     val btnBox = new VBox(5)
 
     val toggleGroup = new ToggleGroup
 
-    partInfoList.map{ user =>
-      val radioBtn = new RadioButton(s"${user._2}")
+    partInfoMap.map{ user =>
+      val radioBtn = new RadioButton(s"${user._2.head.userName}")
       radioBtn.setToggleGroup(toggleGroup)
       radioBtn.setUserData(user._1)
       btnBox.getChildren.add(radioBtn)
@@ -195,7 +234,7 @@ class MeetingController(
           null
       } else {
         Boot.addToPlatform(
-          WarningDialog.initWarningDialog("请选择一名新主持人！")
+          WarningDialog.initWarningDialog("请选择一名参会者！")
         )
         null
       }
@@ -211,6 +250,15 @@ class MeetingController(
     changeHostOpt
   }
 
+  //重置canvas背景
+  def resetBack(userId: Long): Unit = {
+    val canvasId = partUserMap.find(_._2 == userId).map(_._1)
+    if(canvasId.nonEmpty){
+      val imageCanvasBg = new Image("img/picture/background.jpg")
+      meetingScene.canvasMap(canvasId.get)._2.drawImage(
+        imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+    }
+  }
 
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
@@ -218,6 +266,7 @@ class MeetingController(
         log.info(s"rcv HeatBeat from rm: ${msg.ts}")
         rmManager ! HeartBeat
 
+        //通知其余人：房间新来了用户
       case msg: UserInfoListRsp =>
         log.info(s"rcv UserInfoListRsp from rm: $msg")
         val addPartListOpt = msg.UserInfoList
@@ -227,17 +276,20 @@ class MeetingController(
           }
         }
 
+        //通知其余人：某人离开房间
       case msg: LeftUserRsp =>
         log.info(s"rcv LeftUserRsp from rm: $msg")
-        val userId = msg.UserId
-        reducePartUser(userId)
+        rmManager ! SomeoneLeave(msg.UserId)
+        reducePartUser(msg.UserId)
 
+        //收到留言
       case msg: RcvComment =>
         log.info(s"rcv RcvComment from rm: $msg")
         Boot.addToPlatform {
           meetingScene.commentBoard.updateComment(msg)
         }
 
+        //通知主持人：修改房间信息结果
       case msg: ModifyRoomRsp =>
         log.info(s"rcv ModifyRoomRsp from rm: $msg")
         if(msg.errCode != 0){
@@ -249,6 +301,7 @@ class MeetingController(
           rmManager ! ModifyRoomFailed(previousMeetingName, previousMeetingDes)
         }
 
+        //通知观众：房间信息被更改
       case msg: UpdateRoomInfo2Client =>
         log.info(s"rcv UpdateRoomInfo2Client from rm: $msg")
         Boot.addToPlatform{
@@ -256,16 +309,19 @@ class MeetingController(
           meetingScene.meetingDesValue.setText(msg.roomDec)
         }
 
+        //通知主持人：更换主持人的结果
       case msg: ChangeHostRsp =>
         log.info(s"rcv ChangeHostRsp from rm: $msg")
         if(msg.errCode == 0){
           Boot.addToPlatform{
             meetingScene.meetingHostValue.setText(msg.userName)
           }
+          isHost = false
         } else {
           rmManager ! TurnToHost
         }
 
+        //通知某观众：你被指派为主持人
       case msg: ChangeHost2Client =>
         log.info(s"rcv ChangeHost2Client from rm: $msg")
         Boot.addToPlatform{
@@ -273,19 +329,19 @@ class MeetingController(
         }
         if(msg.userId == RmManager.userInfo.get.userId){
           rmManager ! TurnToHost
+          isHost = true
         }
 
+        //得到自己的liveId和liveCode（推）以及房间其余人的liveId（拉）
       case msg: StartMeetingRsp =>
         log.info(s"rcv StartMeetingRsp from rm: $msg")
         if(msg.errCode == 0){
           rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
         } else {
-//          Boot.addToPlatform{
-//            WarningDialog.initWarningDialog(s"${msg.msg}")
-//          }
           rmManager ! GetLiveInfoReq
         }
 
+        //得到自己的liveId和liveCode
       case msg: GetLiveInfoRsp =>
         log.info(s"rcv GetLiveInfoRsp from rm: $msg")
         if(msg.errCode == 0){
@@ -294,9 +350,75 @@ class MeetingController(
           rmManager ! GetLiveInfoReq
         }
 
+        //通知房间里其余人新拉一路流
       case msg: GetLiveId4Other =>
         log.info(s"rcv GetLiveInd4Other from rm: $msg")
         rmManager ! ToPull(msg.userId, msg.liveId)
+
+
+        //通知某观众：你被主持人踢出房间
+      case msg: ForceOut2Client =>
+        log.info(s"rcv ForceOut2Client from rm: $msg")
+        rmManager ! LeaveRoom(true)
+
+        //通知某观众：你被主持人关闭/打开了声音/画面
+      case msg: CloseSoundFrame2Client =>
+        log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
+        Boot.addToPlatform{
+          msg.frame match{
+            case 1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(false)
+            case -1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(true)
+            case x => //do nothing
+          }
+        }
+        Boot.addToPlatform{
+          msg.sound match{
+            case 1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(false)
+            case -1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(true)
+            case x => //do nothing
+          }
+        }
+        rmManager ! ControlSelfImageAndSound(msg.frame, msg.sound)
+
+        //通知主持人：某观众关闭/打开了声音/画面
+      case msg: CloseOwnSoundFrame =>
+        val userId = msg.userId
+        val userInfo = partInfoMap.find(_._1 == userId)
+        val canvasId = partUserMap.find(l => l._2 == userId).map(_._1)
+        if(canvasId.nonEmpty){
+          Boot.addToPlatform{
+            msg.sound match{
+              case 1 =>
+                meetingScene.liveBarMap(canvasId.get)._3.setSelected(false)
+                if(userInfo.nonEmpty){
+                  partInfoMap.update(userId,
+                    mutable.Set(PartInfo(userInfo.get._2.head.userName, 1, userInfo.get._2.head.soundStatus)))
+                }
+              case -1 =>
+                meetingScene.liveBarMap(canvasId.get)._3.setSelected(true)
+                if(userInfo.nonEmpty){
+                  partInfoMap.update(userId,
+                    mutable.Set(PartInfo(userInfo.get._2.head.userName, -1, userInfo.get._2.head.soundStatus)))
+                }
+              case x => // do nothing
+            }
+            msg.frame match{
+              case 1 =>
+                meetingScene.liveBarMap(canvasId.get)._2.setSelected(false)
+                if(userInfo.nonEmpty){
+                  partInfoMap.update(userId,
+                    mutable.Set(PartInfo(userInfo.get._2.head.userName, userInfo.get._2.head.imageStatus, 1)))
+                }
+              case -1 =>
+                meetingScene.liveBarMap(canvasId.get)._2.setSelected(true)
+                if(userInfo.nonEmpty){
+                  partInfoMap.update(userId,
+                    mutable.Set(PartInfo(userInfo.get._2.head.userName, userInfo.get._2.head.imageStatus, -1)))
+                }
+              case x => // do nothing
+            }
+          }
+        }
 
 
       case x =>

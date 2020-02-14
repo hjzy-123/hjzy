@@ -10,7 +10,7 @@ import javafx.scene.layout.HBox
   * Date: 2020/2/6
   * Time: 22:48
   */
-class CanvasBar(width: Double, height: Double) {
+class CanvasBar(width: Double, height: Double, isSelf: Boolean) {
 
   /**
     * needSound & needImage & fullScreen
@@ -29,10 +29,15 @@ class CanvasBar(width: Double, height: Double) {
   imageToggleButton.setDisable(false)
   Tooltip.install(imageToggleButton, new Tooltip("点击关闭直播画面"))
 
-  val fullScreenIcon = new Button("", new ImageView("img/button/full-screen.png"))
-  fullScreenIcon.setPrefSize(32, 32)
+//  val fullScreenIcon = new Button("", new ImageView("img/button/full-screen.png"))
+//  fullScreenIcon.setPrefSize(32, 32)
 
-  val liveBarBox = new HBox(10, soundToggleButton, imageToggleButton, fullScreenIcon)
+  val kickBtn = new Button(s"踢")
+
+  val liveBarBox: HBox =
+    if(isSelf) new HBox(10, soundToggleButton, imageToggleButton)
+    else new HBox(10, soundToggleButton, imageToggleButton, kickBtn)
+
   liveBarBox.setMaxSize(width, height)
   liveBarBox.setPadding(new Insets(0,10,0,0))
   liveBarBox.setAlignment(Pos.CENTER_RIGHT)

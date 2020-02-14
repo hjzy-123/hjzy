@@ -26,7 +26,7 @@ import org.seekloud.hjzy.player.sdk.MediaPlayer
 import org.slf4j.LoggerFactory
 import org.seekloud.hjzy.pcClient.Boot.{executor, materializer, scheduler, system, timeout}
 import org.seekloud.byteobject.ByteObject._
-import org.seekloud.hjzy.pcClient.core.stream.LiveManager.VideoInfo
+import org.seekloud.hjzy.pcClient.core.stream.LiveManager.{StopPullOneStream, VideoInfo}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -64,7 +64,7 @@ object RmManager {
 
   final case object StopSelf extends RmCommand
 
-  final case object LeaveRoom extends RmCommand
+  final case class LeaveRoom(isKicked: Boolean) extends RmCommand
 
   final case class SendComment(userId: Long, roomId: Long, comment: String) extends RmCommand
 
@@ -82,6 +82,10 @@ object RmManager {
 
   final case class ToPull(userId: Long, liveId: String) extends RmCommand
 
+  final case class SomeoneLeave(userId: Long) extends RmCommand
+
+  final case class ControlSelfImageAndSound(image: Int = 0, sound: Int = 0) extends RmCommand // 1->打开, -1->关闭
+
   /*主持人*/
   final case object HostWsEstablish extends RmCommand
 
@@ -93,7 +97,13 @@ object RmManager {
 
   final case object StartMeetingReq extends RmCommand
 
+  final case object StopMeetingReq extends RmCommand
+
   final case class KickSbOut(userId: Long) extends RmCommand
+
+  final case class ControlOthersImageAndSound(userId: Long, image: Int = 0, sound: Int = 0) extends RmCommand // 1->打开, -1->关闭
+
+  final case class AppointSpeaker(userId: Long) extends RmCommand
 
   /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
@@ -157,7 +167,7 @@ object RmManager {
         log.debug(s"create meeting success.")
         this.meetingRoomInfo = roomInfo
         val meetingScene = new MeetingScene(stageCtx.getStage)
-        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
+        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, true)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
         liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))
@@ -173,7 +183,7 @@ object RmManager {
         log.debug(s"join meeting success.")
         this.meetingRoomInfo = roomInfo
         val meetingScene = new MeetingScene(stageCtx.getStage)
-        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self)
+        val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, false)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
         liveManager ! LiveManager.DevicesOn(meetingScene.selfImageGc, callBackFunc = Some(callBack))
@@ -184,18 +194,6 @@ object RmManager {
           meetingController.showScene(false)
         }
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer))
-
-
-//      case GoToRoomHall =>
-//        val roomScene = new RoomScene()
-//        val roomController = new RoomController(stageCtx, roomScene, ctx.self)
-//        Boot.addToPlatform {
-//          if (homeController != null) {
-//            homeController.get.removeLoading()
-//          }
-//          roomController.showScene()
-//        }
-//        idle(stageCtx, liveManager, mediaPlayer, homeController, Some(roomController))
 
 
       case Logout =>
@@ -288,7 +286,7 @@ object RmManager {
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = previousDes))
         Behaviors.same
 
-      case LeaveRoom =>
+      case LeaveRoom(isKicked) =>
         log.info(s"host back to home.")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
@@ -332,6 +330,11 @@ object RmManager {
         sender.foreach(_ ! WsProtocol.StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
         Behaviors.same
 
+      case StopMeetingReq =>
+
+        //todo
+        Behaviors.same
+
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
         log.info(s"rcv StartMeeting from meetingScene: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
         assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
@@ -347,6 +350,7 @@ object RmManager {
             liveManager ! LiveManager.PullStream(l._2, VideoInfo(this.meetingRoomInfo.get.roomId, l._1, gc), Some(meetingScene))
           }
         }
+        meetingController.isLiving = true
         val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audInfo))
@@ -376,6 +380,40 @@ object RmManager {
       case GetLiveInfoReq =>
         assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
         sender.foreach(_ ! WsProtocol.GetLiveInfoReq(this.userInfo.get.userId))
+        Behaviors.same
+
+      case KickSbOut(userId) =>
+        sender.foreach(_ ! WsProtocol.ForceOut(userId))
+        Behaviors.same
+
+      case SomeoneLeave(userId) =>
+        if(joinAudienceList.isEmpty) {
+          Behaviors.same
+        } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
+          //stop play
+          val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
+          val resetFunc: Unit = meetingController.resetBack(userId)
+          mediaPlayer.stop(playId, () => resetFunc)
+          //stop pull
+          liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
+
+          val audienceList = joinAudienceList.get.filterNot(l => l.userId == userId)
+          hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+            meetingStatus, Some(audienceList))
+        } else {
+          Behaviors.same
+        }
+
+      case ControlOthersImageAndSound(userId, image, sound) =>
+        sender.foreach(_ ! WsProtocol.CloseSoundFrame(userId, sound, image))
+        Behaviors.same
+
+      case ControlSelfImageAndSound(image, sound) =>
+        liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
+        Behaviors.same
+
+      case AppointSpeaker(userId) =>
+        sender.foreach(_ ! WsProtocol.AppointSpeak(userId))
         Behaviors.same
 
       case StopSelf =>
@@ -449,8 +487,8 @@ object RmManager {
         }
         Behaviors.same
 
-      case LeaveRoom =>
-        log.debug(s"audience back to home.")
+      case LeaveRoom(isKicked) =>
+        log.debug(s"audience back to home, isKicked: $isKicked")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -474,9 +512,11 @@ object RmManager {
 
         Boot.addToPlatform {
 //          meetingScene.stopPackageLoss()
-          homeController.foreach {
-            r =>
-              r.showScene()
+          homeController.foreach { r =>
+            r.showScene()
+          }
+          if(isKicked){
+            WarningDialog.initWarningDialog(s"你被主持人踢出房间！")
           }
         }
 //        meetingScene.stopPackageLoss()
@@ -519,6 +559,7 @@ object RmManager {
             liveManager ! LiveManager.PullStream(l._2, VideoInfo(this.meetingRoomInfo.get.roomId, l._1, gc), Some(meetingScene))
           }
         }
+        meetingController.isLiving = true
         val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audInfo))
@@ -545,7 +586,29 @@ object RmManager {
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audienceList))
 
+      case SomeoneLeave(userId) =>
+        if(joinAudienceList.isEmpty) {
+          Behaviors.same
+        } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
+          //stop play
+          val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
+          val resetFunc = meetingController.resetBack(userId)
+          mediaPlayer.stop(playId, () => resetFunc)
+          //stop pull
+          liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
 
+          val audienceList = joinAudienceList.get.filterNot(l => l.userId == userId)
+          hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+            meetingStatus, Some(audienceList))
+        } else {
+          Behaviors.same
+        }
+
+      case ControlSelfImageAndSound(image, sound) =>
+        assert(this.userInfo.nonEmpty)
+        liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
+        sender.foreach(_ ! WsProtocol.CloseOwnSoundFrame(this.userInfo.get.userId, sound, image))
+        Behaviors.same
 
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")

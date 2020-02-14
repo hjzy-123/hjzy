@@ -37,6 +37,8 @@ object CaptureActor {
 
   final case class GetMediaCapture(mediaCapture: MediaCapture) extends CaptureCommand
 
+  final case class ControlImageAndSound(image: Int = 0, sound: Int = 0) extends CaptureCommand //1->open,-1->close
+
   /*drawer*/
   sealed trait DrawCommand
 
@@ -186,6 +188,20 @@ object CaptureActor {
             }
           }
           idle(frameRate, gc, isJoin, callBackFunc, Some(msg.reset), mediaCapture, reqActor, loopExecutor, imageLoop, drawActor)
+
+        case ControlImageAndSound(image, sound) =>
+          //todo
+          image match {
+//            case 1 => reqActor.foreach(_ ! )
+//            case -1 => reqActor.foreach(_ ! )
+            case x => //do nothing
+          }
+          sound match{
+//            case 1 => reqActor.foreach(_ ! )
+//            case -1 => reqActor.foreach(_ ! )
+            case x => //do nothing
+          }
+          Behaviors.same
 
         case StopCapture =>
           log.info(s"Media capture is stopping...")
