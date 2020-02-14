@@ -414,6 +414,7 @@ object RoomActor {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}同意了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp())
           dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
+          dispatch(SpeakingUser(userId, userName))
         } else {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}拒绝了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
@@ -422,11 +423,21 @@ object RoomActor {
         Behaviors.same
 
       //todo processor update
-      case AppointSpeak(userId, userName) =>
+      case AppointSpeak(userId) =>
+        val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
         dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
+        dispatch(SpeakingUser(userId, userName))
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
+        Behaviors.same
+
+      case StopSpeak(userId) =>
+        val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
+        dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s" $userName 发言结束"))
+        dispatchTo(List(userId), RcvComment(-1,"",s"主持人结束您的发言"))
+        dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(1))
+        dispatch(StopSpeakingUser(userId, userName))
         Behaviors.same
 
       case StopMeetingReq(userId) =>

@@ -113,6 +113,8 @@ object WsProtocol {
   /*主持人指定某人发言*/
   case class AppointSpeak(userId: Long) extends WsMsgHost
 
+  case class StopSpeak(userId: Long) extends WsMsgHost
+
 //  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
 
   /*主持人指定某人发言*/
@@ -243,4 +245,13 @@ object WsProtocol {
                              msg: String = "ok"
                            ) extends WsMsgRm
 
+  case class SpeakingUser(
+                           userId: Long,
+                           userName: String
+                         ) extends WsMsgRm
+
+  case class StopSpeakingUser(
+                           userId: Long,
+                           userName: String
+                         ) extends WsMsgRm
 }
