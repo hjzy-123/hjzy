@@ -76,7 +76,6 @@ object RoomActor {
       log.debug(s"${ctx.self.path} setup")
       Behaviors.withTimers[Command] { implicit timer =>
         implicit val sendBuffer: MiddleBufferInJvm = new MiddleBufferInJvm(1024)  //8192
-        //todo subscribers的参数是什么？
         val subscribers = mutable.HashMap.empty[Long, ActorRef[UserActor.Command]]
         val liveInfoMap = mutable.HashMap.empty[Long, LiveInfo]
         val wholeRoomInfo = WholeRoomInfo(RoomInfo(roomId,"","",-1,"","",""))
@@ -146,6 +145,7 @@ object RoomActor {
             dispatch(subscribers)(UserInfoListRsp(None,100008, "此房间没有用户"))
           Behaviors.same
 
+          //todo processor update
         case ActorProtocol.UpdateSubscriber(join, roomId, userId,userActorOpt) =>
           if (join == Common.Subscriber.join) {
             log.info(s"${ctx.self.path}新用户加入房间roomId=$roomId,userId=$userId")
@@ -191,6 +191,7 @@ object RoomActor {
 //          idle(WholeRoomInfo(roomInfo, mutable.HashMap[Int, mutable.HashMap[Long, LiveInfo]]()),subscribers,  System.currentTimeMillis(), 0)
           Behaviors.same
 
+        //todo processor update
         case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host leave room")
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
@@ -205,6 +206,8 @@ object RoomActor {
             idle(roomId, subscribers,newRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
           } else {
             log.info("主持人离开，房间内无人委派，房间废弃")
+            if(wholeRoomInfo.isStart == 1)
+              ProcessorClient.closeRoom(roomId)
             timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
             idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = "")), liveInfoMap, startTime)
           }
@@ -333,7 +336,8 @@ object RoomActor {
       case StartMeetingReq(`userId`,token) =>
         log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
-        var liveInfo4mix = LiveInfo("","")
+        //todo 发言人
+        var speaker = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
         userIdList.foreach{ id =>
           val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != id)
           if(liveInfoMap.get(id).nonEmpty)
@@ -343,16 +347,26 @@ object RoomActor {
         }
         dispatch(RcvComment(-1, "", s"会议开始了~"))
 
-        //todo processor newConnnet
-//        RtpClient.getLiveInfoFunc().map {
-//          case Right(GetLiveInfoRsp(liveInfo4Mix, 0, _)) =>
-//            liveInfo4mix = liveInfo4Mix
-//          case _ =>
-//        }
-//        ProcessorClient.newConnect(roomId, liveInfoMap.values.toList, liveInfo4mix.liveId, liveInfo4mix.liveCode)
+        for {
+          data <- RtpClient.getLiveInfoFunc()
+        } yield {
+          data match {
+            case Right(rsp) =>
+              ProcessorClient.newConnect(roomId, liveInfoMap.values.map(_.liveId).toList, liveInfoMap.values.toList.length,
+                speaker, rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+                case Right(r) =>
+                  val startTime = r.startTime
+                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt))
+                case Left(e) =>
+                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+              }
 
-        val startTime = -1
-        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1), liveInfoMap, startTime , userInfoListOpt)
+            case Left(str) =>
+              log.info(s"${ctx.self.path} 请求processor录像失败=$str")
+              ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+          }
+        }
+        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
       case GetLiveInfoReq(userId) =>
         RtpClient.getLiveInfoFunc().map {
@@ -394,6 +408,7 @@ object RoomActor {
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ApplySpeak2Host(userId, userName))
         Behaviors.same
 
+      //todo processor update
       case ApplySpeakAccept(userId, userName, accept) =>
         if(accept) {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}同意了 $userName 的发言请求"))
@@ -406,6 +421,7 @@ object RoomActor {
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
         Behaviors.same
 
+      //todo processor update
       case AppointSpeak(userId, userName) =>
         dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
@@ -414,7 +430,7 @@ object RoomActor {
         Behaviors.same
 
       case StopMeetingReq(userId) =>
-        //todo  processor停止录像
+        ProcessorClient.closeRoom(roomId)
         if(userInfoListOpt.get.nonEmpty)
         roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
         dispatch(RcvComment(-1,"","会议结束了~"))

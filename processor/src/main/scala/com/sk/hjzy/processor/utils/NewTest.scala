@@ -1,27 +1,25 @@
-package com.sk.hjzy.roomManager.utils
+package com.sk.hjzy.processor.utils
 
-import akka.event.jul.Logger
-import SecureUtil.genPostEnvelope
+import java.io.File
+
+import com.sk.hjzy.processor.Boot.executor
+import com.sk.hjzy.processor.utils.SecureUtil.genPostEnvelope
+import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
 import org.slf4j.LoggerFactory
-import com.sk.hjzy.roomManager.Boot.{executor, scheduler, system, timeout}
-import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, RecordInfoRsp, SeekRecord, UpdateRoomInfo, UpdateRsp}
-import com.sk.hjzy.roomManager.common.AppSettings
-import com.sk.hjzy.roomManager.common.AppSettings.distributorDomain
-import com.sk.hjzy.roomManager.http.ServiceUtils.CommonRsp
 
+import scala.collection.mutable
 import scala.concurrent.Future
-/**
-  * created by byf on 2019.7.17 13:09
-  * */
+
+
 object ProcessorClient extends HttpUtil{
 
   import io.circe.generic.auto._
-  import io.circe.syntax._
   import io.circe.parser.decode
+  import io.circe.syntax._
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  val processorBaseUrl = s"http://${AppSettings.processorIp}:${AppSettings.processorPort}/hjzy/processor"
+  val processorBaseUrl = "http://127.0.0.1:30388/hjzy/processor"
 
   def newConnect(roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String):Future[Either[String,NewConnectRsp]] = {
     val url = processorBaseUrl + "/newConnect"
@@ -79,28 +77,24 @@ object ProcessorClient extends HttpUtil{
     }
   }
 
-  def seekRecord(roomId:Long, startTime:Long):Future[Either[String,RecordInfoRsp]] = {
-    val url = processorBaseUrl + "/seekRecord"
-    val jsonString = SeekRecord(roomId, startTime).asJson.noSpaces
-    postJsonRequestSend("seekRecord",url,List(),jsonString,timeOut = 60 * 1000,needLogRsp = false).map{
-      case Right(v) =>
-        decode[RecordInfoRsp](v) match{
-          case Right(data) =>
-            log.debug(s"$data")
-            if(data.errCode == 0){
-              Right(data)
-            }else{
-              log.error(s"seekRecord decode error1 : ${data.msg}")
-              Left(s"seekRecord decode error1 :${data.msg}")
-            }
-          case Left(e) =>
-            log.error(s"seekRecord decode error : $e")
-            Left(s"seekRecord decode error : $e")
-        }
-      case Left(error) =>
-        log.error(s"seekRecord postJsonRequestSend error : $error")
-        Left(s"seekRecord postJsonRequestSend error : $error")
-    }
+  def main(args: Array[String]): Unit = {
+
+    //    deleteFile()
+    //    updateRoomInfo(8888,List("liveIdTest-1111"),1,0).map{
+    //      a=>
+    //        println(a)
+    //    }
+
+    Thread.sleep(30000)
+    //
+    //    closeRoom(8888).map{
+    //      a =>
+    //        println(a)
+    //    }
+    //    updateRoomInfo(8888,List("1000","2000"),2,0).map{
+    //      a=>
+    //        println(a)
+    //    }
   }
 
 
