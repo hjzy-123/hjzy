@@ -64,7 +64,7 @@ object RmManager {
 
   final case object StopSelf extends RmCommand
 
-  final case object LeaveRoom extends RmCommand
+  final case class LeaveRoom(isKicked: Boolean) extends RmCommand
 
   final case class SendComment(userId: Long, roomId: Long, comment: String) extends RmCommand
 
@@ -82,7 +82,7 @@ object RmManager {
 
   final case class ToPull(userId: Long, liveId: String) extends RmCommand
 
-  final case class SomeoneLeft(userId: Long) extends RmCommand
+  final case class SomeoneLeave(userId: Long) extends RmCommand
 
   final case class ControlSelfImageAndSound(image: Int = 0, sound: Int = 0) extends RmCommand // 1->打开, -1->关闭
 
@@ -286,7 +286,7 @@ object RmManager {
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = previousDes))
         Behaviors.same
 
-      case LeaveRoom =>
+      case LeaveRoom(isKicked) =>
         log.info(s"host back to home.")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
@@ -386,13 +386,14 @@ object RmManager {
         sender.foreach(_ ! WsProtocol.ForceOut(userId))
         Behaviors.same
 
-      case SomeoneLeft(userId) =>
+      case SomeoneLeave(userId) =>
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
           //stop play
           val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
-          mediaPlayer.stop(playId, () => ())
+          val resetFunc: Unit = meetingController.resetBack(userId)
+          mediaPlayer.stop(playId, () => resetFunc)
           //stop pull
           liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
 
@@ -402,10 +403,6 @@ object RmManager {
         } else {
           Behaviors.same
         }
-
-      case KickSbOut(userId) =>
-        sender.foreach(_ ! WsProtocol.ForceOut(userId))
-        Behaviors.same
 
       case ControlOthersImageAndSound(userId, image, sound) =>
         sender.foreach(_ ! WsProtocol.CloseSoundFrame(userId, sound, image))
@@ -491,8 +488,8 @@ object RmManager {
         }
         Behaviors.same
 
-      case LeaveRoom =>
-        log.debug(s"audience back to home.")
+      case LeaveRoom(isKicked) =>
+        log.debug(s"audience back to home, isKicked: $isKicked")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -516,9 +513,11 @@ object RmManager {
 
         Boot.addToPlatform {
 //          meetingScene.stopPackageLoss()
-          homeController.foreach {
-            r =>
-              r.showScene()
+          homeController.foreach { r =>
+            r.showScene()
+          }
+          if(isKicked){
+            WarningDialog.initWarningDialog(s"你被主持人踢出房间！")
           }
         }
 //        meetingScene.stopPackageLoss()
@@ -588,13 +587,14 @@ object RmManager {
         hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audienceList))
 
-      case SomeoneLeft(userId) =>
+      case SomeoneLeave(userId) =>
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
           //stop play
           val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
-          mediaPlayer.stop(playId, () => ())
+          val resetFunc = meetingController.resetBack(userId)
+          mediaPlayer.stop(playId, () => resetFunc)
           //stop pull
           liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
 
@@ -606,9 +606,10 @@ object RmManager {
         }
 
       case ControlSelfImageAndSound(image, sound) =>
+        assert(this.userInfo.nonEmpty)
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
+        sender.foreach(_ ! WsProtocol.CloseOwnSoundFrame(this.userInfo.get.userId, sound, image))
         Behaviors.same
-
 
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")

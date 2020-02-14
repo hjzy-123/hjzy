@@ -277,28 +277,25 @@ class MeetingScene(stage: Stage){
   selfImageGc.drawImage(selfImageCanvasBg, 0, 0, Constants.DefaultPlayer.width, Constants.DefaultPlayer.height)
 
   /*self liveBar*/
-  val selfCanvasBar = new CanvasBar(Constants.DefaultPlayer.width, 40)
-  val selfImageToggleBtn: ToggleButton = selfCanvasBar.imageToggleButton
-  val selfSoundToggleBtn: ToggleButton = selfCanvasBar.soundToggleButton
-  val selfLiveBar: HBox = selfCanvasBar.liveBarBox
+  val selfCanvasBar = new CanvasBar(Constants.DefaultPlayer.width, 40, true)
 
-  selfImageToggleBtn.setOnAction { _ =>
-    if (selfImageToggleBtn.isSelected) {
+  selfCanvasBar.imageToggleButton.setOnAction { _ =>
+    if (selfCanvasBar.imageToggleButton.isSelected) {
       listener.controlSelfImage(-1)
-      Tooltip.install(selfImageToggleBtn, new Tooltip("点击打开画面"))
+      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击打开画面"))
     } else {
       listener.controlSelfImage(1)
-      Tooltip.install(liveToggleButton, new Tooltip("点击关闭画面"))
+      Tooltip.install(selfCanvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
     }
   }
 
-  selfSoundToggleBtn.setOnAction { _ =>
-    if (selfSoundToggleBtn.isSelected) {
+  selfCanvasBar.soundToggleButton.setOnAction { _ =>
+    if (selfCanvasBar.soundToggleButton.isSelected) {
       listener.controlSelfSound(-1)
-      Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
+      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击打开声音"))
     } else {
       listener.controlSelfSound(1)
-      Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
+      Tooltip.install(selfCanvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
     }
   }
 
@@ -307,12 +304,12 @@ class MeetingScene(stage: Stage){
 
   selfLivePane.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
     selfLivePane.setAlignment(Pos.BOTTOM_RIGHT)
-    selfLivePane.getChildren.add(selfLiveBar)
+    selfLivePane.getChildren.add(selfCanvasBar.liveBarBox)
   })
 
   selfLivePane.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
     selfLivePane.setAlignment(Pos.BOTTOM_RIGHT)
-    selfLivePane.getChildren.remove(selfLiveBar)
+    selfLivePane.getChildren.remove(selfCanvasBar.liveBarBox)
   })
 
 
@@ -339,55 +336,42 @@ class MeetingScene(stage: Stage){
   }.toMap
 
   /*others' liveBar*/
-  def addLiveBarToCanvas(orderNum: Int) = {
-    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
-    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
-    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
+  val liveBarMap: Map[Int, (HBox, ToggleButton, ToggleButton)] = List(1,2,3,4,5,6).map{ i =>
+    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40, false)
     val liveBar: HBox = canvasBar.liveBarBox
 
-    imageToggleBtn.setOnAction { _ =>
-      if (imageToggleBtn.isSelected) {
-        listener.controlOnesImage(orderNum = orderNum, -1)
-        Tooltip.install(imageToggleBtn, new Tooltip("点击打开画面"))
+    canvasBar.imageToggleButton.setOnAction { _ =>
+      if (canvasBar.imageToggleButton.isSelected) {
+        listener.controlOnesImage(orderNum = i, -1)
+        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击打开画面"))
       } else {
-        listener.controlOnesImage(orderNum = orderNum, 1)
-        Tooltip.install(imageToggleBtn, new Tooltip("点击关闭画面"))
+        listener.controlOnesImage(orderNum = i, 1)
+        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
       }
     }
 
-    soundToggleBtn.setOnAction { _ =>
-      if (selfSoundToggleBtn.isSelected) {
-        listener.controlOnesSound(orderNum = orderNum, -1)
-        Tooltip.install(selfSoundToggleBtn, new Tooltip("点击打开声音"))
+    canvasBar.soundToggleButton.setOnAction { _ =>
+      if (canvasBar.soundToggleButton.isSelected) {
+        listener.controlOnesSound(orderNum = i, -1)
+        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击打开声音"))
       } else {
-        listener.controlOnesSound(orderNum = orderNum, 1)
-        Tooltip.install(selfSoundToggleBtn, new Tooltip("点击关闭声音"))
+        listener.controlOnesSound(orderNum = i, 1)
+        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
       }
     }
+
+    canvasBar.kickBtn.setOnAction(_ => listener.kickSbOut(i))
+    i -> (liveBar, canvasBar.imageToggleButton, canvasBar.soundToggleButton)
+  }.toMap
+
+  def addLiveBarToCanvas(orderNum: Int) = {
+    val liveBar: HBox = liveBarMap(orderNum)._1
     canvasMap(orderNum)._3.getChildren.add(liveBar)
   }
 
   def removeLiveBarFromCanvas(orderNum: Int) = {
     canvasMap(orderNum)._3.getChildren.clear()
     canvasMap(orderNum)._3.getChildren.add(canvasMap(orderNum)._1)
-  }
-
-  val liveBarMap: List[(Int, HBox)] = List(1,2,3,4,5,6).map{ i =>
-    val canvasBar = new CanvasBar(Constants.DefaultPlayer.width/3, 40)
-    val imageToggleBtn: ToggleButton = canvasBar.imageToggleButton
-    val soundToggleBtn: ToggleButton = canvasBar.soundToggleButton
-    val liveBar: HBox = canvasBar.liveBarBox
-
-    imageToggleBtn.setOnAction {
-      _ =>
-
-    }
-
-    soundToggleBtn.setOnAction {
-      _ =>
-
-    }
-    i -> liveBar
   }
 
   val box1 = new HBox(
