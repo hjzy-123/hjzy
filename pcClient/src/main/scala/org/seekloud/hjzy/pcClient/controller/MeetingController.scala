@@ -397,8 +397,8 @@ class MeetingController(
         rmManager ! ControlSelfImageAndSound(msg.frame, msg.sound)
 
         //通知主持人：某观众关闭/打开了声音/画面
-      case msg: CloseOwnSoundFrame =>
-        log.info(s"rcv CloseOwnSoundFrame from rm: $msg")
+      case msg: ClientCloseSoundFrame =>
+        log.info(s"rcv ClientCloseSoundFrame from rm: $msg")
         val userId = msg.userId
         val userInfo = partInfoMap.find(_._1 == userId)
         val canvasId = partUserMap.find(l => l._2 == userId).map(_._1)
