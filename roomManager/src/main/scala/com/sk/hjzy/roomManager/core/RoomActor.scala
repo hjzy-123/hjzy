@@ -218,7 +218,7 @@ object RoomActor {
           Behaviors.stopped
 
         case ActorProtocol.WebSocketMsgWithActor(userId, roomId, wsMsg) =>
-          handleWebSocketMsg(WholeRoomInfo(wholeRoomInfo.roomInfo), subscribers,liveInfoMap,startTime, userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
+          handleWebSocketMsg(wholeRoomInfo, subscribers,liveInfoMap,startTime, userInfoListOpt, dispatch(subscribers), dispatchTo(subscribers))(ctx, userId, roomId, wsMsg)
 
         case x =>
           log.debug(s"${ctx.self.path} recv an unknown msg:$x in idle state...")
