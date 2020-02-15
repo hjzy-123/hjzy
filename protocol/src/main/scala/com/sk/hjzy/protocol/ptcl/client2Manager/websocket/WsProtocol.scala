@@ -95,7 +95,7 @@ object WsProtocol {
 
   /*主持人强制某人退出会议*/
   case class ForceOut(
-                       userId: Long,
+                       userId: Long
                      ) extends WsMsgHost
 
   case class ForceOutRsp(
@@ -167,7 +167,7 @@ object WsProtocol {
 
   /*申请发言*/   //todo
   case class ApplySpeak(
-                         userId: Long,
+                         userId: Long
                        ) extends WsMsgAudience
 
   case class ApplySpeakRsp(
