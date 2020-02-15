@@ -105,6 +105,7 @@ class MeetingScene(stage: Stage){
     addToMeetingNameBox(isHost)
     addToMeetingDesBox(isHost)
     addToSpeakStateBox(isHost)
+    addToSpeakInfoBox(isHost)
     addToControlBox(isHost)
     this.scene
   }
@@ -207,7 +208,7 @@ class MeetingScene(stage: Stage){
   }
 
   val meetingInfoBox = new VBox(15, leaveBtn, meetingInfoLabel, roomIdBox, meetingHostBox, meetingNameBox, meetingDesBox)
-  meetingInfoBox.setPadding(new Insets(10,30,20,30))
+  meetingInfoBox.setPadding(new Insets(10,30,10,30))
 
 
 
@@ -254,20 +255,20 @@ class MeetingScene(stage: Stage){
   val audObservableList: ObservableList[ApplySpeakListInfo] = FXCollections.observableArrayList()
 
   val userInfoCol = new TableColumn[ApplySpeakListInfo, String]("申请用户")
-  userInfoCol.setPrefWidth(100)
+  userInfoCol.setPrefWidth(110)
   userInfoCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, String]("userInfo"))
 
   val agreeBtnCol = new TableColumn[ApplySpeakListInfo, Button]("同意")
   agreeBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("agreeBtn"))
-  agreeBtnCol.setPrefWidth(51)
+  agreeBtnCol.setPrefWidth(50)
 
   val refuseBtnCol = new TableColumn[ApplySpeakListInfo, Button]("拒绝")
   refuseBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("refuseBtn"))
-  refuseBtnCol.setPrefWidth(51)
+  refuseBtnCol.setPrefWidth(50)
 
   applySpeakTable.setItems(audObservableList)
   applySpeakTable.getColumns.addAll(userInfoCol, agreeBtnCol, refuseBtnCol)
-  applySpeakTable.setPrefHeight(150)
+  applySpeakTable.setPrefHeight(180)
 
 
   def updateSpeakApplier(userId: Long, userName: String): Unit = {
@@ -301,8 +302,18 @@ class MeetingScene(stage: Stage){
   }
 
 
-  val speakInfoBox = new VBox(15, speakInfoLabel, speakStateBox, applySpeakTable)
-  speakInfoBox.setPadding(new Insets(10,30,20,30))
+  val speakInfoBox = new VBox(15)
+  speakInfoBox.setPadding(new Insets(0,30,20,30))
+
+  def addToSpeakInfoBox(isHost: Boolean) = {
+    speakInfoBox.getChildren.clear()
+    if(isHost){
+      speakInfoBox.getChildren.addAll(speakInfoLabel, speakStateBox, applySpeakTable)
+    } else {
+      speakInfoBox.getChildren.addAll(speakInfoLabel, speakStateBox)
+
+    }
+  }
 
 
 
@@ -563,6 +574,7 @@ class MeetingScene(stage: Stage){
     addToMeetingNameBox(isHost)
     addToMeetingDesBox(isHost)
     addToSpeakStateBox(isHost)
+    addToSpeakInfoBox(isHost)
     addToControlBox(isHost)
   }
 
