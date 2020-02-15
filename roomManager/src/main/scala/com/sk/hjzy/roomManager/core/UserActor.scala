@@ -159,6 +159,7 @@ object UserActor {
             Behaviors.same
           }
           else{
+            log.info(s"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=$reqOpt")
             reqOpt match{
               case Some(req) =>
                 UserInfoDao.searchById(userId).map{
