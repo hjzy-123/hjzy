@@ -259,11 +259,11 @@ class MeetingScene(stage: Stage){
 
   val agreeBtnCol = new TableColumn[ApplySpeakListInfo, Button]("同意")
   agreeBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("agreeBtn"))
-  agreeBtnCol.setPrefWidth(50)
+  agreeBtnCol.setPrefWidth(51)
 
   val refuseBtnCol = new TableColumn[ApplySpeakListInfo, Button]("拒绝")
   refuseBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("refuseBtn"))
-  refuseBtnCol.setPrefWidth(50)
+  refuseBtnCol.setPrefWidth(51)
 
   applySpeakTable.setItems(audObservableList)
   applySpeakTable.getColumns.addAll(userInfoCol, agreeBtnCol, refuseBtnCol)
