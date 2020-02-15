@@ -51,10 +51,12 @@ class MeetingController(
 
   meetingScene.setListener(new MeetingSceneListener {
     override def startLive(): Unit = {
+      log.info(s"点击开始会议")
       rmManager ! StartMeetingReq
     }
 
     override def stopLive(): Unit = {
+      log.info(s"点击结束会议")
       rmManager ! RmManager.StopMeetingReq
     }
 
@@ -114,6 +116,7 @@ class MeetingController(
     }
 
     override def handleSpeakApply(userId: Long, userName: String, accept: Boolean, newRequest: ApplySpeakListInfo): Unit = {
+      log.info(s"点击处理某人发言申请: userId = $userId, userName = $userName, accept = $accept")
       if (!someoneSpeaking) {
         rmManager ! RmManager.SpeakAcceptance(userId, userName, accept)
         meetingScene.audObservableList.remove(newRequest)

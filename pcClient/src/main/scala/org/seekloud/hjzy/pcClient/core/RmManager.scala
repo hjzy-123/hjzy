@@ -277,7 +277,7 @@ object RmManager {
         Behaviors.same
 
       case ModifyRoom(meetingName, meetingDes) =>
-        log.info(s"rcv ModifyRoom from meetingScene: name == $meetingName, des == $meetingDes")
+        log.info(s"rcv ModifyRoom in host: name = $meetingName, des = $meetingDes")
         if(meetingName.nonEmpty){
           this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = meetingName.get))
         }
@@ -293,7 +293,7 @@ object RmManager {
         Behaviors.same
 
       case LeaveRoom(isKicked) =>
-        log.info(s"host back to home.")
+        log.info(s"rcv LeaveRoom in host: isKicked = $isKicked")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -318,12 +318,12 @@ object RmManager {
         switchBehavior(ctx, "idle", idle(stageCtx, liveManager, mediaPlayer, homeController))
 
       case SendComment(userId, roomId, comment) =>
-        log.info(s"rcv SendComment from meetingScene.")
+        log.info(s"rcv SendComment in host: userId = $userId, roomId = $roomId, comment = $comment")
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
       case TurnToAudience(newHostId) =>
-        log.info(s"rcv TurnToAudience from meetingScene: newHostId == $newHostId")
+        log.info(s"rcv TurnToAudience in host: newHostId = $newHostId")
         sender.foreach(_ ! ChangeHost(newHostId))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
@@ -332,11 +332,13 @@ object RmManager {
         switchBehavior(ctx, "audienceBehavior", audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
       case StartMeetingReq =>
+        log.info(s"rcv StartMeetingReq in host.")
         assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
         sender.foreach(_ ! WsProtocol.StartMeetingReq(this.userInfo.get.userId, this.userInfo.get.token))
         Behaviors.same
 
       case StopMeetingReq =>
+        log.info(s"rcv StopMeetingReq in host.")
 
         //todo
         Behaviors.same
@@ -389,6 +391,7 @@ object RmManager {
         Behaviors.same
 
       case KickSbOut(userId) =>
+        log.info(s"rcv KickSbOut in host: userId = $userId")
         sender.foreach(_ ! WsProtocol.ForceOut(userId))
         Behaviors.same
 
@@ -411,14 +414,17 @@ object RmManager {
         }
 
       case ControlOthersImageAndSound(userId, image, sound) =>
+        log.info(s"rcv ControlOthersImageAndSound in host: userId = $userId, image = $image, sound = $sound")
         sender.foreach(_ ! WsProtocol.CloseSoundFrame(userId, sound, image))
         Behaviors.same
 
       case ControlSelfImageAndSound(image, sound) =>
+        log.info(s"rcv ControlSelfImageAndSound in host: image: $image, sound: $sound")
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
         Behaviors.same
 
       case AppointSpeaker(userId) =>
+        log.info(s"rcv AppointSpeaker in host: userId = $userId")
         sender.foreach(_ ! WsProtocol.AppointSpeak(userId))
         Behaviors.same
 
@@ -427,10 +433,12 @@ object RmManager {
         Behaviors.stopped
 
       case SpeakAcceptance(userId, userName, accept) =>
+        log.info(s"rcv SpeakAcceptance in host: userId: $userId, userName: $userName, accept:$accept")
         sender.foreach(_ ! WsProtocol.ApplySpeakAccept(userId, userName, accept))
         Behaviors.same
 
       case StopSbSpeak(userId) =>
+        log.info(s"rcv StopSbSpeak in host: userId = $userId")
         sender.foreach(_ ! WsProtocol.StopSpeak(userId))
         Behaviors.same
 
@@ -502,7 +510,7 @@ object RmManager {
         Behaviors.same
 
       case LeaveRoom(isKicked) =>
-        log.debug(s"audience back to home, isKicked: $isKicked")
+        log.info(s"rcv LeaveRoom in audience: isKicked = $isKicked")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -540,7 +548,7 @@ object RmManager {
 
 
       case SendComment(userId, roomId, comment) =>
-        log.info(s"rcv SendComment from meetingScene.")
+        log.info(s"rcv SendComment in audience: userId = $userId, roomId = $roomId, comment = $comment")
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
@@ -619,12 +627,14 @@ object RmManager {
         }
 
       case ControlSelfImageAndSound(image, sound) =>
+        log.info(s"rcv ControlSelfImageAndSound in audience: image: $image, sound: $sound")
         assert(this.userInfo.nonEmpty)
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
         sender.foreach(_ ! WsProtocol.CloseOwnSoundFrame(this.userInfo.get.userId, sound, image))
         Behaviors.same
 
       case ApplyForSpeak =>
+        log.info(s"rcv ApplyForSpeak in audience.")
         assert(this.userInfo.nonEmpty)
         sender.foreach(_ ! WsProtocol.ApplySpeak(this.userInfo.get.userId))
         Behaviors.same
