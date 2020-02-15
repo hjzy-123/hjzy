@@ -134,6 +134,7 @@ object RoomActor {
 
             val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != userId)
             if(wholeRoomInfo.isStart == 1){
+              log.info(s"会议已经开始，给新进来的用户直接发送liveId---------${wholeRoomInfo.isStart}-------------")
               if(liveInfoMap.get(userId).nonEmpty){
                 dispatchTo(subscribers)(List(userId),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
                 dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
@@ -368,7 +369,9 @@ object RoomActor {
 //        }
 //        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
-        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt)
+        val newRoom = WholeRoomInfo(wholeRoomInfo.roomInfo, 1)
+        log.info(s"开始会议后新的房间$newRoom")
+        idle(roomId,subscribers,newRoom,liveInfoMap, startTime, userInfoListOpt)
 
       case GetLiveInfoReq(userId) =>
         RtpClient.getLiveInfoFunc().map {
