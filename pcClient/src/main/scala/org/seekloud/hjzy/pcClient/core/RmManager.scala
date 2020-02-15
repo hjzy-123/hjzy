@@ -241,9 +241,9 @@ object RmManager {
           //            Boot.addToPlatform {
           //              hostController.showScene()
           //            }
-          Boot.addToPlatform {
-            WarningDialog.initWarningDialog("webSocket连接成功！")
-          }
+//          Boot.addToPlatform {
+//            WarningDialog.initWarningDialog("webSocket连接成功！")
+//          }
         }
 
         def failureFunc(): Unit = {
@@ -475,9 +475,9 @@ object RmManager {
           //            Boot.addToPlatform {
           //              hostController.showScene()
           //            }
-          Boot.addToPlatform {
-            WarningDialog.initWarningDialog("webSocket连接成功！")
-          }
+//          Boot.addToPlatform {
+//            WarningDialog.initWarningDialog("webSocket连接成功！")
+//          }
         }
 
         def failureFunc(): Unit = {
