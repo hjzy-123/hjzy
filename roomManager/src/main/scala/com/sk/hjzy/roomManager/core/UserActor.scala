@@ -152,12 +152,14 @@ object UserActor {
           Behaviors.same
 
         case WebSocketMsg(reqOpt) =>
+//          log.info(s"-----------------------------------------------------------------------$reqOpt")
           if(reqOpt.contains(PingPackage)){
             if(timer.isTimerActive("HeartBeatKey_" + userId)) timer.cancel("HeartBeatKey_" + userId)
             ctx.self ! SendHeartBeat
             Behaviors.same
           }
           else{
+            log.info(s"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=$reqOpt")
             reqOpt match{
               case Some(req) =>
                 UserInfoDao.searchById(userId).map{

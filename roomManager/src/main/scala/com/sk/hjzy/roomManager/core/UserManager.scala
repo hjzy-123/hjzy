@@ -142,29 +142,29 @@ object UserManager {
         Some(wsMsg)
       } catch {
         case e: Exception =>
-          log.warn(s"parse front msg failed when json parse,s=${s},e=$e")
+          log.info(s"parse front msg failed when json parse,s=${s},e=$e")
           None
       }
     }
     Flow[Message]
       .collect {
         case TextMessage.Strict(m) =>
-          log.debug(s"接收到ws消息，类型TextMessage.Strict，msg-${m}")
+          log.info(s"接收到ws消息，类型TextMessage.Strict，msg-${m}")
           UserActor.WebSocketMsg(m)
 
         case BinaryMessage.Strict(m) =>
-          //          log.debug(s"接收到ws消息，类型Binary")
+//          log.info(s"接收到ws消息，类型Binary")
           val buffer = new MiddleBufferInJvm(m.asByteBuffer)
           bytesDecode[WsMsgClient](buffer) match {
             case Right(req) =>
               UserActor.WebSocketMsg(Some(req))
             case Left(e) =>
-              log.debug(s"websocket decode error:$e")
+              log.info(s"websocket decode error:$e")
               UserActor.WebSocketMsg(None)
           }
 
         case x =>
-          log.debug(s"$userActor recv a unsupported msg from websocket:$x")
+          log.info(s"$userActor recv a unsupported msg from websocket:$x")
           UserActor.WebSocketMsg(None)
 
       }

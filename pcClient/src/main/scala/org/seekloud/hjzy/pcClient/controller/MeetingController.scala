@@ -166,11 +166,15 @@ class MeetingController(
     override def controlSelfSound(targetStatus: Int): Unit = {
       log.info(s"点击控制自己声音，targetStatus: $targetStatus")
       rmManager ! RmManager.ControlSelfImageAndSound(sound = targetStatus)
+
+//      reducePartUser(123)
     }
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom(false)
+
+//      addPartUser(123,"124")
 
     }
 
@@ -211,6 +215,9 @@ class MeetingController(
       val num = userReduced.get._1
       partUserMap = partUserMap - num
       log.info(s"回收离开用户canvas，id = $num")
+      val imageCanvasBg = new Image("img/picture/background.jpg")
+      meetingScene.canvasMap(num)._2.drawImage(
+        imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText("")
         if(isHost) meetingScene.removeLiveBarFromCanvas(num)
@@ -273,12 +280,14 @@ class MeetingController(
   }
 
   //重置canvas背景
-  def resetBack(userId: Long): Unit = {
-    val canvasId = partUserMap.find(_._2 == userId).map(_._1)
-    if(canvasId.nonEmpty){
-      val imageCanvasBg = new Image("img/picture/background.jpg")
-      meetingScene.canvasMap(canvasId.get)._2.drawImage(
-        imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+  def resetBack(canvasId: Int): Unit = {
+    log.info(s"resetBack ########, canvasId: $canvasId")
+    if(List(1,2,3,4,5,6).contains(canvasId)){
+      Boot.addToPlatform{
+        val imageCanvasBg = new Image("img/picture/background.jpg")
+        meetingScene.canvasMap(canvasId)._2.drawImage(
+          imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+      }
     }
   }
 
@@ -301,7 +310,9 @@ class MeetingController(
         //通知其余人：某人离开房间
       case msg: LeftUserRsp =>
         log.info(s"rcv LeftUserRsp from rm: $msg")
-        rmManager ! SomeoneLeave(msg.UserId)
+        val userReduced = partUserMap.find(_._2 == msg.UserId)
+        val canvasId = if(userReduced.nonEmpty) userReduced.get._1 else -1
+        rmManager ! SomeoneLeave(msg.UserId, canvasId)
         reducePartUser(msg.UserId)
 
         //收到留言
