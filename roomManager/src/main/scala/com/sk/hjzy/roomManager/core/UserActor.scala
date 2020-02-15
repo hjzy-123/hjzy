@@ -152,7 +152,7 @@ object UserActor {
           Behaviors.same
 
         case WebSocketMsg(reqOpt) =>
-          log.info(s"-----------------------------------------------------------------------$reqOpt")
+//          log.info(s"-----------------------------------------------------------------------$reqOpt")
           if(reqOpt.contains(PingPackage)){
             if(timer.isTimerActive("HeartBeatKey_" + userId)) timer.cancel("HeartBeatKey_" + userId)
             ctx.self ! SendHeartBeat
