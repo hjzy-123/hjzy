@@ -387,26 +387,26 @@ object RoomActor {
       case CloseSoundFrame(userId, sound, frame) =>
         log.info(s"${ctx.self.path} 主持人屏蔽$userId")
         dispatchTo(List(userId), CloseSoundFrame2Client(sound ,frame))
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case CloseOwnSoundFrame(userId, sound, frame) =>
         log.info(s"${ctx.self.path} $userId 关闭或打开自己的声音或图像")
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ClientCloseSoundFrame( userId, sound, frame))
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case ForceOut(userId) =>
         log.info(s"${ctx.self.path} 强制$userId 退出会议")
         dispatchTo(List(userId), ForceOut2Client(userId))
         dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != userId)))
 
       case ApplySpeak(userId) =>
         val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
         log.info(s"${ctx.self.path} $userName 请求发言")
         dispatch(RcvComment(-1,"",s"$userName 请求发言"))
         dispatchTo(List(wholeRoomInfo.roomInfo.userId), ApplySpeak2Host(userId, userName))
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       //todo processor update
       case ApplySpeakAccept(userId, userName, accept) =>
@@ -420,7 +420,7 @@ object RoomActor {
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
         }
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       //todo processor update
       case AppointSpeak(userId) =>
@@ -430,7 +430,7 @@ object RoomActor {
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         dispatch(SpeakingUser(userId, userName))
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case StopSpeak(userId) =>
         val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
@@ -438,7 +438,7 @@ object RoomActor {
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人结束您的发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(1))
         dispatch(StopSpeakingUser(userId, userName))
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case StopMeetingReq(userId) =>
         ProcessorClient.closeRoom(roomId)
@@ -446,7 +446,7 @@ object RoomActor {
         roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
         dispatch(RcvComment(-1,"","会议结束了~"))
         dispatch(StopMeetingRsp())
-        Behaviors.same
+        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 0), liveInfoMap, startTime, userInfoListOpt)
 
       case x =>
         log.info(s"${ctx.self.path} recv an unknown msg:$x")
