@@ -70,7 +70,7 @@ class CommentBoard(boardWidth: Double, boardHeight: Double) {
       commentBoard.getChildren.add(oneCommentBox)
       count += 1
     } else {
-      if (count < 10) { //最多显示5条留言
+      if (count < 20) { //最多显示20条留言
         commentBoard.getChildren.add(oneCommentBox)
         count += 1
       } else {
