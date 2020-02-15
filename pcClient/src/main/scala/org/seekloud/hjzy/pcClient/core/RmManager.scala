@@ -82,7 +82,7 @@ object RmManager {
 
   final case class ToPull(userId: Long, liveId: String) extends RmCommand
 
-  final case class SomeoneLeave(userId: Long) extends RmCommand
+  final case class SomeoneLeave(userId: Long, canvasId: Int) extends RmCommand
 
   final case class ControlSelfImageAndSound(image: Int = 0, sound: Int = 0) extends RmCommand // 1->打开, -1->关闭
 
@@ -395,13 +395,13 @@ object RmManager {
         sender.foreach(_ ! WsProtocol.ForceOut(userId))
         Behaviors.same
 
-      case SomeoneLeave(userId) =>
+      case SomeoneLeave(userId, canvasId) =>
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
           //stop play
           val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
-          val resetFunc: Unit = meetingController.resetBack(userId)
+          val resetFunc: Unit = meetingController.resetBack(canvasId)
           mediaPlayer.stop(playId, () => resetFunc)
           //stop pull
           liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
@@ -608,13 +608,13 @@ object RmManager {
         audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audienceList))
 
-      case SomeoneLeave(userId) =>
+      case SomeoneLeave(userId, canvasId) =>
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
           //stop play
           val playId = Ids.getPlayId(this.meetingRoomInfo.get.roomId, userId)
-          val resetFunc = meetingController.resetBack(userId)
+          val resetFunc = meetingController.resetBack(canvasId)
           mediaPlayer.stop(playId, () => resetFunc)
           //stop pull
           liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
