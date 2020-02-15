@@ -397,8 +397,8 @@ object RoomActor {
       case ForceOut(userId) =>
         log.info(s"${ctx.self.path} 强制$userId 退出会议")
         dispatchTo(List(userId), ForceOut2Client(userId))
-        dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
-        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
+//        dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
+//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
         idle(roomId,subscribers.filter(_._1 != userId),wholeRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != userId)))
 
       case ApplySpeak(userId) =>

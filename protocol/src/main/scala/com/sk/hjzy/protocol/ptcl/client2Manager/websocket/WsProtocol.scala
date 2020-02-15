@@ -98,10 +98,10 @@ object WsProtocol {
                        userId: Long
                      ) extends WsMsgHost
 
-  case class ForceOutRsp(
-                          errCode: Int = 0,
-                          msg: String = "ok"
-                        ) extends WsMsgRm2Host
+//  case class ForceOutRsp(
+//                          errCode: Int = 0,
+//                          msg: String = "ok"
+//                        ) extends WsMsgRm2Host
 
   /*主持人审批某人发言请求*/
   case class ApplySpeak2Host( userId: Long, userName: String ) extends WsMsgRm2Host   //申请发言用户id
