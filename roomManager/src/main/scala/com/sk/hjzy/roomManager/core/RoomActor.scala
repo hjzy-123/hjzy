@@ -347,26 +347,28 @@ object RoomActor {
         }
         dispatch(RcvComment(-1, "", s"会议开始了~"))
 
-        for {
-          data <- RtpClient.getLiveInfoFunc()
-        } yield {
-          data match {
-            case Right(rsp) =>
-              ProcessorClient.newConnect(roomId, liveInfoMap.values.map(_.liveId).toList, liveInfoMap.values.toList.length,
-                speaker, rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
-                case Right(r) =>
-                  val startTime = r.startTime
-                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt))
-                case Left(e) =>
-                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
-              }
+//        for {
+//          data <- RtpClient.getLiveInfoFunc()
+//        } yield {
+//          data match {
+//            case Right(rsp) =>
+//              ProcessorClient.newConnect(roomId, liveInfoMap.values.map(_.liveId).toList, liveInfoMap.values.toList.length,
+//                speaker, rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+//                case Right(r) =>
+//                  val startTime = r.startTime
+//                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt))
+//                case Left(e) =>
+//                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+//              }
+//
+//            case Left(str) =>
+//              log.info(s"${ctx.self.path} 请求processor录像失败=$str")
+//              ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+//          }
+//        }
+//        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
-            case Left(str) =>
-              log.info(s"${ctx.self.path} 请求processor录像失败=$str")
-              ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
-          }
-        }
-        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
+        idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt)
 
       case GetLiveInfoReq(userId) =>
         RtpClient.getLiveInfoFunc().map {
