@@ -254,16 +254,16 @@ class MeetingScene(stage: Stage){
   val audObservableList: ObservableList[ApplySpeakListInfo] = FXCollections.observableArrayList()
 
   val userInfoCol = new TableColumn[ApplySpeakListInfo, String]("申请用户")
-  userInfoCol.setPrefWidth(50)
+  userInfoCol.setPrefWidth(100)
   userInfoCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, String]("userInfo"))
 
   val agreeBtnCol = new TableColumn[ApplySpeakListInfo, Button]("同意")
   agreeBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("agreeBtn"))
-  agreeBtnCol.setPrefWidth(30)
+  agreeBtnCol.setPrefWidth(50)
 
   val refuseBtnCol = new TableColumn[ApplySpeakListInfo, Button]("拒绝")
   refuseBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("refuseBtn"))
-  refuseBtnCol.setPrefWidth(30)
+  refuseBtnCol.setPrefWidth(50)
 
   applySpeakTable.setItems(audObservableList)
   applySpeakTable.getColumns.addAll(userInfoCol, agreeBtnCol, refuseBtnCol)
