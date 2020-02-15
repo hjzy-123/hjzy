@@ -2,7 +2,7 @@ package org.seekloud.hjzy.capture.core
 
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.nio.ShortBuffer
+import java.nio.{Buffer, ShortBuffer}
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.{LinkedBlockingDeque, ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
@@ -117,7 +117,7 @@ object EncodeActor {
             TimeUnit.MICROSECONDS
           )
 
-          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, Some(loop), Some(encodeLoopExecutor), frameNumber)
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, Some(loop), Some(encodeLoopExecutor), frameNumber, pauseEncode)
 
         case PauseEncode =>
           working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber, true)
@@ -141,6 +141,8 @@ object EncodeActor {
                     val iw = latestImage.frame.imageWidth
                     val ih = latestImage.frame.imageHeight
                     val bImg = imageConverter.convert(latestImage.frame)
+
+                   // log.info(Java2DFrameConverter.getBufferedImageType(latestImage.frame) + "")
                     val ts = if (CaptureManager.timeGetter != null) CaptureManager.timeGetter() else System.currentTimeMillis()
                     val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:S").format(ts)
                     bImg.getGraphics.drawString(date, iw / 10, ih / 10)
@@ -158,23 +160,18 @@ object EncodeActor {
               }
             }
           }else {
-            val blackFrame: Frame =
-              if (savedFrame.isDefined) {
-                savedFrame.get
-              } else {
-                val f = new Frame()
-                f.imageWidth = mediaSettings.imageWidth
-                f.imageHeight = mediaSettings.imageHeight
-                savedFrame = Some(f)
-                f
-              }
             try {
-              val bImg = imageConverter.convert(blackFrame)
+//              savedFrame.get.image.
+              ////              blackFrame.image = new Array[Buffer]()
+
+              val bImg = new BufferedImage(mediaSettings.imageWidth, mediaSettings.imageHeight, BufferedImage.TYPE_3BYTE_BGR)
+//              val bImg = imageConverter.convert(blackFrame)
+//              log.info("b")
+//              log.info("!!!!" + (bImg == null))
               val gra = bImg.getGraphics
               gra.setColor(Color.BLACK)
               gra.fillRect(0, 0, mediaSettings.imageWidth, mediaSettings.imageHeight)
               encoder.record(imageConverter.convert(bImg))
-              log.info("record black frame")
             } catch {
               case ex: Exception =>
                 log.error(s"[$encodeType] encode image frame error: $ex")
@@ -184,7 +181,7 @@ object EncodeActor {
                 }
             }
           }
-          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber + 1)
+          working(replyTo, encodeType, encoder, imageCache, imageConverter, mediaSettings, encodeLoop, encodeExecutor, frameNumber + 1, pauseEncode)
 
         case msg: EncodeSamples =>
           if (encodeLoop.nonEmpty) {
