@@ -200,7 +200,6 @@ class MeetingController(
         if(isHost) meetingScene.addLiveBarToCanvas(num)
 
       }
-
     }
   }
 

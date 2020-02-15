@@ -605,7 +605,7 @@ object RmManager {
         } else {
           List(AudienceInfo(userId, liveId))
         }
-        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+        audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audienceList))
 
       case SomeoneLeave(userId) =>
@@ -620,7 +620,7 @@ object RmManager {
           liveManager ! StopPullOneStream(joinAudienceList.get.filter(l => l.userId == userId).head.liveId)
 
           val audienceList = joinAudienceList.get.filterNot(l => l.userId == userId)
-          hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+          audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
             meetingStatus, Some(audienceList))
         } else {
           Behaviors.same
@@ -644,7 +644,7 @@ object RmManager {
         Behaviors.stopped
 
       case x =>
-        log.warn(s"unknown msg in hostBehavior: $x")
+        log.warn(s"unknown msg in audience Behavior: $x")
         stashBuffer.stash(x)
         Behaviors.same
     }
