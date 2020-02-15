@@ -583,7 +583,7 @@ object RmManager {
         }
         meetingController.isLiving = true
         val audInfo = pullLiveIdList.map(l => AudienceInfo(l._1, l._2))
-        hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
+        audienceBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender,
           MeetingStatus.LIVE, Some(audInfo))
 
 

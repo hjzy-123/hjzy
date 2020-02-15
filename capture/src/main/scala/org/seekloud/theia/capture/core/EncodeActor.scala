@@ -145,7 +145,7 @@ object EncodeActor {
                     val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:S").format(ts)
                     bImg.getGraphics.drawString(date, iw / 10, ih / 10)
                     encoder.record(imageConverter.convert(bImg))
-                    log.info("record frame")
+//                    log.info("record frame")
                   }
                 }
               } catch {

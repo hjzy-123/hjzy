@@ -160,12 +160,12 @@ class MeetingController(
 
     override def controlSelfImage(targetStatus: Int): Unit = {
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
-      rmManager ! RmManager.ControlSelfImageAndSound(targetStatus, 0)
+      rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
       log.info(s"点击控制自己声音，targetStatus: $targetStatus")
-      rmManager ! RmManager.ControlSelfImageAndSound(0, targetStatus)
+      rmManager ! RmManager.ControlSelfImageAndSound(sound = targetStatus)
     }
 
     override def leaveRoom(): Unit = {
@@ -189,10 +189,10 @@ class MeetingController(
   }
 
   def addPartUser(userId: Long, userName: String): Unit = {
-    log.info(s"addPartUser !!!")
-    log.info(s"############## parUserMap长度：${partUserMap.keys.toList.length} ###############")
+//    log.info(s"addPartUser !!!")
+//    log.info(s"############## parUserMap长度：${partUserMap.keys.toList.length} ###############")
     if(partUserMap.keys.toList.length < 6){
-      log.info("1")
+//      log.info("1")
       Future{
         partInfoMap.put(userId, PartInfo(userName, 1, 1))
       }.recover{
@@ -213,7 +213,7 @@ class MeetingController(
   }
 
   def reducePartUser(userId: Long): Unit = {
-    log.info(s"reducePartUser !!!")
+//    log.info(s"reducePartUser !!!")
     val userReduced = partUserMap.find(_._2 == userId)
     if(userReduced.nonEmpty){
       partInfoMap.remove(userId)
