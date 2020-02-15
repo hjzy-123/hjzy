@@ -426,7 +426,10 @@ class MeetingScene(stage: Stage){
 
   /*others' nameLabel*/
   val nameLabelMap: Map[Int, Label] = List(1,2,3,4,5,6).map{ i =>
-    val nameLabel = new Label("")
+    val unSpeakIcon = new ImageView("img/icon/unSpeak.png")
+    unSpeakIcon.setFitWidth(25)
+    unSpeakIcon.setFitHeight(25)
+    val nameLabel = new Label("", unSpeakIcon)
     nameLabel.setPrefSize(Constants.DefaultPlayer.width/3, 30)
     nameLabel.setFont(Font.font(15))
     nameLabel.setAlignment(Pos.BOTTOM_CENTER)

@@ -291,6 +291,34 @@ class MeetingController(
     }
   }
 
+  //突出显示发言者
+  def emphasizeSpeaker(userId: Long, userName: String, toEmphasize: Boolean) = {
+    val canvasIdOpt = partUserMap.find(_._2 == userId).map(_._1)
+    if(List(1,2,3,4,5,6).contains(canvasIdOpt.getOrElse(-1))){
+      val canvasId = canvasIdOpt.get
+      Boot.addToPlatform{
+        if(toEmphasize){
+          val speakerIcon = new ImageView("img/icon/speaker.png")
+          speakerIcon.setFitWidth(25)
+          speakerIcon.setFitWidth(25)
+          meetingScene.nameLabelMap(canvasId).setGraphic(speakerIcon)
+          meetingScene.nameLabelMap(canvasId).setStyle("-fx-text-fill: #6495ED; -fx-font-weight: bolder;")
+
+        } else {
+          val unSpeakIcon = new ImageView("img/icon/unSpeak.png")
+          unSpeakIcon.setFitWidth(25)
+          unSpeakIcon.setFitHeight(25)
+          meetingScene.nameLabelMap(canvasId).setGraphic(unSpeakIcon)
+          meetingScene.nameLabelMap(canvasId).setStyle("-fx-text-fill: #000000; -fx-font-weight: normal;")
+
+        }
+
+      }
+
+
+    }
+  }
+
   def wsMessageHandle(data: WsMsgRm): Unit = {
     data match {
       case msg: HeatBeat =>
@@ -465,6 +493,7 @@ class MeetingController(
       case msg: SpeakingUser =>
         log.info(s"rcv SpeakingUser from rm: $msg")
         this.someoneSpeaking = true
+        emphasizeSpeaker(msg.userId, msg.userName, true)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"${msg.userName}")
           meetingScene.editControlSpeakBtn(toStop = true, userId = Some(msg.userId))
@@ -472,8 +501,9 @@ class MeetingController(
 
         //通知所有人：某观众结束发言
       case msg: StopSpeakingUser =>
-        log.info(s"rcv SpeakingUser from rm: $msg")
+        log.info(s"rcv StopSpeakingUser from rm: $msg")
         this.someoneSpeaking = false
+        emphasizeSpeaker(msg.userId, msg.userName, false)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"无")
           meetingScene.editControlSpeakBtn(toAppoint = true)
