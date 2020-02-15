@@ -254,20 +254,20 @@ class MeetingScene(stage: Stage){
   val audObservableList: ObservableList[ApplySpeakListInfo] = FXCollections.observableArrayList()
 
   val userInfoCol = new TableColumn[ApplySpeakListInfo, String]("申请用户")
-  userInfoCol.setPrefWidth(width * 0.15)
+  userInfoCol.setPrefWidth(50)
   userInfoCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, String]("userInfo"))
 
   val agreeBtnCol = new TableColumn[ApplySpeakListInfo, Button]("同意")
   agreeBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("agreeBtn"))
-  agreeBtnCol.setPrefWidth(width * 0.05)
+  agreeBtnCol.setPrefWidth(30)
 
   val refuseBtnCol = new TableColumn[ApplySpeakListInfo, Button]("拒绝")
   refuseBtnCol.setCellValueFactory(new PropertyValueFactory[ApplySpeakListInfo, Button]("refuseBtn"))
-  refuseBtnCol.setPrefWidth(width * 0.05)
+  refuseBtnCol.setPrefWidth(30)
 
   applySpeakTable.setItems(audObservableList)
   applySpeakTable.getColumns.addAll(userInfoCol, agreeBtnCol, refuseBtnCol)
-  applySpeakTable.setPrefHeight(200)
+  applySpeakTable.setPrefHeight(150)
 
 
   def updateSpeakApplier(userId: Long, userName: String): Unit = {
