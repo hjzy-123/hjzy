@@ -190,16 +190,8 @@ class MeetingController(
 
   def addPartUser(userId: Long, userName: String): Unit = {
 //    log.info(s"addPartUser !!!")
-//    log.info(s"############## parUserMap长度：${partUserMap.keys.toList.length} ###############")
     if(partUserMap.keys.toList.length < 6){
-//      log.info("1")
-      Future{
-        partInfoMap.put(userId, PartInfo(userName, 1, 1))
-      }.recover{
-        case x => log.info(s"$x")
-      }
-
-      log.info(s"2, $partInfoMap")
+      partInfoMap.put(userId, PartInfo(userName, 1, 1))
       val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
       log.info(s"为新用户分配canvas，id= $num")
       partUserMap = partUserMap.updated(num, userId)
@@ -219,7 +211,7 @@ class MeetingController(
       partInfoMap.remove(userId)
       val num = userReduced.get._1
       partUserMap = partUserMap - num
-      log.info(s"回收该用户canvas，id = $num")
+      log.info(s"回收离开用户canvas，id = $num")
       Boot.addToPlatform{
         meetingScene.nameLabelMap(num).setText("")
         if(isHost) meetingScene.removeLiveBarFromCanvas(num)
