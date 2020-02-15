@@ -463,15 +463,19 @@ class MeetingScene(stage: Stage){
   }.toMap
 
   def addLiveBarToCanvas(orderNum: Int) = {
-    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
-      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
-      canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
-    })
 
-    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
-      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
-      canvasMap(orderNum)._3.getChildren.remove(liveBarMap(orderNum)._1)
-    })
+    canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
+    canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
+
+//    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
+//      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
+//      canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
+//    })
+//
+//    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
+//      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
+//      canvasMap(orderNum)._3.getChildren.remove(liveBarMap(orderNum)._1)
+//    })
 
   }
 
