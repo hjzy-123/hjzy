@@ -278,8 +278,10 @@ class MeetingController(
 
   //重置canvas背景
   def resetBack(userId: Long): Unit = {
+    log.info(s"resetBack ###############")
     val canvasId = partUserMap.find(_._2 == userId).map(_._1)
     if(canvasId.nonEmpty){
+      log.info(s"canvasId = ${canvasId.get}")
       val imageCanvasBg = new Image("img/picture/background.jpg")
       meetingScene.canvasMap(canvasId.get)._2.drawImage(
         imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
