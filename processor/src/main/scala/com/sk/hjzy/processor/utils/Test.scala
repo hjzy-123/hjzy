@@ -12,7 +12,7 @@ import scala.concurrent.Future
 /**
   * created by byf on 2019.7.17 13:09
   * */
-object ProcessorClient extends HttpUtil{
+object ProcessorClient1 extends HttpUtil{
 
   import io.circe.generic.auto._
   import io.circe.parser.decode

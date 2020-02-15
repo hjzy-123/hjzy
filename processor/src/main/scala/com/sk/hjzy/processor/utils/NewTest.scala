@@ -85,7 +85,7 @@ object ProcessorClient extends HttpUtil{
     //        println(a)
     //    }
 
-    Thread.sleep(30000)
+
     //
     //    closeRoom(8888).map{
     //      a =>
@@ -95,6 +95,13 @@ object ProcessorClient extends HttpUtil{
     //      a=>
     //        println(a)
     //    }
+
+    newConnect(1111, List("1000", "1000", "1000"), 3, "1000", "", "").map{
+      r =>
+        println(r)
+    }
+
+    Thread.sleep(30000)
   }
 
 
