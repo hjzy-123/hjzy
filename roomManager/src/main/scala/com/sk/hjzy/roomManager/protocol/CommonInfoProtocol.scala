@@ -12,7 +12,8 @@ object CommonInfoProtocol {
   final case class WholeRoomInfo(
                                 var roomInfo:RoomInfo,
                                 //var recordStartTime: Option[Long] = None,
-                                var isStart: Int = 0
+                                var isStart: Int = 0,
+                                var speaker:(Long, String) = (-1, "")
                                 )
 
 }
