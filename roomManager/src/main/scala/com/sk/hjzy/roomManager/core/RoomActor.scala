@@ -140,6 +140,12 @@ object RoomActor {
                 dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
               }else
                 dispatchTo(subscribers)(List(userId),StartMeetingRsp(None, liveIdList, 100002,"无liveInfo"))
+
+              if(wholeRoomInfo.speaker._1 != -1){
+                log.info(s"有人正在发言，给新来的用户发言者信息---------${wholeRoomInfo.speaker._2}-------------")
+                dispatchTo(subscribers)(List(userId), CloseSoundFrame2Client(-1))
+                dispatchTo(subscribers)(List(userId), SpeakingUser(wholeRoomInfo.speaker._1, wholeRoomInfo.speaker._2))
+              }
             }
 
           } else
@@ -420,22 +426,26 @@ object RoomActor {
           dispatchTo(List(userId), ApplySpeakRsp())
           dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
           dispatch(SpeakingUser(userId, userName))
+          idle(roomId,subscribers,wholeRoomInfo.copy(speaker = (userId, userName)), liveInfoMap, startTime, userInfoListOpt)
         } else {
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}拒绝了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
+          idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
         }
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
+
 
       //todo processor update
       case AppointSpeak(userId) =>
-        val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
+        var userName = "参会者"
+        if(userInfoListOpt.get.exists(p = _.userId == userId))
+          userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
         dispatchTo(subscribers.filter(r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, RcvComment(-1,"",s"主持人指定 $userName 发言"))
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         dispatch(SpeakingUser(userId, userName))
 //        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
+        idle(roomId,subscribers,wholeRoomInfo.copy(speaker = (userId, userName)), liveInfoMap, startTime, userInfoListOpt)
 
       case StopSpeak(userId) =>
         val userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
@@ -443,7 +453,7 @@ object RoomActor {
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人结束您的发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(1))
         dispatch(StopSpeakingUser(userId, userName))
-        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
+        idle(roomId,subscribers,wholeRoomInfo.copy(speaker = (-1,"")), liveInfoMap, startTime, userInfoListOpt)
 
       case StopMeetingReq(userId) =>
         ProcessorClient.closeRoom(roomId)
