@@ -34,25 +34,23 @@ object TestPushClient extends HttpUtil {
   /**拉流 liveId*/
   val liveId = "liveIdTest-1580"
 
-  val distributerBaseUrl = "http://10.1.29.248:30389/theia/distributor"
-
   /** super5 内网 */
-  val pushStreamDst = new InetSocketAddress("10.1.29.246", 61040)
-  val pullStreamDst = new InetSocketAddress("10.1.29.246", 61041)
-  val httpDst = "http://10.1.29.248:30390"
+  val pushStreamDst = new InetSocketAddress("10.1.29.247", 42043)
+  val pullStreamDst = new InetSocketAddress("10.1.29.247", 42044)
+  val httpDst = "http://10.1.29.247:42040"
 
   def single(num:Int):Unit = {
     val threadPool:ExecutorService=Executors.newFixedThreadPool(2)
     try {
       var ssrc = 220
-      for(i <- 1199 until 1199+num){
+      for(i <- 1000 until 1000+num){
         ssrc += 1
         //todo newConnect
 //        newLive(i.toLong,s"liveIdTest-$ssrc",System.currentTimeMillis())
         //        newLive(i.toLong,s"$ssrc",System.currentTimeMillis())
         Thread.sleep(2000)
 //        threadPool.execute(new ThreadTest(ssrc))
-        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$ssrc", ssrc), "PushStreamActor")
+        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$i", ssrc), s"PushStreamActor-$i")
         val pushClient = new PushStreamClient("0.0.0.0", 1234, pushStreamDst, pushActor, httpDst)
         pushActor ! TestPushActor.Ready(pushClient)
       }
@@ -84,7 +82,7 @@ object TestPushClient extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(1)
+    single(2)
 
     /** 本地测试 */
     //        val pushStreamDst = new InetSocketAddress("127.0.0.1", 61040)
@@ -110,14 +108,19 @@ object TestPushClient extends HttpUtil {
     //        val pushStreamDst = new InetSocketAddress("media.seekloud.com", 61040)
     //        val pullStreamDst = new InetSocketAddress("media.seekloud.com", 61041)
     //        val httpDst = "https://media.seekloud.com:50443"
+    RtpClient.getLiveInfoFunc().map {
+      case Right(rsp) =>
+        println("获得push的live", rsp)
+        newConnect(666, List("liveIdTest-221", "liveIdTest-222"), 3, "1000", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+          r =>
+            println("-----------------------------------------------------------------------------------", r)
+        }
+      case Left(value) =>
+        println("essor", value)
+    }
+//    Thread.sleep(3000)
 
-
-
-
-
-    Thread.sleep(2000)
-
-
+    Thread.sleep(4000)
 
   }
 

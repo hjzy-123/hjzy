@@ -49,20 +49,23 @@ object StreamPushPipe {
         implicit timer =>
           log.info(s"${ctx.self} init ----")
           ctx.self ! NewLive(startTime)
-//          val out = if(isDebug){
-//            val file = new File(s"$debugPath$roomId/${liveId}_out.ts")
-//            Some(new FileOutputStream(file))
-//          }else{
-//            None
-//          }
-          val file = new File(s"$recordLocation$roomId/$startTime/record.mp4")
-          val out  = new FileOutputStream(file)
+          val out = if(isDebug){
+            val file = new File(s"$debugPath$roomId/${startTime}_out.ts")
+            Some(new FileOutputStream(file))
+          }else{
+            None
+          }
+//          var out: FileOutputStream = null
+//          val file = new File(s"$recordLocation$roomId/${startTime}_record.ts")
+//          file.delete()
+//          file.createNewFile()
+//          out  = new FileOutputStream(file)
           work(roomId, liveId, liveCode, source,ByteBuffer.allocate(1316), out)
       }
     }
   }
 
-  def work(roomId: Long,liveId:String, liveCode: String, source:SourceChannel, dataBuf:ByteBuffer, out:FileOutputStream)
+  def work(roomId: Long,liveId:String, liveCode: String, source:SourceChannel, dataBuf:ByteBuffer, out:Option[FileOutputStream])
     (implicit timer: TimerScheduler[Command],
       stashBuffer: StashBuffer[Command]): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
@@ -78,9 +81,10 @@ object StreamPushPipe {
           dataBuf.flip()
           if (r > 0) {
             val data = dataBuf.array().clone()
-            if(out !=null){
-              out.write(data)
-            }
+//            if(out !=null){
+//              out.write(data)
+//            }
+            out.foreach(_.write(data))
             streamPushActor ! StreamPushActor.PushData(liveId,  data.take(r))
             if (liveCountMap.getOrElse(liveId, 0) < 5) {
               log.info(s"$liveId send data --")
@@ -101,8 +105,9 @@ object StreamPushPipe {
           log.info(s"$roomId pushPipe stopped ----")
           source.close()
           dataBuf.clear()
-          if(out != null)
-            out.close()
+//          if(out != null)
+//            out.close()
+          out.foreach(_.close())
           Behaviors.stopped
 
         case x =>
