@@ -40,6 +40,7 @@ object SoundCapture {
 
   final case object ReStartSample extends Command
 
+  val emptySample = new Array[Short](2756)
 
   def create(
     replyTo: ActorRef[Messages.ReplyToCommand],
@@ -98,7 +99,7 @@ object SoundCapture {
               val nBytesRead = line.read(audioBytes, 0, line.available)
               val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
               val samples = new Array[Short](nSamplesRead)
-              log.info(s"$nSamplesRead !!!!!!")
+          //    log.info(s"$nSamplesRead !!!!!! $sampleSize")
               sampleSize match {
                 case 8 =>
                   val shortBuff = ShortBuffer.wrap(audioBytes.map(_.toShort))
@@ -119,8 +120,7 @@ object SoundCapture {
             }
           }else{
 //            log.info("no encode sound")
-            val emptySamples = new Array[Short](8)
-            val emptySp = ShortBuffer.wrap(emptySamples, 0, 8)
+            val emptySp = ShortBuffer.wrap(emptySample, 0, emptySample.length)
             encoders.foreach(_._2 ! EncodeActor.EncodeSamples(sampleRate.toInt, channels, emptySp))
           }
           working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = false, pauseSamples)
