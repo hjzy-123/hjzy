@@ -67,7 +67,8 @@ object Common {
                          roomId: Long,
                          roomName: String,
                          roomDes: String,
-                         password: String
+                         password: String,
+                         invitees: List[String]
                         )
 
   case class NewMeetingRsp(
