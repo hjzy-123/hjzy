@@ -39,19 +39,21 @@ object TestPushClient extends HttpUtil {
   val pullStreamDst = new InetSocketAddress("10.1.29.247", 42044)
   val httpDst = "http://10.1.29.247:42040"
 
+  val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
+  val portList = List(1234, 1235)
+
   def single(num:Int):Unit = {
     val threadPool:ExecutorService=Executors.newFixedThreadPool(2)
     try {
-      var ssrc = 220
-      for(i <- 1000 until 1000+num){
+      var ssrc = 110
+      for(i <- 0 until 0+num){
         ssrc += 1
-        //todo newConnect
-//        newLive(i.toLong,s"liveIdTest-$ssrc",System.currentTimeMillis())
-        //        newLive(i.toLong,s"$ssrc",System.currentTimeMillis())
-        Thread.sleep(2000)
+
+        Thread.sleep(20)
 //        threadPool.execute(new ThreadTest(ssrc))
-        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$i", ssrc), s"PushStreamActor-$i")
-        val pushClient = new PushStreamClient("0.0.0.0", 1234, pushStreamDst, pushActor, httpDst)
+        println(srcList(i))
+        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$ssrc", ssrc, srcList(i)), s"PushStreamActor-$i")
+        val pushClient = new PushStreamClient("0.0.0.0", portList(i), pushStreamDst, pushActor, httpDst)
         pushActor ! TestPushActor.Ready(pushClient)
       }
     }finally {
@@ -84,43 +86,18 @@ object TestPushClient extends HttpUtil {
 
     single(2)
 
-    /** 本地测试 */
-    //        val pushStreamDst = new InetSocketAddress("127.0.0.1", 61040)
-    //        val pullStreamDst = new InetSocketAddress("127.0.0.1", 61041)
-    //        val httpDst = "http://127.0.0.1:30390"
-
-    /** super1 内网 */
-    //        val pushStreamDst = new InetSocketAddress("10.1.29.244", 61040)
-    //        val pullStreamDst = new InetSocketAddress("10.1.29.244", 61041)
-    //        val httpDst = "http://10.1.29.244:30390"
-
-    /** super1 公网 */
-    //    val pushStreamDst = new InetSocketAddress("media.seekloud.org", 61040)
-    //    val pullStreamDst = new InetSocketAddress("media.seekloud.org", 61041)
-    //    val httpDst = "https://media.seekloud.org:50443"
-
-    /** super3 内网 */
-    //        val pushStreamDst = new InetSocketAddress("10.1.29.246", 61040)
-    //        val pullStreamDst = new InetSocketAddress("10.1.29.246", 61041)
-    //        val httpDst = "http://10.1.29.246:30390"
-
-    /** super3 公网 */
-    //        val pushStreamDst = new InetSocketAddress("media.seekloud.com", 61040)
-    //        val pullStreamDst = new InetSocketAddress("media.seekloud.com", 61041)
-    //        val httpDst = "https://media.seekloud.com:50443"
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(666, List("liveIdTest-221", "liveIdTest-222"), 3, "1000", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(630, List("liveIdTest-111", "liveIdTest-112"), 2, "liveIdTest-106", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
         }
       case Left(value) =>
-        println("essor", value)
+        println("error", value)
     }
-//    Thread.sleep(3000)
 
-    Thread.sleep(4000)
+    Thread.sleep(1200000)
 
   }
 

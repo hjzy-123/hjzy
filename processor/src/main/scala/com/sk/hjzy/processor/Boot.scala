@@ -45,7 +45,7 @@ object Boot extends HttpService {
   val streamPullActor:ActorRef[Command] = system.spawn(StreamPullActor.create(), "streamPullActor")
 
   //fixme 此处用以判断流是否存在
-  var showStreamLog = true
+  var showStreamLog = false
 
 	def main(args: Array[String]) {
 

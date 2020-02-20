@@ -43,23 +43,23 @@ object TestPushActor {
 
   case class Auth(liveId: String, liveCode: String) extends Protocol.Command
 
-  def create(liveId:String, ssrc:Int): Behavior[Protocol.Command] = {
+  def create(liveId:String, ssrc:Int, src:String): Behavior[Protocol.Command] = {
     Behaviors.setup[Protocol.Command] { ctx =>
       implicit val stashBuffer: StashBuffer[Protocol.Command] = StashBuffer[Protocol.Command](Int.MaxValue)
       Behaviors.withTimers[Protocol.Command] { implicit timer =>
-        wait4Ready(liveId, ssrc)
+        wait4Ready(liveId, ssrc, src)
       }
     }
   }
 
-  def wait4Ready(liveId:String, ssrc:Int)
+  def wait4Ready(liveId:String, ssrc:Int, src:String)
     (implicit timer: TimerScheduler[Protocol.Command],
       stashBuffer: StashBuffer[Protocol.Command]): Behavior[Protocol.Command] = {
     Behaviors.receive[Protocol.Command] { (ctx, msg) =>
       msg match {
         case Ready(client) =>
           log.info("recv Ready")
-          stashBuffer.unstashAll(ctx, work(liveId:String, ssrc:Int, client))
+          stashBuffer.unstashAll(ctx, work(liveId:String, ssrc:Int, client, src))
 
         case x =>
           stashBuffer.stash(x)
@@ -68,12 +68,12 @@ object TestPushActor {
     }
   }
 
-  def work(liveId:String, ssrc:Int, client: PushStreamClient)
+  def work(liveId:String, ssrc:Int, client: PushStreamClient, src:String)
     (implicit timer: TimerScheduler[Protocol.Command],
       stashBuffer: StashBuffer[Protocol.Command]): Behavior[Protocol.Command] = {
     Behaviors.setup[Protocol.Command] { ctx =>
       //读取视频文件
-      val src = "D:\\videos\\爱宠大机密.ts"
+//      val src = "D:\\videos\\爱宠大机密.ts"
       //      val src = "C:/Users/Administrator/Videos/2019-11-06 10-56-35.ts"
       val fis = new FileInputStream(new File(src))
       var countRead = 0
