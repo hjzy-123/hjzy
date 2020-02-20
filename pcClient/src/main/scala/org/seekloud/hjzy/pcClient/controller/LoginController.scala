@@ -357,18 +357,11 @@ class LoginController(
     val dialog = new Dialog[(String, String, String)]()
     dialog.setTitle("创建会议")
 
-    val welcomeText = new Text("创建会议")
-    welcomeText.setStyle("-fx-font: 35 KaiTi;-fx-fill: #333f50")
-    val upBox = new HBox()
-    upBox.setAlignment(Pos.TOP_CENTER)
-    upBox.setPadding(new Insets(40, 200, 0, 200))
-    upBox.getChildren.add(welcomeText)
-
     //会议房间号
     val roomIdIcon = new ImageView("img/icon/email.png")
     roomIdIcon.setFitHeight(28)
     roomIdIcon.setFitWidth(28)
-    val roomIdLabel = new Label("房间号:")
+    val roomIdLabel = new Label("房间号")
     roomIdLabel.setFont(Font.font(15))
     val roomIdText = new Label(s"$roomId")
     roomIdText.setFont(Font.font(15))
@@ -377,7 +370,7 @@ class LoginController(
     val passwordIcon = new ImageView("img/icon/email.png")
     passwordIcon.setFitHeight(28)
     passwordIcon.setFitWidth(28)
-    val passwordLabel = new Label("房间密码:")
+    val passwordLabel = new Label("房间密码")
     passwordLabel.setFont(Font.font(15))
     val passwordField = new TextField()
 
@@ -385,7 +378,7 @@ class LoginController(
     val roomNameIcon = new ImageView("img/icon/userName.png")
     roomNameIcon.setFitHeight(30)
     roomNameIcon.setFitWidth(30)
-    val roomNameLabel = new Label("会议名:")
+    val roomNameLabel = new Label("会议名")
     roomNameLabel.setFont(Font.font(15))
     val roomNameField = new TextField()
 
@@ -393,11 +386,59 @@ class LoginController(
     val describeIcon = new ImageView("img/icon/passWord.png")
     describeIcon.setFitHeight(30)
     describeIcon.setFitWidth(30)
-    val describeLabel = new Label("会议描述:")
+    val describeLabel = new Label("会议描述")
     describeLabel.setFont(Font.font(15))
-    val describeField = new TextField()
+//    val describeField = new TextField()
+    val describeField  = new TextArea()
+    describeField.setPrefSize(160, 100)
+    describeField.setWrapText(true)
 
-    val grid = new GridPane
+    //邀请参会者
+    val inviteIcon = new ImageView("img/icon/userName.png")
+    inviteIcon.setFitHeight(30)
+    inviteIcon.setFitWidth(30)
+    val inviteLabel = new Label(s"参会者列表")
+    inviteLabel.setFont(Font.font(15))
+    val addBtn = new Button("添加+")
+    addBtn.setStyle("-fx-background-color: #00000000;-fx-cursor: hand;-fx-border-color: black; -fx-border-radius: 6; -fx-font-size: 12;")
+    val inviteLabelBox = new HBox(15, inviteIcon, inviteLabel, addBtn)
+    inviteLabelBox.setAlignment(Pos.CENTER_LEFT)
+
+    val nameListBox = new VBox()
+    nameListBox.setPrefSize(200, 200)
+    nameListBox.setPadding(new Insets(0,0,0,50))
+
+    val inviteBox = new VBox(15, inviteLabelBox, nameListBox)
+
+    import scala.collection.mutable
+
+    var list: List[String] = List()
+    addBtn.setOnAction{_ =>
+      if(nameListBox.getChildren.size() <= 5){
+        val dialogRst = inviteDialog()
+        if (dialogRst.nonEmpty){
+          list = dialogRst.get :: list
+          val nameLabel = new Label(s"${dialogRst.get}")
+          nameLabel.setStyle("-fx-text-fill: #6495ED; -fx-font-size: 12;")
+          nameLabel.autosize()
+          val deleteIcon = new ImageView("img/button/delete.png")
+          val deleteBtn = new Button("", deleteIcon)
+          val nameBox = new HBox(10, nameLabel, deleteBtn)
+          nameBox.setAlignment(Pos.CENTER_LEFT)
+          nameListBox.getChildren.add(nameBox)
+          deleteBtn.setOnAction{_ =>
+            list = list.filterNot(_ == dialogRst.get)
+            nameListBox.getChildren.remove(nameBox)
+          }
+          deleteBtn.setStyle("-fx-background-color: #00000000;-fx-cursor: hand;-fx-border-color: #00000000;")
+
+        }
+      } else {
+        WarningDialog.initWarningDialog("最多邀请六名参会者！")
+      }
+    }
+
+    val grid = new GridPane()
     grid.setHgap(15)
     grid.setVgap(25)
     grid.add(roomIdIcon, 0, 0)
@@ -412,36 +453,29 @@ class LoginController(
     grid.add(describeIcon, 0, 3)
     grid.add(describeLabel, 1, 3)
     grid.add(describeField, 2, 3)
-    grid.setStyle("-fx-background-color:#ddc1ad;-fx-background-radius: 10")
-    grid.setPadding(new Insets(60, 20, 60, 20))
 
-    val bottomBox = new HBox()
-    bottomBox.getChildren.add(grid)
-    bottomBox.setAlignment(Pos.BOTTOM_CENTER)
-    bottomBox.setPadding(new Insets(10, 100, 50, 100))
-
-    val box = new VBox()
-    box.getChildren.addAll(upBox, bottomBox)
-    box.setAlignment(Pos.CENTER)
-    box.setSpacing(30)
-    box.setStyle("-fx-background-color:#e6d9d1")
+    val wholeBox = new HBox(20, grid, inviteBox)
+    wholeBox.setAlignment(Pos.TOP_CENTER)
+    wholeBox.setPadding(new Insets(50, 50, 50, 50))
+    wholeBox.setStyle("-fx-background-color:#e6d9d1")
 
     val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
 
     val group = new Group()
-    group.getChildren.add(box)
+    group.getChildren.add(wholeBox)
     dialog.getDialogPane.getButtonTypes.add(confirmButton)
     dialog.getDialogPane.setContent(group)
     dialog.setResultConverter(dialogButton =>
-      if (passwordField.getText().nonEmpty && roomNameField.getText().nonEmpty && describeField.getText().nonEmpty) {
-        if (dialogButton == confirmButton)
+      if (dialogButton == confirmButton){
+        if (passwordField.getText().nonEmpty && roomNameField.getText().nonEmpty && describeField.getText().nonEmpty){
           (passwordField.getText(), roomNameField.getText(),describeField.getText())
-        else
+        } else {
+          Boot.addToPlatform(
+            WarningDialog.initWarningDialog("输入不能为空！")
+          )
           null
+        }
       } else {
-        Boot.addToPlatform(
-          WarningDialog.initWarningDialog("输入不能为空！")
-        )
         null
       }
     )
@@ -454,6 +488,49 @@ class LoginController(
         None
     }
     createMeetingInfo
+  }
+
+  //添加参会者弹窗
+  def inviteDialog() = {
+    val dialog = new Dialog[String]()
+    dialog.setTitle("邀请参会者")
+    val nameLabel = new Label(s"用户名：")
+    val nameField = new TextField()
+
+    val box = new HBox(5, nameLabel, nameField)
+    box.setAlignment(Pos.CENTER)
+    box.setPadding(new Insets(20,20,20,20))
+//    box.setStyle("-fx-background-color:#e6d9d1")
+
+
+    val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
+
+    val group = new Group()
+    group.getChildren.add(box)
+    dialog.getDialogPane.getButtonTypes.add(confirmButton)
+    dialog.getDialogPane.setContent(group)
+    dialog.setResultConverter(dialogButton =>
+      if (dialogButton == confirmButton){
+        if (nameField.getText().nonEmpty){
+          nameField.getText()
+        } else {
+          Boot.addToPlatform(
+            WarningDialog.initWarningDialog("输入不能为空！")
+          )
+          null
+        }
+      } else null
+    )
+    var info: Option[String] = None
+    val rst = dialog.showAndWait()
+    rst.ifPresent { a =>
+      if (a != null && a != "" )
+        info = Some(a)
+      else
+        None
+    }
+    info
+
   }
 
   //加入会议弹窗
