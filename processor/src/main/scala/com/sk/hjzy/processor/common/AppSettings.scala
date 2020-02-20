@@ -70,6 +70,8 @@ object AppSettings {
   val isTest = appConfig.getBoolean("isTest")
   val debugPath = appConfig.getString("debugPath")
   val recordLocation = appConfig.getString("recordLocation")
+  val rtpIp = appConfig.getString("rtp.ip")
+  val rtpPort = appConfig.getInt("rtp.port")
 
   val slickConfig = config.getConfig("slick.db")
   val slickUrl = slickConfig.getString("url")

@@ -353,8 +353,8 @@ class LoginController(
   }
 
   //创建会议弹窗
-  def createMeetingDialog(roomId: Long): Option[(String, String, String)] = {
-    val dialog = new Dialog[(String, String, String)]()
+  def createMeetingDialog(roomId: Long): Option[(String, String, String, List[String])] = {
+    val dialog = new Dialog[(String, String, String, List[String])]()
     dialog.setTitle("创建会议")
 
     //会议房间号
@@ -468,7 +468,7 @@ class LoginController(
     dialog.setResultConverter(dialogButton =>
       if (dialogButton == confirmButton){
         if (passwordField.getText().nonEmpty && roomNameField.getText().nonEmpty && describeField.getText().nonEmpty){
-          (passwordField.getText(), roomNameField.getText(),describeField.getText())
+          (passwordField.getText(), roomNameField.getText(),describeField.getText(), list)
         } else {
           Boot.addToPlatform(
             WarningDialog.initWarningDialog("输入不能为空！")
@@ -479,11 +479,11 @@ class LoginController(
         null
       }
     )
-    var createMeetingInfo: Option[(String, String, String)] = None
+    var createMeetingInfo: Option[(String, String, String, List[String])] = None
     val rst = dialog.showAndWait()
     rst.ifPresent { a =>
       if (a._1 != null && a._2 != null && a._3 != null && a._1 != "" && a._2 != "" && a._3 != "")
-        createMeetingInfo = Some((a._1, a._2, a._3))
+        createMeetingInfo = Some((a._1, a._2, a._3, a._4))
       else
         None
     }

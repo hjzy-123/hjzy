@@ -161,26 +161,18 @@ class MeetingController(
     override def controlSelfImage(targetStatus: Int): Unit = {
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
       rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
-      //for test
-//      emphasizeSpeaker(123, "124", false)
 
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
       log.info(s"点击控制自己声音，targetStatus: $targetStatus")
       rmManager ! RmManager.ControlSelfImageAndSound(sound = targetStatus)
-      //for test
-//      emphasizeSpeaker(123, "124", true)
-
-      reducePartUser(123)
 
     }
 
     override def leaveRoom(): Unit = {
-//      log.info(s"点击离开房间")
-//      rmManager ! LeaveRoom(false)
-
-      addPartUser(123,"124")
+      log.info(s"点击离开房间")
+      rmManager ! LeaveRoom(false)
 
     }
 

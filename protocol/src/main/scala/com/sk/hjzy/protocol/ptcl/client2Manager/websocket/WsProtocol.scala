@@ -124,6 +124,11 @@ object WsProtocol {
                                  frame: Int = 0
                                ) extends WsMsgRm2Host
 
+  /*主持人邀请用户参加会议 */
+  case class InviteOthers(
+                           invitees: List[String]
+                         )  extends WsMsgHost
+
   /**
    *
    * 观众端

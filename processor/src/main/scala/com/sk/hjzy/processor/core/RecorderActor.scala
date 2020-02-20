@@ -132,7 +132,7 @@ object RecorderActor {
           ffFilterN.setSampleFormat(sampleFormat)
 
           //todo    setAudioInputs 是什么意思
-          ffFilterN.setAudioInputs(num)
+          ffFilterN.setAudioInputs(2)
           ffFilterN.start()
           single(roomId,  liveIdList, num, speaker, recorder4ts, ffFilterN, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
 
@@ -156,6 +156,7 @@ object RecorderActor {
             recorder4ts.record(frame)
             Behaviors.same
           }else{
+            log.info("进入work阶段")
             val canvas = new BufferedImage(CanvasSize._1, CanvasSize._2, BufferedImage.TYPE_3BYTE_BGR)
 
             val clientFrameMap: mutable.Map[String, Image] = mutable.Map[String, Image]()
@@ -219,19 +220,19 @@ object RecorderActor {
               log.info(s"wrong, liveId, work got wrong img")
             }
           }
-          if (frame.samples != null) {
-            try {
-              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-
-              val f = ffFilter.pullSamples().clone()
-              if (f != null) {
-                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
-              }
-            } catch {
-              case ex: Exception =>
-                log.debug(s"$liveId record sample error system: $ex")
-            }
-          }
+//          if (frame.samples != null) {
+//            try {
+//              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
+//
+//              val f = ffFilter.pullSamples().clone()
+//              if (f != null) {
+//                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
+//              }
+//            } catch {
+//              case ex: Exception =>
+//                log.debug(s"$liveId record sample error system: $ex")
+//            }
+//          }
           Behaviors.same
 
         case msg: UpdateRoomInfo =>
@@ -292,7 +293,7 @@ object RecorderActor {
       Behaviors.receiveMessage[VideoCommand] {
         case t: Image4Host =>
           val time = t.frame.timestamp
-
+          log.info("主持人画面")
           //fixme 优化布局
           t.liveIdList.foreach{ liveId =>
             val index = t.liveIdList.indexOf(liveId)

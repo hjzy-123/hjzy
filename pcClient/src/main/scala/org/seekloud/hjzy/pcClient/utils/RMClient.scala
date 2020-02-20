@@ -104,10 +104,10 @@ object RMClient extends HttpUtil {
   }
 
   //创建会议
-  def createMeeting(userId: Long, roomId: Long, password: String, roomName: String, roomDes: String): Future[Either[Throwable, NewMeetingRsp]] = {
+  def createMeeting(userId: Long, roomId: Long, password: String, roomName: String, roomDes: String, inviteList: List[String]): Future[Either[Throwable, NewMeetingRsp]] = {
     val methodName = "createMeeting"
     val url = Routes.newMeeting
-    val data = NewMeeting(userId, roomId, roomName, roomDes, password).asJson.noSpaces
+    val data = NewMeeting(userId, roomId, roomName, roomDes, password, inviteList).asJson.noSpaces
     log.debug(s"createMeeting post data: $data")
     postJsonRequestSend(methodName, url, Nil, data, needLogRsp = false).map {
       case Right(jsonStr) =>

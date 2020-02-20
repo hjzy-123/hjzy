@@ -38,7 +38,7 @@ class HomeController(
         val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
         if(createMeetingInfo.nonEmpty){
           val info = createMeetingInfo.get
-          createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+          createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3, info._4)
         }
       } else {
         gotoLogin(isToCreate = true)
@@ -204,7 +204,7 @@ class HomeController(
             val createMeetingInfo = loginController.createMeetingDialog(RmManager.roomInfo.get.roomId)
             if(createMeetingInfo.nonEmpty){
               val info = createMeetingInfo.get
-              createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3)
+              createMeeting(RmManager.userInfo.get.userId, RmManager.roomInfo.get.roomId, info._1, info._2, info._3, info._4)
             }
 
           } else {
@@ -264,9 +264,9 @@ class HomeController(
     * 创建会议
     */
 
-  def createMeeting(userId: Long, roomId:Long, password: String, roomName: String, roomDes: String): Future[Unit] ={
+  def createMeeting(userId: Long, roomId:Long, password: String, roomName: String, roomDes: String, inviteList: List[String]): Future[Unit] ={
     showLoading()
-    RMClient.createMeeting(userId, roomId, password, roomName, roomDes).map {
+    RMClient.createMeeting(userId, roomId, password, roomName, roomDes, inviteList).map {
       case Right(rsp) =>
         if(rsp.errCode == 0){
           rmManager ! CreateMeetingSuccess(rsp.roomInfo)

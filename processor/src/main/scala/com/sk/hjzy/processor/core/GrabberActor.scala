@@ -62,6 +62,7 @@ object GrabberActor {
             log.info(s"${ctx.self} receive a msg $t")
             val grabber = new FFmpegFrameGrabber1(buf)
             try {
+              log.info(s"$liveId grabber start 1111111111111111111111")
               grabber.start()
             } catch {
               case e: Exception =>

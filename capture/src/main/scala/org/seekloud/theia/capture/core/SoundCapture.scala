@@ -40,6 +40,7 @@ object SoundCapture {
 
   final case object ReStartSample extends Command
 
+  val emptySample = new Array[Short](8192)
 
   def create(
     replyTo: ActorRef[Messages.ReplyToCommand],
@@ -92,13 +93,12 @@ object SoundCapture {
           working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, Some(audioExecutor), Some(audioLoop), askFlag, pauseSamples)
 
         case Sample =>
-          if(!pauseSamples){
 //            log.info("encode sound")
             try {
               val nBytesRead = line.read(audioBytes, 0, line.available)
               val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
               val samples = new Array[Short](nSamplesRead)
-//              log.info(s"$nSamplesRead !!!!!!")
+          //    log.info(s"$nSamplesRead !!!!!! $sampleSize")
               sampleSize match {
                 case 8 =>
                   val shortBuff = ShortBuffer.wrap(audioBytes.map(_.toShort))
@@ -109,7 +109,10 @@ object SoundCapture {
                 case _ => //invalid
               }
 
-              val sp = ShortBuffer.wrap(samples, 0, nSamplesRead)
+              val sp = {
+                if(!pauseSamples) ShortBuffer.wrap(samples, 0, nSamplesRead)
+                else ShortBuffer.wrap(emptySample, 0, nSamplesRead)
+              }
               if (askFlag) replyTo ! Messages.SoundRsp(LatestSound(sp, System.currentTimeMillis()))
               encoders.foreach(_._2 ! EncodeActor.EncodeSamples(sampleRate.toInt, channels, sp))
             } catch {
@@ -117,12 +120,6 @@ object SoundCapture {
 
                 log.warn(s"sample sound error: $ex")
             }
-          }else{
-//            log.info("no encode sound")
-            val emptySamples = new Array[Short](8)
-            val emptySp = ShortBuffer.wrap(emptySamples, 0, 8)
-            encoders.foreach(_._2 ! EncodeActor.EncodeSamples(sampleRate.toInt, channels, emptySp))
-          }
           working(replyTo, line, encoders, frameRate, sampleRate, channels, sampleSize, audioBytes, audioExecutor, audioLoop, askFlag = false, pauseSamples)
 
         case AskSamples =>
