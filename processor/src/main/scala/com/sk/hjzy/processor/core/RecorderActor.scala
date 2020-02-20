@@ -132,7 +132,7 @@ object RecorderActor {
           ffFilterN.setSampleFormat(sampleFormat)
 
           //todo    setAudioInputs 是什么意思
-          ffFilterN.setAudioInputs(num)
+          ffFilterN.setAudioInputs(2)
           ffFilterN.start()
           single(roomId,  liveIdList, num, speaker, recorder4ts, ffFilterN, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
 
