@@ -172,7 +172,7 @@ object RmManager {
       case CreateMeetingSuccess(roomInfo) =>
         log.debug(s"create meeting success.")
         this.meetingRoomInfo = roomInfo
-        val meetingScene = new MeetingScene(stageCtx.getStage)
+        val meetingScene = new MeetingScene(stageCtx.getStage, true)
         val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, true)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())
@@ -188,7 +188,7 @@ object RmManager {
       case JoinMeetingSuccess(roomInfo) =>
         log.debug(s"join meeting success.")
         this.meetingRoomInfo = roomInfo
-        val meetingScene = new MeetingScene(stageCtx.getStage)
+        val meetingScene = new MeetingScene(stageCtx.getStage, false)
         val meetingController = new MeetingController(stageCtx, meetingScene, ctx.self, false)
 
         def callBack(): Unit = Boot.addToPlatform(meetingScene.changeToggleAction())

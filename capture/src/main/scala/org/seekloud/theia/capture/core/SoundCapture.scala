@@ -98,7 +98,7 @@ object SoundCapture {
               val nBytesRead = line.read(audioBytes, 0, line.available)
               val nSamplesRead = if (sampleSize == 16) nBytesRead / 2 else nBytesRead
               val samples = new Array[Short](nSamplesRead)
-              log.info(s"$nSamplesRead !!!!!!")
+//              log.info(s"$nSamplesRead !!!!!!")
               sampleSize match {
                 case 8 =>
                   val shortBuff = ShortBuffer.wrap(audioBytes.map(_.toShort))

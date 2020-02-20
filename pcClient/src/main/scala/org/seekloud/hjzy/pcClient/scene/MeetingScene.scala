@@ -2,13 +2,14 @@ package org.seekloud.hjzy.pcClient.scene
 
 import javafx.beans.property.{ObjectProperty, SimpleObjectProperty, SimpleStringProperty, StringProperty}
 import javafx.collections.{FXCollections, ObservableList}
+import javafx.event.EventHandler
 import javafx.geometry.{Insets, Pos}
 import javafx.scene.canvas.{Canvas, GraphicsContext}
 import javafx.scene.control._
 import javafx.scene.control.cell.PropertyValueFactory
 import javafx.scene.effect.Glow
 import javafx.scene.image.{Image, ImageView}
-import javafx.scene.input.MouseEvent
+import javafx.scene.input.{InputEvent, MouseEvent}
 import javafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 import javafx.scene.text.Font
 import javafx.scene.{Group, Node, Scene}
@@ -18,6 +19,8 @@ import org.seekloud.hjzy.pcClient.common.Constants.AppWindow
 import org.seekloud.hjzy.pcClient.component.{CanvasBar, CommentBoard, WarningDialog}
 import org.seekloud.hjzy.pcClient.core.RmManager
 import org.slf4j.LoggerFactory
+
+import scala.collection.mutable
 
 /**
   * Author: zwq
@@ -85,13 +88,17 @@ object MeetingScene {
   }
 
 }
-class MeetingScene(stage: Stage){
+class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
   import MeetingScene._
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
   private val width = AppWindow.width * 0.9
   private val height = AppWindow.height * 0.75
+
+  val canvasUserIdMap = mutable.HashMap.empty[Int, Option[Long]]
+
+  var isHost: Boolean = this.ifHostWhenCreate
 
   val group = new Group()
 
@@ -411,18 +418,7 @@ class MeetingScene(stage: Stage){
   })
 
 
-  /*others' canvas*/
-  val canvasMap: Map[Int, (Canvas, GraphicsContext, StackPane)] = List(1,2,3,4,5,6).map{ i =>
-    val imageCanvas = new Canvas(Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
-    val imageGc: GraphicsContext = imageCanvas.getGraphicsContext2D
-    val imageCanvasBg = new Image("img/picture/background.jpg")
-    imageGc.drawImage(imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
-    val stackPane = new StackPane()
-    stackPane.getChildren.add(imageCanvas)
-    stackPane.setAlignment(Pos.BOTTOM_CENTER)
 
-    i -> (imageCanvas, imageGc, stackPane)
-  }.toMap
 
   /*others' nameLabel*/
   val nameLabelMap: Map[Int, Label] = List(1,2,3,4,5,6).map{ i =>
@@ -444,20 +440,16 @@ class MeetingScene(stage: Stage){
     canvasBar.imageToggleButton.setOnAction { _ =>
       if (canvasBar.imageToggleButton.isSelected) {
         listener.controlOnesImage(orderNum = i, 1)
-//        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击关闭画面"))
       } else {
         listener.controlOnesImage(orderNum = i, -1)
-//        Tooltip.install(canvasBar.imageToggleButton, new Tooltip("点击打开画面"))
       }
     }
 
     canvasBar.soundToggleButton.setOnAction { _ =>
       if (canvasBar.soundToggleButton.isSelected) {
         listener.controlOnesSound(orderNum = i, 1)
-//        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击关闭声音"))
       } else {
         listener.controlOnesSound(orderNum = i, -1)
-//        Tooltip.install(canvasBar.soundToggleButton, new Tooltip("点击打开声音"))
       }
     }
 
@@ -465,26 +457,45 @@ class MeetingScene(stage: Stage){
     i -> (liveBar, canvasBar.imageToggleButton, canvasBar.soundToggleButton)
   }.toMap
 
-  def addLiveBarToCanvas(orderNum: Int) = {
 
-    canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
-    canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
+  /*others' canvas*/
+  val canvasMap: Map[Int, (Canvas, GraphicsContext, StackPane)] = List(1,2,3,4,5,6).map{ i =>
+    val imageCanvas = new Canvas(Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+    val imageGc: GraphicsContext = imageCanvas.getGraphicsContext2D
+    val imageCanvasBg = new Image("img/picture/background.jpg")
+    imageGc.drawImage(imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
+    canvasUserIdMap.put(i, None)
+    val stackPane = new StackPane()
+    stackPane.getChildren.add(imageCanvas)
+    stackPane.addEventHandler(MouseEvent.MOUSE_ENTERED,(_: MouseEvent) => {
+      if(canvasUserIdMap(i).nonEmpty && isHost) stackPane.getChildren.add(liveBarMap(i)._1)
+    })
+    stackPane.addEventHandler(MouseEvent.MOUSE_EXITED,(_: MouseEvent) => {
+      stackPane.getChildren.remove(liveBarMap(i)._1)
+    })
+    stackPane.setAlignment(Pos.BOTTOM_CENTER)
 
-//    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_ENTERED, (_: MouseEvent) => {
-//      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
-//      canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
-//    })
-//
-//    canvasMap(orderNum)._3.addEventHandler(MouseEvent.MOUSE_EXITED, (_: MouseEvent) => {
-//      canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
-//      canvasMap(orderNum)._3.getChildren.remove(liveBarMap(orderNum)._1)
-//    })
+    i -> (imageCanvas, imageGc, stackPane)
+  }.toMap
+
+
+  def addLiveBarToCanvas(canvasId: Int, userId: Long) = {
+//    canvasMap(orderNum)._3.setAlignment(Pos.BOTTOM_RIGHT)
+//    canvasMap(orderNum)._3.getChildren.add(liveBarMap(orderNum)._1)
+
+    canvasUserIdMap.update(canvasId, Some(userId))
+
+
 
   }
 
-  def removeLiveBarFromCanvas(orderNum: Int) = {
-    canvasMap(orderNum)._3.getChildren.clear()
-    canvasMap(orderNum)._3.getChildren.add(canvasMap(orderNum)._1)
+  def removeLiveBarFromCanvas(canvasId: Int) = {
+//    canvasMap(orderNum)._3.getChildren.clear()
+//    canvasMap(orderNum)._3.getChildren.add(canvasMap(orderNum)._1)
+    canvasUserIdMap.update(canvasId, None)
+    liveBarMap(canvasId)._2.setSelected(true)
+    liveBarMap(canvasId)._3.setSelected(true)
+
   }
 
   val box1 = new HBox(

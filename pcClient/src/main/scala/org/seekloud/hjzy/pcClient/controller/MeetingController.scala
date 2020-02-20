@@ -161,20 +161,26 @@ class MeetingController(
     override def controlSelfImage(targetStatus: Int): Unit = {
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
       rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
+      //for test
+//      emphasizeSpeaker(123, "124", false)
+
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
       log.info(s"点击控制自己声音，targetStatus: $targetStatus")
       rmManager ! RmManager.ControlSelfImageAndSound(sound = targetStatus)
+      //for test
+//      emphasizeSpeaker(123, "124", true)
 
-//      reducePartUser(123)
+      reducePartUser(123)
+
     }
 
     override def leaveRoom(): Unit = {
-      log.info(s"点击离开房间")
-      rmManager ! LeaveRoom(false)
+//      log.info(s"点击离开房间")
+//      rmManager ! LeaveRoom(false)
 
-//      addPartUser(123,"124")
+      addPartUser(123,"124")
 
     }
 
@@ -196,12 +202,12 @@ class MeetingController(
 //    log.info(s"addPartUser !!!")
     if(partUserMap.keys.toList.length < 6){
       partInfoMap.put(userId, PartInfo(userName, 1, 1))
-      val num = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
-      log.info(s"为新用户分配canvas，id= $num")
-      partUserMap = partUserMap.updated(num, userId)
+      val canvasId = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
+      log.info(s"为新用户分配canvas，id= $canvasId")
+      partUserMap = partUserMap.updated(canvasId, userId)
       Boot.addToPlatform{
-        meetingScene.nameLabelMap(num).setText(userName)
-        if(isHost) meetingScene.addLiveBarToCanvas(num)
+        meetingScene.nameLabelMap(canvasId).setText(userName)
+        meetingScene.addLiveBarToCanvas(canvasId, userId)
 
       }
     }
@@ -212,15 +218,15 @@ class MeetingController(
     val userReduced = partUserMap.find(_._2 == userId)
     if(userReduced.nonEmpty){
       partInfoMap.remove(userId)
-      val num = userReduced.get._1
-      partUserMap = partUserMap - num
-      log.info(s"回收离开用户canvas，id = $num")
+      val canvasId = userReduced.get._1
+      partUserMap = partUserMap - canvasId
+      log.info(s"回收离开用户canvas，id = $canvasId")
       val imageCanvasBg = new Image("img/picture/background.jpg")
-      meetingScene.canvasMap(num)._2.drawImage(
+      meetingScene.canvasMap(canvasId)._2.drawImage(
         imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
       Boot.addToPlatform{
-        meetingScene.nameLabelMap(num).setText("")
-        if(isHost) meetingScene.removeLiveBarFromCanvas(num)
+        meetingScene.nameLabelMap(canvasId).setText("")
+        meetingScene.removeLiveBarFromCanvas(canvasId)
       }
     }
   }
@@ -300,7 +306,7 @@ class MeetingController(
         if(toEmphasize){
           val speakerIcon = new ImageView("img/icon/speaker.png")
           speakerIcon.setFitWidth(25)
-          speakerIcon.setFitWidth(25)
+          speakerIcon.setFitHeight(25)
           meetingScene.nameLabelMap(canvasId).setGraphic(speakerIcon)
           meetingScene.nameLabelMap(canvasId).setStyle("-fx-text-fill: #6495ED; -fx-font-weight: bolder;")
 
@@ -312,10 +318,7 @@ class MeetingController(
           meetingScene.nameLabelMap(canvasId).setStyle("-fx-text-fill: #000000; -fx-font-weight: normal;")
 
         }
-
       }
-
-
     }
   }
 
@@ -376,8 +379,8 @@ class MeetingController(
         if(msg.errCode == 0){
           Boot.addToPlatform{
             meetingScene.meetingHostValue.setText(msg.userName)
+            meetingScene.isHost = false
           }
-          isHost = false
         } else {
           rmManager ! TurnToHost
         }
@@ -390,7 +393,9 @@ class MeetingController(
         }
         if(msg.userId == RmManager.userInfo.get.userId){
           rmManager ! TurnToHost
-          isHost = true
+          Boot.addToPlatform{
+            meetingScene.isHost = true
+          }
         }
 
         //得到自己的liveId和liveCode（推）以及房间其余人的liveId（拉）
@@ -493,7 +498,7 @@ class MeetingController(
       case msg: SpeakingUser =>
         log.info(s"rcv SpeakingUser from rm: $msg")
         this.someoneSpeaking = true
-        emphasizeSpeaker(msg.userId, msg.userName, true)
+//        emphasizeSpeaker(msg.userId, msg.userName, true)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"${msg.userName}")
           meetingScene.editControlSpeakBtn(toStop = true, userId = Some(msg.userId))
@@ -503,7 +508,7 @@ class MeetingController(
       case msg: StopSpeakingUser =>
         log.info(s"rcv StopSpeakingUser from rm: $msg")
         this.someoneSpeaking = false
-        emphasizeSpeaker(msg.userId, msg.userName, false)
+//        emphasizeSpeaker(msg.userId, msg.userName, false)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"无")
           meetingScene.editControlSpeakBtn(toAppoint = true)
