@@ -162,7 +162,7 @@ object RecorderActor {
             val clientFrameMap: mutable.Map[String, Image] = mutable.Map[String, Image]()
             val Java2DFrameConverterMap: mutable.Map[String, Java2DFrameConverter] = mutable.Map[String, Java2DFrameConverter]()
 
-            liveIdList.tail.foreach{ id =>
+            liveIdList.foreach{ id =>
               clientFrameMap.put(id, Image())
               Java2DFrameConverterMap.put(id, new Java2DFrameConverter())
             }
@@ -220,19 +220,19 @@ object RecorderActor {
               log.info(s"wrong, liveId, work got wrong img")
             }
           }
-//          if (frame.samples != null) {
-//            try {
-//              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-//
-//              val f = ffFilter.pullSamples().clone()
-//              if (f != null) {
-//                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
-//              }
-//            } catch {
-//              case ex: Exception =>
-//                log.debug(s"$liveId record sample error system: $ex")
-//            }
-//          }
+          if (frame.samples != null) {
+            try {
+              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
+
+              val f = ffFilter.pullSamples().clone()
+              if (f != null) {
+                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
+              }
+            } catch {
+              case ex: Exception =>
+                log.debug(s"$liveId record sample error system: $ex")
+            }
+          }
           Behaviors.same
 
         case msg: UpdateRoomInfo =>
@@ -295,9 +295,10 @@ object RecorderActor {
           val time = t.frame.timestamp
           log.info("主持人画面")
           //fixme 优化布局
-          t.liveIdList.foreach{ liveId =>
+          graph.drawImage(convert1(t.liveIdList.head).convert(t.frame), canvasSize._1/4 * 0, 0, canvasSize._1/4, canvasSize._2/2, null)
+          t.liveIdList.tail.foreach{ liveId =>
             val index = t.liveIdList.indexOf(liveId)
-            val img: BufferedImage = convert1(liveId).convert(t.frame)
+            val img: BufferedImage = convert1(liveId).convert(clientFrame(liveId).frame)
             if(index < 4)
               graph.drawImage(img, canvasSize._1/4 * index, 0, canvasSize._1/4, canvasSize._2/2, null)
             else

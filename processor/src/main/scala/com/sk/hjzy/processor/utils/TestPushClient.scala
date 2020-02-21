@@ -42,20 +42,20 @@ object TestPushClient extends HttpUtil {
   val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
   val portList = List(1234, 1235)
 
-  def single(num:Int):Unit = {
+  def single(ssrc:Int, src:String, port: Int):Unit = {
     val threadPool:ExecutorService=Executors.newFixedThreadPool(2)
     try {
-      var ssrc = 110
-      for(i <- 0 until 0+num){
-        ssrc += 1
+//      var ssrc = 110
+//      for(i <- 0 until 0+num){
+//        ssrc += 1
 
         Thread.sleep(20)
 //        threadPool.execute(new ThreadTest(ssrc))
-        println(srcList(i))
-        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$ssrc", ssrc, srcList(i)), s"PushStreamActor-$i")
-        val pushClient = new PushStreamClient("0.0.0.0", portList(i), pushStreamDst, pushActor, httpDst)
+//        println(srcList(i))
+        val pushActor = system.spawn(TestPushActor.create(s"liveIdTest-$ssrc", ssrc, src), s"PushStreamActor-$ssrc")
+        val pushClient = new PushStreamClient("0.0.0.0",port, pushStreamDst, pushActor, httpDst)
         pushActor ! TestPushActor.Ready(pushClient)
-      }
+//      }
     }finally {
       threadPool.shutdown()
     }
@@ -84,12 +84,14 @@ object TestPushClient extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(2)
+    single(307, srcList.head,portList.head)
+    single(308, srcList(1),portList(1))
 
+    Thread.sleep(5000)
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(630, List("liveIdTest-111", "liveIdTest-112"), 2, "liveIdTest-106", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(702, List("liveIdTest-307", "liveIdTest-308"), 2, "liveIdTest-307", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
         }
