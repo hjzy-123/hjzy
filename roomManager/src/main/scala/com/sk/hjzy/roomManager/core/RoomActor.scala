@@ -150,7 +150,7 @@ object RoomActor {
 //                }
 //              }else
 //                log.info("123", inviteEmail)
-
+              replyTo ! NewMeetingRsp(Some(partRoomInfo))
               ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
