@@ -21,7 +21,7 @@ trait MeetingService extends CirceSupport with ServiceUtils with SessionBase{
   private val newMeeting = (path("newMeeting") & post){
     entity(as[Either[Error, NewMeeting]]){
       case Right(req) =>
-        val newRoomRsp : Future[NewMeetingRsp]  = roomManager ? (NewRoom(req.userId, req.roomId, req.roomName, req.roomDes, req.password, _))
+        val newRoomRsp : Future[NewMeetingRsp]  = roomManager ? (NewRoom(req.userId, req.roomId, req.roomName, req.roomDes, req.password, req.invitees , _))
         dealFutureResult{
           newRoomRsp.map{ r =>
             complete(r)

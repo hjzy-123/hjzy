@@ -15,7 +15,7 @@ import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.Boot.{executor, roomManager, userManager}
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
-import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
+import com.sk.hjzy.roomManager.utils.{DistributorClient, EmailUtil, ProcessorClient, RtpClient}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -99,13 +99,49 @@ object RoomActor {
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case NewRoom(userId, roomId, roomName: String, roomDes: String, password: String, replyTo: ActorRef[NewMeetingRsp]) =>
+        case NewRoom(userId, roomId, roomName: String, roomDes: String, password: String, invitees, replyTo: ActorRef[NewMeetingRsp]) =>
           UserInfoDao.searchById(userId).map{ userTableOpt =>
             if(userTableOpt.nonEmpty){
               val partRoomInfo = RoomInfo(roomId, roomName, roomDes, userTableOpt.get.uid, userTableOpt.get.userName,
                 UserInfoDao.getHeadImg(userTableOpt.get.headImg),
                 UserInfoDao.getHeadImg(userTableOpt.get.coverImg),Some(password), None)
-              replyTo ! NewMeetingRsp(Some(partRoomInfo))
+
+              var inviteError = List.empty[String]
+              var inviteEmail = List.empty[String]
+
+              val FutureList = invitees.map{ invitee =>
+                UserInfoDao.searchByName(invitee)
+              }
+
+              FutureList.foreach{ f=>
+                f.map{ rsp=>
+                  if(rsp.nonEmpty) {
+                    inviteEmail = inviteEmail :+ rsp.get.email
+                    log.info("此用户存在")
+                  }
+                  else {
+                    inviteError = inviteError :+ rsp.get.userName
+                    log.info("此用户不存在")
+                  }
+                }
+              }
+
+              if(inviteError.nonEmpty)
+                replyTo ! NewMeetingRsp(Some(partRoomInfo))
+              else
+                replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"$inviteError 不存在，邀请以上用户失败")
+
+              if(inviteEmail.nonEmpty)
+                Future{
+                  EmailUtil.send("您收到以下会议邀请，请及时参与会议~", s"房间号：$roomId;  密码：$password;" +
+                    s"\n 会议名称：$roomName; \n 会议描述: $roomDes", inviteEmail)
+                }.onComplete{
+                  case Success(value) =>
+                    log.info(s"邀请成功")
+                  case Failure(exception) =>
+                    log.info(s"邀请失败")
+                }
+
               ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
