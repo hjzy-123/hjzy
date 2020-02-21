@@ -110,28 +110,35 @@ object RoomActor {
               var inviteEmail = List.empty[String]
 
               val FutureList = invitees.map{ invitee =>
-                UserInfoDao.searchByName(invitee)
-              }
-
-              FutureList.foreach{ f=>
-                f.map{ rsp=>
-                  if(rsp.nonEmpty) {
-                    inviteEmail = inviteEmail :+ rsp.get.email
-                    log.info("此用户存在")
-                  }
-                  else {
-                    inviteError = inviteError :+ rsp.get.userName
-                    log.info("此用户不存在")
-                  }
+                log.info("33333333333333333")
+                UserInfoDao.searchByName(invitee).map{
+                  rsp=>
+                    if(rsp.nonEmpty) {
+                      inviteEmail = inviteEmail :+ rsp.get.email
+                      log.info("此用户存在")
+                      log.info("5555555")
+                    }
+                    else {
+                      inviteError = inviteError :+ rsp.get.userName
+                      log.info("此用户不存在")
+                      log.info("666666666666666")
+                    }
                 }
               }
 
-              if(inviteError.nonEmpty)
-                replyTo ! NewMeetingRsp(Some(partRoomInfo))
-              else
-                replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"$inviteError 不存在，邀请以上用户失败")
+//              FutureList.foreach{ f=>
+//                f.map{
+//                }
+//              }
 
-              if(inviteEmail.nonEmpty)
+              if(inviteError.nonEmpty)
+                replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"$inviteError 不存在，邀请以上用户失败")
+              else {
+                replyTo ! NewMeetingRsp(Some(partRoomInfo))
+              }
+
+              if(inviteEmail.nonEmpty) {
+               log.info("11111111111111")
                 Future{
                   EmailUtil.send("您收到以下会议邀请，请及时参与会议~", s"房间号：$roomId;  密码：$password;" +
                     s"\n 会议名称：$roomName; \n 会议描述: $roomDes", inviteEmail)
@@ -141,6 +148,8 @@ object RoomActor {
                   case Failure(exception) =>
                     log.info(s"邀请失败")
                 }
+              }else
+                log.info("123", inviteEmail)
 
               ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
             }else{
