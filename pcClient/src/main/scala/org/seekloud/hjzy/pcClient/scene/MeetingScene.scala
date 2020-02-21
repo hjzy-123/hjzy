@@ -82,6 +82,8 @@ object MeetingScene {
 
     def sendComment(comment: String)
 
+    def invite()
+
     def leaveRoom()
 
 
@@ -114,6 +116,7 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
     addToSpeakStateBox(isHost)
     addToSpeakInfoBox(isHost)
     addToControlBox(isHost)
+    addToRightArea(isHost)
     this.scene
   }
 
@@ -526,11 +529,7 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
   val commentLabel = new Label(s"消息区")
   commentLabel.setFont(Font.font(18))
 
-//  val commentArea = new TextArea()
-//  commentArea.setPrefSize(200, 500)
-//  commentArea.setEditable(false)
-//  commentArea.setWrapText(true)
-  val commentBoard = new CommentBoard(250, 500)
+  val commentBoard = new CommentBoard(250, 450)
   val commentArea: VBox = commentBoard.commentBoard
 
   val commentBox = new VBox(15, commentLabel, commentArea)
@@ -565,8 +564,22 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
   val writeBox = new HBox(5, writeField, sendBtn)
   writeBox.setAlignment(Pos.CENTER_LEFT)
 
-  val rightArea = new VBox(15, commentBox, writeBox)
+  val inviteBtn = new Button(s"邀请参会者")
+  inviteBtn.getStyleClass.add("confirmBtn")
+  inviteBtn.setOnAction(_ =>listener.invite())
+
+  val rightArea = new VBox(15)
   rightArea.setPadding(new Insets(23,30,20,30))
+  rightArea.setAlignment(Pos.TOP_CENTER)
+
+  def addToRightArea(isHost: Boolean): Boolean = {
+    rightArea.getChildren.clear()
+    if(isHost){
+      rightArea.getChildren.addAll(commentBox, writeBox, inviteBtn)
+    } else {
+      rightArea.getChildren.addAll(commentBox, writeBox)
+    }
+  }
 
 
 
@@ -594,6 +607,7 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
     addToSpeakStateBox(isHost)
     addToSpeakInfoBox(isHost)
     addToControlBox(isHost)
+    addToRightArea(isHost)
   }
 
 

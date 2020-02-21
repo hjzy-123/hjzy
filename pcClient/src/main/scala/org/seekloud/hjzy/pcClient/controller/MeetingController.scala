@@ -170,6 +170,20 @@ class MeetingController(
 
     }
 
+    override def invite(): Unit = {
+      if(partUserMap.toList.length < 6){
+        val info = inviteDialog()
+        if(info.nonEmpty){
+          rmManager ! RmManager.Invite(info.get)
+        }
+      } else {
+        Boot.addToPlatform{
+          WarningDialog.initWarningDialog("当前会议人数已满！")
+        }
+      }
+
+    }
+
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom(false)
@@ -275,6 +289,49 @@ class MeetingController(
         None
     }
     changeHostOpt
+  }
+
+  //添加参会者弹窗
+  def inviteDialog() = {
+    val dialog = new Dialog[String]()
+    dialog.setTitle("邀请参会者")
+    val nameLabel = new Label(s"用户名：")
+    val nameField = new TextField()
+
+    val box = new HBox(5, nameLabel, nameField)
+    box.setAlignment(Pos.CENTER)
+    box.setPadding(new Insets(20,20,20,20))
+    //    box.setStyle("-fx-background-color:#e6d9d1")
+
+
+    val confirmButton = new ButtonType("确定", ButtonData.OK_DONE)
+
+    val group = new Group()
+    group.getChildren.add(box)
+    dialog.getDialogPane.getButtonTypes.add(confirmButton)
+    dialog.getDialogPane.setContent(group)
+    dialog.setResultConverter(dialogButton =>
+      if (dialogButton == confirmButton){
+        if (nameField.getText().nonEmpty){
+          nameField.getText()
+        } else {
+          Boot.addToPlatform(
+            WarningDialog.initWarningDialog("输入不能为空！")
+          )
+          null
+        }
+      } else null
+    )
+    var info: Option[String] = None
+    val rst = dialog.showAndWait()
+    rst.ifPresent { a =>
+      if (a != null && a != "" )
+        info = Some(a)
+      else
+        None
+    }
+    info
+
   }
 
   //重置canvas背景

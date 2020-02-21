@@ -109,6 +109,8 @@ object RmManager {
 
   final case class StopSbSpeak(userId: Long) extends RmCommand
 
+  final case class Invite(userName: String) extends RmCommand
+
   /*普通观众*/
   final case object AudienceWsEstablish extends RmCommand
 
@@ -426,6 +428,11 @@ object RmManager {
       case AppointSpeaker(userId) =>
         log.info(s"rcv AppointSpeaker in host: userId = $userId")
         sender.foreach(_ ! WsProtocol.AppointSpeak(userId))
+        Behaviors.same
+
+      case Invite(userName) =>
+        log.info(s"rcv Invite in host.")
+        sender.foreach(_ ! WsProtocol.InviteOthers(List(userName)))
         Behaviors.same
 
       case StopSelf =>
