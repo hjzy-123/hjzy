@@ -432,7 +432,7 @@ object RmManager {
 
       case Invite(userName) =>
         log.info(s"rcv Invite in host.")
-        sender.foreach(_ ! WsProtocol.InviteOthers(List(userName)))
+        sender.foreach(_ ! WsProtocol.InviteOthers(userName))
         Behaviors.same
 
       case StopSelf =>
