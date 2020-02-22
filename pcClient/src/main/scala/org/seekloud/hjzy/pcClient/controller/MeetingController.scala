@@ -547,7 +547,7 @@ class MeetingController(
       case msg: SpeakingUser =>
         log.info(s"rcv SpeakingUser from rm: $msg")
         this.someoneSpeaking = true
-//        emphasizeSpeaker(msg.userId, msg.userName, true)
+        emphasizeSpeaker(msg.userId, msg.userName, true)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"${msg.userName}")
           meetingScene.editControlSpeakBtn(toStop = true, userId = Some(msg.userId))
@@ -557,7 +557,7 @@ class MeetingController(
       case msg: StopSpeakingUser =>
         log.info(s"rcv StopSpeakingUser from rm: $msg")
         this.someoneSpeaking = false
-//        emphasizeSpeaker(msg.userId, msg.userName, false)
+        emphasizeSpeaker(msg.userId, msg.userName, false)
         Boot.addToPlatform{
           meetingScene.speakStateValue.setText(s"无")
           meetingScene.editControlSpeakBtn(toAppoint = true)
