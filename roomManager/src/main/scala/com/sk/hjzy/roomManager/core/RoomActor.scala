@@ -493,16 +493,16 @@ object RoomActor {
         timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
         idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 0), liveInfoMap, startTime, userInfoListOpt)
 
-      case InviteOthers(userId, invitees) =>
+      case InviteOthers(invitees) =>
         for{
-          inviteError <- UserInfoDao.searchNameNonexist(invitees)
+          inviteError <- UserInfoDao.searchNameNonexist(List(invitees))
         }yield {
           if(inviteError.nonEmpty)
             dispatchTo(List(userId), InviteOthersRsp(1000021,s"邀请${inviteError.mkString(",")}邮件发送失败，请检查用户名后重新邀请。"))
           else
             dispatchTo(List(userId), InviteOthersRsp())
         }
-        ctx.self ! sendInviteEmail(invitees, wholeRoomInfo.roomInfo)
+        ctx.self ! sendInviteEmail(List(invitees), wholeRoomInfo.roomInfo)
         idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case x =>
