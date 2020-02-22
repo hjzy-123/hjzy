@@ -563,6 +563,18 @@ class MeetingController(
           meetingScene.editControlSpeakBtn(toAppoint = true)
         }
 
+        //通知主持人：邀请某用户的反馈
+      case msg: InviteOthersRsp =>
+        if(msg.errCode == 0) {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog("邀请邮件已发送！")
+          }
+        } else {
+          Boot.addToPlatform{
+            WarningDialog.initWarningDialog(s"${msg.msg}")
+          }
+        }
+
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")
     }
