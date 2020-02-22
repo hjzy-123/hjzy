@@ -112,7 +112,7 @@ object RoomActor {
                 inviteError <- UserInfoDao.searchNameNonexist(invitees)
               }yield {
                 if(inviteError.nonEmpty)
-                  replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"用户 ${inviteError.mkString(",")} 不存在，邀请以上用户失败")
+                  replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"邀请${inviteError.mkString(",")}邮件发送失败，请检查用户名后重新邀请。")
                 else {
                   replyTo ! NewMeetingRsp(Some(partRoomInfo))
                 }
@@ -486,6 +486,7 @@ object RoomActor {
         roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
         dispatch(RcvComment(-1,"","会议结束了~"))
         dispatch(StopMeetingRsp())
+        timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
         idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 0), liveInfoMap, startTime, userInfoListOpt)
 
       case InviteOthers(invitees) =>
@@ -493,7 +494,7 @@ object RoomActor {
           inviteError <- UserInfoDao.searchNameNonexist(invitees)
         }yield {
           if(inviteError.nonEmpty)
-            dispatchTo(List(userId), InviteOthersRsp(1000021,s"用户 ${inviteError.mkString(",")} 不存在，邀请以上用户失败"))
+            dispatchTo(List(userId), InviteOthersRsp(1000021,s"邀请${inviteError.mkString(",")}邮件发送失败，请检查用户名后重新邀请。"))
           else
             dispatchTo(List(userId), InviteOthersRsp())
         }

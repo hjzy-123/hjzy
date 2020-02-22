@@ -9,22 +9,21 @@ package com.sk.hjzy.processor.utils
 import java.net.InetSocketAddress
 import java.util.concurrent.{ExecutorService, Executors}
 
-import com.sk.hjzy.processor.Boot.executor
+import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import com.sk.hjzy.processor.utils.ProcessorClient.{log, postJsonRequestSend, processorBaseUrl}
+import com.sk.hjzy.processor.Boot.executor
+import com.sk.hjzy.processor.common.AppSettings._
+import com.sk.hjzy.processor.utils.ProcessorClient.processorBaseUrl
 import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{NewConnect, NewConnectRsp}
 import com.sk.hjzy.rtpClient.PushStreamClient
-import com.sk.hjzy.processor.common.AppSettings._
-import scala.concurrent.Future
-import scala.language.postfixOps
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax._
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ActorRef, DispatcherSelector}
-import akka.actor.ActorSystem
-import org.slf4j.LoggerFactory
-object TestPushClient extends HttpUtil {
+
+import scala.concurrent.Future
+import scala.language.postfixOps
+
+object TestPushClient1 extends HttpUtil {
 
   implicit val system: ActorSystem = ActorSystem("push", config)
 
@@ -83,20 +82,7 @@ object TestPushClient extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(425, srcList.head,portList.head)
-//    single(423, srcList(1),portList(1))
-
-    Thread.sleep(2000)
-    RtpClient.getLiveInfoFunc().map {
-      case Right(rsp) =>
-        println("获得push的live", rsp)
-        newConnect(721, List("liveIdTest-425", "liveIdTest-426"), 2, "liveIdTest-425", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
-          r =>
-            println("-----------------------------------------------------------------------------------", r)
-        }
-      case Left(value) =>
-        println("error", value)
-    }
+    single(426, srcList(1),portList(1))
 
     Thread.sleep(1200000)
 
