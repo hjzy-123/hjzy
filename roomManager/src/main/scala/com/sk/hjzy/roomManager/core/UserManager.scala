@@ -152,8 +152,8 @@ object UserManager {
           log.info(s"接收到ws消息，类型TextMessage.Strict，msg-${m}")
           UserActor.WebSocketMsg(m)
 
-        case BinaryMessage.Strict(m) =>
-//          log.info(s"接收到ws消息，类型Binary")
+        case r@BinaryMessage.Strict(m) =>
+          log.info(s"接收到ws消息，类型Binary $r")
           val buffer = new MiddleBufferInJvm(m.asByteBuffer)
           bytesDecode[WsMsgClient](buffer) match {
             case Right(req) =>
