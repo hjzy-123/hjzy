@@ -64,6 +64,21 @@ object UserInfoDao {
     db.run(tUserInfo.filter(i => i.userName === name).result.headOption)
   }
 
+  def searchEmailByNameList(nameList:List[String]): Future[Seq[String]] = {
+    db.run(tUserInfo.filter(i => i.userName.inSet(nameList)).map(_.email).result)
+  }
+
+  def searchNameNonexist(nameList:List[String]): Future[List[String]] = {
+    val action =  for{
+      namelist <- tUserInfo.map(_.userName).result
+    }yield {
+      nameList.filterNot{ name =>
+        namelist.contains(name)
+      }
+    }
+    db.run(action.transactionally)
+  }
+
   def updateNameAndImg(uid: Long, name: String, img: String) = {
     db.run(tUserInfo.filter(_.uid === uid).map(user => (user.userName, user.headImg)).update((name, img)))
   }

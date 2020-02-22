@@ -57,7 +57,7 @@ object RoomManager {
     Behaviors.receive[Command]{(ctx,msg) =>
       msg match {
 
-        case r@NewRoom(userId:Long, roomId, roomName: String, roomDes: String, password: String,replyTo: ActorRef[NewMeetingRsp]) =>
+        case r@NewRoom(userId:Long, roomId, roomName: String, roomDes: String, password: String, invitees, replyTo: ActorRef[NewMeetingRsp]) =>
           getRoomActorOpt(roomId,ctx) match{
             case Some(actor) => replyTo ! NewMeetingRsp(None, 100020, "此房间已存在，无法再次创建")
             case None =>

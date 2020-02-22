@@ -39,7 +39,6 @@ object ProcessorClient extends HttpUtil{
         log.error(s"newConnect postJsonRequestSend error : $error")
         Left("Error")
     }
-
   }
 
   def updateRoomInfo(roomId: Long, liveIdList: List[(String,Int)], num: Int, speaker: String):Future[Either[String,UpdateRsp]] = {

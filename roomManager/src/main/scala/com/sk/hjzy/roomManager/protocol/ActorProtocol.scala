@@ -15,7 +15,7 @@ object ActorProtocol {
 
   trait RoomCommand extends RoomManager.Command with RoomActor.Command
 
-  case class NewRoom(userId:Long, roomId: Long, roomName: String, roomDes: String, password: String, replyTo: ActorRef[NewMeetingRsp]) extends RoomCommand
+  case class NewRoom(userId:Long, roomId: Long, roomName: String, roomDes: String, password: String, invitees: List[String], replyTo: ActorRef[NewMeetingRsp]) extends RoomCommand
 
   case class JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) extends RoomCommand
 

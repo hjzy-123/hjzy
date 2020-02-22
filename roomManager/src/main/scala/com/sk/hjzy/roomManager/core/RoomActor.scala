@@ -15,7 +15,7 @@ import com.sk.hjzy.roomManager.models.dao.UserInfoDao
 import com.sk.hjzy.roomManager.Boot.{executor, roomManager, userManager}
 import com.sk.hjzy.roomManager.protocol.ActorProtocol
 import com.sk.hjzy.roomManager.protocol.CommonInfoProtocol.WholeRoomInfo
-import com.sk.hjzy.roomManager.utils.{DistributorClient, ProcessorClient, RtpClient}
+import com.sk.hjzy.roomManager.utils.{DistributorClient, EmailUtil, ProcessorClient, RtpClient}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -66,6 +66,8 @@ object RoomActor {
   final case class GetRoomInfo(replyTo: ActorRef[RoomInfo]) extends Command //考虑后续房间的建立不依赖ws
   final case class UpdateRTMP(rtmp: String) extends Command
 
+  final case class sendInviteEmail(invitees: List[String], roomInfo: RoomInfo) extends Command
+
   case class PartRoomInfo(roomId: Long, roomName: String, roomDes: String)
 
   private final val InitTime = Some(5.minutes)
@@ -99,20 +101,48 @@ object RoomActor {
     ): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case NewRoom(userId, roomId, roomName: String, roomDes: String, password: String, replyTo: ActorRef[NewMeetingRsp]) =>
+        case NewRoom(userId, roomId, roomName: String, roomDes: String, password: String, invitees, replyTo: ActorRef[NewMeetingRsp]) =>
           UserInfoDao.searchById(userId).map{ userTableOpt =>
             if(userTableOpt.nonEmpty){
               val partRoomInfo = RoomInfo(roomId, roomName, roomDes, userTableOpt.get.uid, userTableOpt.get.userName,
                 UserInfoDao.getHeadImg(userTableOpt.get.headImg),
                 UserInfoDao.getHeadImg(userTableOpt.get.coverImg),Some(password), None)
-              replyTo ! NewMeetingRsp(Some(partRoomInfo))
-              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
+
+              for{
+                inviteError <- UserInfoDao.searchNameNonexist(invitees)
+              }yield {
+                if(inviteError.nonEmpty)
+                  replyTo ! NewMeetingRsp(Some(partRoomInfo), 100021, s"用户 ${inviteError.mkString(",")} 不存在，邀请以上用户失败")
+                else {
+                  replyTo ! NewMeetingRsp(Some(partRoomInfo))
+                }
+                ctx.self ! sendInviteEmail(invitees, partRoomInfo)
+                idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime)
+              }
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
-              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo,liveInfoMap, startTime))
+              idle(roomId, subscribers,wholeRoomInfo,liveInfoMap, startTime)
             }
           }
-          switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
+          Behaviors.same
+
+        case sendInviteEmail(invitees, roomInfo) =>
+          for{
+            inviteEmail <- UserInfoDao.searchEmailByNameList(invitees)
+          }yield {
+            if(inviteEmail.nonEmpty) {
+              Future{
+                EmailUtil.send("您收到以下会议邀请，请及时参与会议~", s"房间号：${roomInfo.roomId};<br> 密码：${roomInfo.password.get};" +
+                  s"<br> 会议名称：${roomInfo.roomName}; <br>会议描述: ${roomInfo.roomDes}", inviteEmail.toList)
+              }.onComplete{
+                case Success(value) =>
+                  log.info(s"send---email-----suceess")
+                case Failure(exception) =>
+                  log.info(s"send---email-----fail")
+              }
+            }
+          }
+          Behaviors.same
 
         case JoinRoom(roomId: Long, password: String,replyTo: ActorRef[JoinMeetingRsp]) =>
           if(wholeRoomInfo.roomInfo.password.nonEmpty){
@@ -408,8 +438,6 @@ object RoomActor {
       case ForceOut(userId) =>
         log.info(s"${ctx.self.path} 强制$userId 退出会议")
         dispatchTo(List(userId), ForceOut2Client(userId))
-//        dispatchTo(List(userId), RcvComment(-1,"",s"您被主持人${wholeRoomInfo.roomInfo.userName}强制退出会议"))
-//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), ForceOutRsp())
         idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case ApplySpeak(userId) =>
@@ -432,8 +460,6 @@ object RoomActor {
           dispatchTo(List(userId), ApplySpeakRsp(100008, "主持人拒绝了您的发言请求"))
           idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
         }
-//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), SpeakAcceptRsp())
-
 
       //todo processor update
       case AppointSpeak(userId) =>
@@ -444,7 +470,6 @@ object RoomActor {
         dispatchTo(List(userId), RcvComment(-1,"",s"主持人指定您发言"))
         dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
         dispatch(SpeakingUser(userId, userName))
-//        dispatchTo(List(wholeRoomInfo.roomInfo.userId), AppointSpeakRsp())
         idle(roomId,subscribers,wholeRoomInfo.copy(speaker = (userId, userName)), liveInfoMap, startTime, userInfoListOpt)
 
       case StopSpeak(userId) =>
@@ -462,6 +487,18 @@ object RoomActor {
         dispatch(RcvComment(-1,"","会议结束了~"))
         dispatch(StopMeetingRsp())
         idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 0), liveInfoMap, startTime, userInfoListOpt)
+
+      case InviteOthers(invitees) =>
+        for{
+          inviteError <- UserInfoDao.searchNameNonexist(invitees)
+        }yield {
+          if(inviteError.nonEmpty)
+            dispatchTo(List(userId), InviteOthersRsp(1000021,s"用户 ${inviteError.mkString(",")} 不存在，邀请以上用户失败"))
+          else
+            dispatchTo(List(userId), InviteOthersRsp())
+        }
+        ctx.self ! sendInviteEmail(invitees, wholeRoomInfo.roomInfo)
+        idle(roomId,subscribers,wholeRoomInfo, liveInfoMap, startTime, userInfoListOpt)
 
       case x =>
         log.info(s"${ctx.self.path} recv an unknown msg:$x")

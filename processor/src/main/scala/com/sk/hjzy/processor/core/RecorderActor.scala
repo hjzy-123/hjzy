@@ -32,7 +32,7 @@ object RecorderActor {
   val sampleFormat = 1 //todo 待议
   var frameRate = 30
 
-  val CanvasSize: (Int, Int) = (640, 480)  // todo   这个size由什么决定
+  val CanvasSize: (Int, Int) = (512, 288)  // todo   这个size由什么决定
 
   val number = 8
 
@@ -92,7 +92,7 @@ object RecorderActor {
         implicit timer =>
           log.info(s"recorderActor start----")
           avutil.av_log_set_level(-8)
-          val recorder4ts = new FFmpegFrameRecorder(output, 640, 480, audioChannels)
+          val recorder4ts = new FFmpegFrameRecorder(output, CanvasSize._1, CanvasSize._2, audioChannels)
           recorder4ts.setFrameRate(frameRate)
           recorder4ts.setVideoBitrate(bitRate)
           recorder4ts.setVideoCodec(avcodec.AV_CODEC_ID_MPEG2VIDEO)
@@ -107,7 +107,7 @@ object RecorderActor {
           }
           roomManager ! RoomManager.RecorderRef(roomId, ctx.self)
           ctx.self ! Init
-          single(roomId, liveIdList, number, speaker, recorder4ts, null, null, null, null, output, 30000, CanvasSize)
+          single(roomId, liveIdList, num, speaker, recorder4ts, null, null, null, null, output, 30000, CanvasSize)
       }
     }
   }
@@ -162,7 +162,7 @@ object RecorderActor {
             val clientFrameMap: mutable.Map[String, Image] = mutable.Map[String, Image]()
             val Java2DFrameConverterMap: mutable.Map[String, Java2DFrameConverter] = mutable.Map[String, Java2DFrameConverter]()
 
-            liveIdList.tail.foreach{ id =>
+            liveIdList.foreach{ id =>
               clientFrameMap.put(id, Image())
               Java2DFrameConverterMap.put(id, new Java2DFrameConverter())
             }
@@ -220,19 +220,19 @@ object RecorderActor {
               log.info(s"wrong, liveId, work got wrong img")
             }
           }
-//          if (frame.samples != null) {
-//            try {
-//              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-//
-//              val f = ffFilter.pullSamples().clone()
-//              if (f != null) {
-//                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
-//              }
-//            } catch {
-//              case ex: Exception =>
-//                log.debug(s"$liveId record sample error system: $ex")
-//            }
-//          }
+          if (frame.samples != null) {
+            try {
+              ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
+
+              val f = ffFilter.pullSamples().clone()
+              if (f != null) {
+                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
+              }
+            } catch {
+              case ex: Exception =>
+                log.debug(s"$liveId record sample error system: $ex")
+            }
+          }
           Behaviors.same
 
         case msg: UpdateRoomInfo =>
@@ -293,22 +293,46 @@ object RecorderActor {
       Behaviors.receiveMessage[VideoCommand] {
         case t: Image4Host =>
           val time = t.frame.timestamp
-          log.info("主持人画面")
+          log.info("host frame")
           //fixme 优化布局
-          t.liveIdList.foreach{ liveId =>
-            val index = t.liveIdList.indexOf(liveId)
-            val img: BufferedImage = convert1(liveId).convert(t.frame)
-            if(index < 4)
-              graph.drawImage(img, canvasSize._1/4 * index, 0, canvasSize._1/4, canvasSize._2/2, null)
-            else
-              graph.drawImage(img, canvasSize._1/4 * (index-4), canvasSize._2/2, canvasSize._1/4, canvasSize._2/2, null)
-          }
 
-          val speakerIndex = t.liveIdList.indexOf(speaker)
-          if(speakerIndex < 4)
-            graph.drawString("发言人", canvasSize._1/4 * speakerIndex + 24, 24)
-          else
-            graph.drawString("发言人", canvasSize._1/4 * (speakerIndex - 4), canvasSize._2 + 24)
+          if(num > 0 & num < 5){
+            graph.drawImage(convert1(t.liveIdList.head).convert(t.frame), canvasSize._1/2 * 0, 0, canvasSize._1/2, canvasSize._2/2, null)
+            t.liveIdList.tail.foreach{ liveId =>
+              val index = t.liveIdList.indexOf(liveId)
+              val img: BufferedImage = convert1(liveId).convert(clientFrame(liveId).frame)
+              if(index < 2)
+                graph.drawImage(img, canvasSize._1/2 * index, 0, canvasSize._1/2, canvasSize._2/2, null)
+              else
+                graph.drawImage(img, canvasSize._1/2 * (index-2), canvasSize._2/2, canvasSize._1/2, canvasSize._2/2, null)
+            }
+
+            val speakerIndex = t.liveIdList.indexOf(speaker)
+            if(speakerIndex < 2)
+              graph.drawString("发言人", canvasSize._1/2 * speakerIndex + 24, 24)
+            else
+              graph.drawString("发言人", canvasSize._1/2 * (speakerIndex - 2), canvasSize._2 / 2 + 24)
+          }else if(num > 4 & num < 10){
+            graph.drawImage(convert1(t.liveIdList.head).convert(t.frame), canvasSize._1/3 * 0, 0, canvasSize._1/3, canvasSize._2/3, null)
+            t.liveIdList.tail.foreach{ liveId =>
+              val index = t.liveIdList.indexOf(liveId)
+              val img: BufferedImage = convert1(liveId).convert(clientFrame(liveId).frame)
+              if(index < 3)
+                graph.drawImage(img, canvasSize._1/3 * index, 0, canvasSize._1/3, canvasSize._2/3, null)
+              else if(index < 6 & index >2)
+                graph.drawImage(img, canvasSize._1/3 * (index-3), canvasSize._2/3 , canvasSize._1/3, canvasSize._2/3, null)
+              else
+                graph.drawImage(img, canvasSize._1/3 * (index-6), canvasSize._2/3 * 2, canvasSize._1/3, canvasSize._2/3, null)
+            }
+
+            val speakerIndex = t.liveIdList.indexOf(speaker)
+            if(speakerIndex < 3)
+              graph.drawString("发言人", canvasSize._1/3 * speakerIndex + 24, 24)
+            else if(speakerIndex > 2 & speakerIndex < 6)
+              graph.drawString("发言人", canvasSize._1/3 * (speakerIndex - 3), canvasSize._2/3 + 24)
+            else
+              graph.drawString("发言人", canvasSize._1/3 * (speakerIndex - 6), canvasSize._2/3 * 2 + 24)
+          }
 
           //fixme 此处为何不直接recordImage
           val frame = convert.convert(canvas)
