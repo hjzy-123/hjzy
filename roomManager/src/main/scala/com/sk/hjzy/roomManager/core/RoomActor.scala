@@ -116,15 +116,16 @@ object RoomActor {
                 else {
                   replyTo ! NewMeetingRsp(Some(partRoomInfo))
                 }
+
+                ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime))
                 ctx.self ! sendInviteEmail(invitees, partRoomInfo)
-                idle(roomId, subscribers,wholeRoomInfo.copy(roomInfo = partRoomInfo), liveInfoMap, startTime)
               }
             }else{
               replyTo ! NewMeetingRsp(None, 100020, "此用户不存在")
-              idle(roomId, subscribers,wholeRoomInfo,liveInfoMap, startTime)
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo,liveInfoMap, startTime))
             }
           }
-          Behaviors.same
+          switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case sendInviteEmail(invitees, roomInfo) =>
           for{
@@ -151,6 +152,7 @@ object RoomActor {
             else
               replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:密码错误")
           }else{
+            log.info("加入会议室失败")
             replyTo ! JoinMeetingRsp(None,100020,s"加入会议室请求失败:会议室不存在")
           }
           Behaviors.same
