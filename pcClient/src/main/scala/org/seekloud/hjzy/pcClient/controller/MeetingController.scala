@@ -565,13 +565,15 @@ class MeetingController(
 
         //通知主持人：邀请某用户的反馈
       case msg: InviteOthersRsp =>
-        if(msg.errCode == 0) {
-          Boot.addToPlatform{
-            WarningDialog.initWarningDialog("邀请邮件已发送！")
-          }
-        } else {
-          Boot.addToPlatform{
-            WarningDialog.initWarningDialog(s"${msg.msg}")
+        if(isHost){
+          if(msg.errCode == 0) {
+            Boot.addToPlatform{
+              WarningDialog.initWarningDialog("邀请邮件已发送！")
+            }
+          } else {
+            Boot.addToPlatform{
+              WarningDialog.initWarningDialog(s"${msg.msg}")
+            }
           }
         }
 
