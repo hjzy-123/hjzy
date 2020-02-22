@@ -101,10 +101,6 @@ object RoomActor {
 
           val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
 
-          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime)
-          pushPipeMap.put(msg.pushLiveId, pushPipe4recorder)
-          recorderMap.put(msg.roomId, recorderActor)
-
           liveIdList.foreach{ liveId =>
             val pullPipe4Live = new PipeStream
             val pullSink4Live = pullPipe4Live.getSink
@@ -124,6 +120,10 @@ object RoomActor {
             val pullPipe4live = getPullPipe(ctx, msg.roomId,liveId, pullOut4Live)
             pullPipeMap.put(liveId, pullPipe4live)
           }
+
+          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime)
+          pushPipeMap.put(msg.pushLiveId, pushPipe4recorder)
+          recorderMap.put(msg.roomId, recorderActor)
 
           roomLiveMap.put(msg.roomId,List(msg.pushLiveId) ::: liveIdList)
           streamPushActor ! StreamPushActor.NewLive(msg.pushLiveId, msg.pushLiveCode)

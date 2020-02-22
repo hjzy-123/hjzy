@@ -129,6 +129,11 @@ object WsProtocol {
                            invitees: List[String]
                          )  extends WsMsgHost
 
+  case class InviteOthersRsp(
+                              errCode: Int = 0,
+                              msg: String = "ok"
+                            )  extends WsMsgRm2Host
+
   /**
    *
    * 观众端

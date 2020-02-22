@@ -60,6 +60,7 @@ object StreamPushPipe {
 //          file.delete()
 //          file.createNewFile()
 //          out  = new FileOutputStream(file)
+          //todo  1316代表什么
           work(roomId, liveId, liveCode, source,ByteBuffer.allocate(1316), out)
       }
     }
@@ -70,7 +71,8 @@ object StreamPushPipe {
       stashBuffer: StashBuffer[Command]): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
-        case NewLive(startTime) =>
+        case msg@NewLive(startTime) =>
+          log.info(s"${ctx.self} receive a msg ${msg}")
           liveCountMap.put(liveId, 0)
           ctx.self ! SendData
           dataBuf.clear()
@@ -81,9 +83,6 @@ object StreamPushPipe {
           dataBuf.flip()
           if (r > 0) {
             val data = dataBuf.array().clone()
-//            if(out !=null){
-//              out.write(data)
-//            }
             out.foreach(_.write(data))
             streamPushActor ! StreamPushActor.PushData(liveId,  data.take(r))
             if (liveCountMap.getOrElse(liveId, 0) < 5) {

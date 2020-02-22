@@ -82,7 +82,7 @@ object RtpClient extends HttpUtil{
 //        println(value)
 //    }
 
-    newMeeting(10, 4 , "测试", "test", "123", List("gy", "tldq")).map{
+    newMeeting(10, 4 , "test123", "test123", "123123", List("gy111", "tldq")).map{
       case Left(value) =>
         println("error",value)
       case Right(value) =>
