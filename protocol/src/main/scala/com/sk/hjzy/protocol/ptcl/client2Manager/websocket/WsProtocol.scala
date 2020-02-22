@@ -126,8 +126,9 @@ object WsProtocol {
 
   /*主持人邀请用户参加会议 */
   case class InviteOthers(
+                           userId:Long,
                            invitees: List[String]
-                         )  extends WsMsgHost
+                         ) extends WsMsgHost
 
   case class InviteOthersRsp(
                               errCode: Int = 0,
@@ -175,7 +176,7 @@ object WsProtocol {
                               userId: Long
                             ) extends WsMsgRm2Audience
 
-  /*申请发言*/   //todo
+  /*申请发言*/
   case class ApplySpeak(
                          userId: Long
                        ) extends WsMsgAudience

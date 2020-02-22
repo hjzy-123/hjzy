@@ -218,6 +218,8 @@ object RoomActor {
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
+            if(userId == wholeRoomInfo.speaker._1)
+              dispatchTo(subscribers)(otherUserList,StopSpeakingUser(userId, userInfoListOpt.get.filter(_.userId == userId).head.userName))
             subscribers.remove(userId)
             liveInfoMap.remove(userId)
             ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
@@ -491,7 +493,7 @@ object RoomActor {
         timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
         idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 0), liveInfoMap, startTime, userInfoListOpt)
 
-      case InviteOthers(invitees) =>
+      case InviteOthers(userId, invitees) =>
         for{
           inviteError <- UserInfoDao.searchNameNonexist(invitees)
         }yield {
