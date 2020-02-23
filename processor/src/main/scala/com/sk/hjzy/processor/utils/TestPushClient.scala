@@ -40,7 +40,7 @@ object TestPushClient extends HttpUtil {
   val httpDst = "http://10.1.29.247:42040"
 
   val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
-  val portList = List(1234, 2345)
+  val portList = List(1234, 2345, 3456)
 
   def single(ssrc:Int, src:String, port: Int):Unit = {
     val threadPool:ExecutorService=Executors.newFixedThreadPool(2)
@@ -83,14 +83,14 @@ object TestPushClient extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(425, srcList.head,portList.head)
+    single(488, srcList(0),portList.head)
 //    single(423, srcList(1),portList(1))
 
     Thread.sleep(2000)
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(721, List("liveIdTest-425", "liveIdTest-426"), 2, "liveIdTest-425", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(742, List("liveIdTest-486", "liveIdTest-488"), 2, "liveIdTest-486", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
         }
