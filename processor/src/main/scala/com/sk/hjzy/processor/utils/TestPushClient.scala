@@ -12,9 +12,10 @@ import java.util.concurrent.{ExecutorService, Executors}
 import com.sk.hjzy.processor.Boot.executor
 import akka.actor.typed.scaladsl.adapter._
 import com.sk.hjzy.processor.utils.ProcessorClient.{log, postJsonRequestSend, processorBaseUrl}
-import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{NewConnect, NewConnectRsp}
+import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
 import com.sk.hjzy.rtpClient.PushStreamClient
 import com.sk.hjzy.processor.common.AppSettings._
+
 import scala.concurrent.Future
 import scala.language.postfixOps
 import io.circe.generic.auto._
@@ -79,6 +80,24 @@ object TestPushClient extends HttpUtil {
 
   }
 
+  def updateRoomInfo(roomId: Long, liveIdList: List[(String,Int)], num: Int, speaker: String):Future[Either[String,UpdateRsp]] = {
+    val url = processorBaseUrl + "/updateRoomInfo"
+    val jsonString = UpdateRoomInfo(roomId, liveIdList, num, speaker).asJson.noSpaces
+    postJsonRequestSend("updateRoomInfo",url,List(),jsonString,timeOut = 60 * 1000,needLogRsp = false).map{
+      case Right(v) =>
+        decode[UpdateRsp](v) match{
+          case Right(data) =>
+            Right(data)
+          case Left(e) =>
+            log.error(s"updateRoomInfo decode error : $e")
+            Left(s"updateRoomInfo decode error : $e")
+        }
+      case Left(error) =>
+        log.error(s"updateRoomInfo postJsonRequestSend error : $error")
+        Left(s"updateRoomInfo postJsonRequestSend error : $error")
+    }
+  }
+
   def main(args: Array[String]): Unit = {
 
     println("testPushClient start...")
@@ -90,13 +109,21 @@ object TestPushClient extends HttpUtil {
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(742, List("liveIdTest-486", "liveIdTest-488"), 2, "liveIdTest-486", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(743, List("liveIdTest-486", "liveIdTest-488"), 2, "liveIdTest-486", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
         }
       case Left(value) =>
         println("error", value)
     }
+
+    Thread.sleep(40000)
+
+    updateRoomInfo(743, List(("liveIdTest-486", -1)), 1, "liveIdTest-488").map{ r =>
+      println(r)
+
+    }
+
 
     Thread.sleep(1200000)
 
