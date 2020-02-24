@@ -120,13 +120,6 @@ object WsProtocol {
 
 //  case class AppointSpeakRsp( errCode: Int = 0,  msg: String = "ok") extends WsMsgRm2Host
 
-  /*主持人收到某人关闭声音或图像的消息*/
-  case class ClientCloseSoundFrame(
-                                 userId: Long,
-                                 sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
-                                 frame: Int = 0
-                               ) extends WsMsgRm2Host
-
   /*主持人邀请用户参加会议 */
   case class InviteOthers(
                            invitees: String
@@ -268,4 +261,11 @@ object WsProtocol {
                            userId: Long,
                            userName: String
                          ) extends WsMsgRm
+
+  /*用户收到某人关闭声音或图像的消息*/
+  case class ClientCloseSoundFrame(
+                                    userId: Long,
+                                    sound: Int = 0,   //0:不变   -1：屏蔽   1：恢复
+                                    frame: Int = 0
+                                  ) extends WsMsgRm
 }
