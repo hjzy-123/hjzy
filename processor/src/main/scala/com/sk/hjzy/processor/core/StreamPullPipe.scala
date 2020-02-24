@@ -42,7 +42,7 @@ object StreamPullPipe {
         implicit timer =>
           streamPullActor ! NewLive(liveId, roomId, ctx.self)
           val output = if (isDebug) {
-            val file = new File(s"$debugPath$roomId/${liveId}_in.ts")
+            val file = new File(s"$debugPath$roomId/${liveId}_in.mp4")
             Some(new FileOutputStream(file))
           } else None
           work(roomId, liveId, out, output)

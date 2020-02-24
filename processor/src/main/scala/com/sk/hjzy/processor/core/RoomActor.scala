@@ -172,6 +172,7 @@ object RoomActor {
                 roomLiveMap(roomId) = roomLiveMap(roomId).filter(_ != id._1)
             }
           }
+
           Behaviors.same
 
         case msg:Recorder =>

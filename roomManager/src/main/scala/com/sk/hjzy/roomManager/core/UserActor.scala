@@ -187,7 +187,7 @@ object UserActor {
                 }
                 switchBehavior(ctx,"busy",busy(),BusyTime,TimeOut("busy"))
               case None =>
-                log.debug(s"${ctx.self.path} there is no web socket msg in anchor state")
+                log.info(s"${ctx.self.path} there is no web socket msg in anchor state")
                 Behaviors.same
             }
           }
