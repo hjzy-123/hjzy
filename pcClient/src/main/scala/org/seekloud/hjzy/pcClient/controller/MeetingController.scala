@@ -38,7 +38,7 @@ class MeetingController(
 
   private[this] val log = LoggerFactory.getLogger(this.getClass)
 
-  case class PartInfo(userName: String, imageStatus: Int, soundStatus: Int) //1->open,-1->close
+  case class PartInfo(userName: String, imageStatus: Int, soundStatus: Int) //1->open, -1->close
 
   var isHost: Boolean = this.ifHostWhenCreate
 
@@ -48,6 +48,9 @@ class MeetingController(
 
   var partUserMap: Map[Int, Long] = Map() // canvasId -> userId
   var partInfoMap = mutable.HashMap.empty[Long, this.PartInfo] // userId -> PartInfo(userName, imageStatus, soundStatus)
+
+  var selfImageStatus: Int = 1 //1->open, -1->close
+  var selfSoundStatus: Int = 1 //1->open, -1->close
 
   var previousMeetingName = ""
   var previousMeetingDes = ""
@@ -66,7 +69,9 @@ class MeetingController(
     override def changeHost(): Unit = {
       if(partInfoMap.nonEmpty){
         val newHostId = chooseAudienceDialog(toChangeHost = Some(true))
-        newHostId.foreach(rmManager ! TurnToAudience(_))
+        if(newHostId.nonEmpty) {
+            rmManager ! TurnToAudience(newHostId.get, meetingScene.audSpeakApplyMap)
+          }
       } else {
         Boot.addToPlatform{
           WarningDialog.initWarningDialog("当前房间无其他人！")
@@ -123,10 +128,13 @@ class MeetingController(
       if (!someoneSpeaking) {
         rmManager ! RmManager.SpeakAcceptance(userId, userName, accept)
         meetingScene.audObservableList.remove(newRequest)
+        meetingScene.audSpeakApplyMap.remove(userId)
       } else {
         if (someoneSpeaking && !accept) {
           rmManager ! RmManager.SpeakAcceptance(userId, userName, accept)
           meetingScene.audObservableList.remove(newRequest)
+          meetingScene.audSpeakApplyMap.remove(userId)
+
         } else {
           Boot.addToPlatform {
             WarningDialog.initWarningDialog(s"两人无法同时发言，请先结束当前发言!")
@@ -160,12 +168,14 @@ class MeetingController(
 
     override def controlSelfImage(targetStatus: Int): Unit = {
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
+      selfImageStatus = targetStatus
       rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
 
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
       log.info(s"点击控制自己声音，targetStatus: $targetStatus")
+      selfSoundStatus = targetStatus
       rmManager ! RmManager.ControlSelfImageAndSound(sound = targetStatus)
 
     }
@@ -434,7 +444,7 @@ class MeetingController(
           rmManager ! TurnToHost
         }
 
-        //通知某观众：你被指派为主持人
+        //通知原主持人以外的观众：新主持人信息
       case msg: ChangeHost2Client =>
         log.info(s"rcv ChangeHost2Client from rm: $msg")
         Boot.addToPlatform{
@@ -444,12 +454,20 @@ class MeetingController(
           rmManager ! TurnToHost
           Boot.addToPlatform{
             meetingScene.isHost = true
+            meetingScene.refreshScene(true)
+            msg.audSpeakApplyMap.foreach{ i =>
+              meetingScene.updateSpeakApplier(i._1, i._2)
+            }
+            meetingScene.liveToggleButton.setSelected(isLiving)
           }
         }
 
         //得到自己的liveId和liveCode（推）以及房间其余人的liveId（拉）
       case msg: StartMeetingRsp =>
         log.info(s"rcv StartMeetingRsp from rm: $msg")
+        Boot.addToPlatform{
+          meetingScene.meetingStateLabel.setText("会议进行中")
+        }
         if(msg.errCode == 0){
           rmManager ! StartMeeting(msg.pushLiveInfo, msg.pullLiveIdList)
         } else {
@@ -458,6 +476,9 @@ class MeetingController(
 
         //得到自己的liveId和liveCode
       case msg: GetLiveInfoRsp =>
+        Boot.addToPlatform{
+          meetingScene.meetingStateLabel.setText("会议进行中")
+        }
         log.info(s"rcv GetLiveInfoRsp from rm: $msg")
         if(msg.errCode == 0){
           rmManager ! ToPush(msg.pushLiveInfo.get)
@@ -481,15 +502,23 @@ class MeetingController(
         log.info(s"rcv CloseSoundFrame2Client from rm: $msg")
         Boot.addToPlatform{
           msg.frame match{
-            case 1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(true)
-            case -1 => meetingScene.selfCanvasBar.imageToggleButton.setSelected(false)
+            case 1 =>
+              meetingScene.selfCanvasBar.imageToggleButton.setSelected(true)
+              selfImageStatus = 1
+            case -1 =>
+              meetingScene.selfCanvasBar.imageToggleButton.setSelected(false)
+              selfImageStatus = -1
             case x => //do nothing
           }
         }
         Boot.addToPlatform{
           msg.sound match{
-            case 1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(true)
-            case -1 => meetingScene.selfCanvasBar.soundToggleButton.setSelected(false)
+            case 1 =>
+              meetingScene.selfCanvasBar.soundToggleButton.setSelected(true)
+              selfSoundStatus = 1
+            case -1 =>
+              meetingScene.selfCanvasBar.soundToggleButton.setSelected(false)
+              selfSoundStatus = -1
             case x => //do nothing
           }
         }

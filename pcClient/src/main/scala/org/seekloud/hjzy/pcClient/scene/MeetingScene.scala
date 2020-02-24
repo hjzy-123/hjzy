@@ -263,6 +263,7 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
   val applySpeakTable = new TableView[ApplySpeakListInfo]()
   applySpeakTable.getStyleClass.add("table-view")
   val audObservableList: ObservableList[ApplySpeakListInfo] = FXCollections.observableArrayList()
+  val audSpeakApplyMap = mutable.HashMap.empty[Long, String] // userId -> userName
 
   val userInfoCol = new TableColumn[ApplySpeakListInfo, String]("申请用户")
   userInfoCol.setPrefWidth(110)
@@ -305,6 +306,7 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
       new SimpleObjectProperty[Button](refuseBtn)
     )
     audObservableList.add(newRequest)
+    audSpeakApplyMap.put(userId, userName)
 
     agreeBtn.setOnAction { _ =>listener.handleSpeakApply(userId = userId, userName = userName, accept = true, newRequest)}
     refuseBtn.setOnAction { _ =>listener.handleSpeakApply(userId = userId, userName = userName, accept = false, newRequest)}
@@ -366,12 +368,8 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
       _ =>
         if (liveToggleButton.isSelected) {
           listener.startLive()
-          meetingStateLabel.setText("会议进行中")
-          Tooltip.install(liveToggleButton, new Tooltip("点击停止会议"))
         } else {
           listener.stopLive()
-          meetingStateLabel.setText("会议未开始")
-          Tooltip.install(liveToggleButton, new Tooltip("点击开始会议"))
         }
 
     }
@@ -608,6 +606,8 @@ class MeetingScene(stage: Stage, ifHostWhenCreate: Boolean){
     addToSpeakInfoBox(isHost)
     addToControlBox(isHost)
     addToRightArea(isHost)
+    audSpeakApplyMap.clear()
+    audObservableList.clear()
   }
 
 
