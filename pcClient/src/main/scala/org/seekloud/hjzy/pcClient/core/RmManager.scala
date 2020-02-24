@@ -31,6 +31,7 @@ import org.seekloud.hjzy.pcClient.core.stream.LiveManager.{StopPullOneStream, Vi
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import concurrent.duration._
+import scala.collection.mutable
 
 
 /**
@@ -93,7 +94,7 @@ object RmManager {
 
   final case class ModifyRoomFailed(previousName: String, previousDes: String) extends RmCommand
 
-  final case class TurnToAudience(newHostId: Long) extends RmCommand
+  final case class TurnToAudience(newHostId: Long, audSpeakApplyMap: mutable.HashMap[Long, String]) extends RmCommand
 
   final case object StartMeetingReq extends RmCommand
 
@@ -324,9 +325,9 @@ object RmManager {
         sender.foreach(_ ! Comment(userId, roomId, comment))
         Behaviors.same
 
-      case TurnToAudience(newHostId) =>
+      case TurnToAudience(newHostId, audSpeakApplyMap) =>
         log.info(s"rcv TurnToAudience in host: newHostId = $newHostId")
-        sender.foreach(_ ! ChangeHost(newHostId))
+        sender.foreach(_ ! ChangeHost(newHostId, audSpeakApplyMap))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
           meetingScene.refreshScene(false)
@@ -568,9 +569,6 @@ object RmManager {
       case TurnToHost =>
         log.info(s"rcv TurnToHost from meetingScene")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = userInfo.get.userId))
-        Boot.addToPlatform{
-          meetingScene.refreshScene(true)
-        }
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
 
