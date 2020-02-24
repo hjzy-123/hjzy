@@ -163,8 +163,10 @@ object RecorderActor {
             recorder4ts.setFrameRate(f)
             recorder4ts.setAudioChannels(channel)
             recorder4ts.setSampleRate(sampleRate)
-            ffFilter.setAudioChannels(channel)
-            ffFilter.setSampleRate(sampleRate)
+            if(ffFilter != null){
+              ffFilter.setAudioChannels(channel)
+              ffFilter.setSampleRate(sampleRate)
+            }
             recorder4ts.setImageWidth(width)
             recorder4ts.setImageHeight(height)
             work(roomId, liveIdList, num, speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer,  canvasSize)
@@ -205,6 +207,7 @@ object RecorderActor {
           Behaviors.same
 
         case msg: UpdateRoomInfo =>
+          log.info(s"${ctx.self} receive a msg $msg")
           var newliveIdList = liveIdList
           msg.liveIdList.foreach{ id =>
             if(id._2 == 1)
@@ -213,9 +216,9 @@ object RecorderActor {
               newliveIdList = liveIdList.filter( _ != id._1)
           }
           if(drawer != null)
-            drawer ! UpdateDrawer(msg.liveIdList, num, speaker)
+            drawer ! UpdateDrawer(msg.liveIdList, msg.num, msg.speaker)
           ctx.self ! Init
-          work(roomId,  newliveIdList, num, speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
+          work(roomId,  newliveIdList, msg.num, msg.speaker, recorder4ts, ffFilter, drawer, ts4Host, ts4Client, out, tsDiffer, canvasSize)
 
         case CloseRecorder =>
           try {

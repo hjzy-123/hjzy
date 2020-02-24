@@ -130,6 +130,7 @@ object RoomActor {
           Behaviors.same
 
         case UpdateRoomInfo(roomId, liveIdList, num, speaker) =>
+          log.info(s"${ctx.self} receive a msg $msg")
           if(recorderMap.get(roomId).nonEmpty) {
             recorderMap.get(roomId).foreach(_ ! RecorderActor.UpdateRoomInfo(roomId,liveIdList, num, speaker ))
           } else {
@@ -163,7 +164,7 @@ object RoomActor {
               } else {
                 log.info(s"${roomId}  grabbers not exist when closeRoom")
               }
-
+              streamPullActor ! StreamPullActor.CleanStream(id._1)
               pullPipeMap.get(id._1).foreach( a => a ! StreamPullPipe.ClosePipe)
               pullPipeMap.remove(id._1)
               pipeMap.remove(id._1)
