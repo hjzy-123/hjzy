@@ -39,7 +39,7 @@ object TestPushClient1 extends HttpUtil {
   val httpDst = "http://10.1.29.247:42040"
 
   val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
-  val portList = List(1234, 2345, 3456)
+  val portList = List(1234, 1235, 3456)
 
   def single(ssrc:Int, src:String, port: Int):Unit = {
     val threadPool:ExecutorService=Executors.newFixedThreadPool(2)
@@ -82,7 +82,7 @@ object TestPushClient1 extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(486, srcList(0),portList(1))
+    single(495, srcList(0),portList(1))
 
     Thread.sleep(1200000)
 
