@@ -168,6 +168,7 @@ object RoomActor {
             if(wholeRoomInfo.isStart == 1){
               log.info(s"会议已经开始，给新进来的用户直接发送liveId---------${wholeRoomInfo.isStart}-------------")
               if(liveInfoMap.get(userId).nonEmpty){
+                ProcessorClient.updateRoomInfo(roomId, List((liveInfoMap(userId).liveId, 1)), liveInfoMap.keys.toList.length, wholeRoomInfo.speaker._2)
                 dispatchTo(subscribers)(List(userId),StartMeetingRsp(Some(liveInfoMap(userId)), liveIdList))
                 dispatchTo(subscribers)(oldUserList,GetLiveId4Other(userId, liveInfoMap(userId).liveId))
               }else
@@ -218,13 +219,18 @@ object RoomActor {
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
-            if(userId == wholeRoomInfo.speaker._1)
-              dispatchTo(subscribers)(otherUserList,StopSpeakingUser(userId, userInfoListOpt.get.filter(_.userId == userId).head.userName))
             subscribers.remove(userId)
             liveInfoMap.remove(userId)
-            ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
+            if(userId == wholeRoomInfo.speaker._1) {
+              dispatchTo(subscribers)(otherUserList,StopSpeakingUser(userId, userInfoListOpt.get.filter(_.userId == userId).head.userName))
+              val speakerNew = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
+              ProcessorClient.updateRoomInfo(roomId, List((liveInfoMap(userId).liveId, -1)), liveInfoMap.keys.toList.length, speakerNew)
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(speaker = (wholeRoomInfo.roomInfo.userId, speakerNew)), liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
+            }else{
+              ProcessorClient.updateRoomInfo(roomId, List((liveInfoMap(userId).liveId, -1)), liveInfoMap.keys.toList.length, wholeRoomInfo.speaker._2)
+              ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
+            }
           }
-
           switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
         case TestRoom(roomInfo) =>
@@ -235,6 +241,7 @@ object RoomActor {
         //todo processor update
         case ActorProtocol.HostLeaveRoom(roomId) =>
           log.info(s"${ctx.self.path} host leave room")
+          val hostLiveId = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
           subscribers.remove(wholeRoomInfo.roomInfo.userId)
           liveInfoMap.remove(wholeRoomInfo.roomInfo.userId)
           if(userInfoListOpt.get.exists(_.userId != wholeRoomInfo.roomInfo.userId) && userInfoListOpt.nonEmpty){
@@ -243,8 +250,15 @@ object RoomActor {
             dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
             dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
             userManager ! ActorProtocol.ChangeBehaviorToHost(newHost.userId, newHost.userId)
-            val newRoomInfo = WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl))
-            idle(roomId, subscribers,newRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+            val newRoomInfo = wholeRoomInfo.copy(roomInfo = wholeRoomInfo.roomInfo.copy(userId = newHost.userId, userName = newHost.userName, headImgUrl = newHost.headImgUrl))
+
+            if(wholeRoomInfo.roomInfo.userId == wholeRoomInfo.speaker._1) {
+              ProcessorClient.updateRoomInfo(roomId, List((hostLiveId, -1)), liveInfoMap.keys.toList.length, liveInfoMap(newHost.userId).liveId)
+              idle(roomId, subscribers,newRoomInfo.copy(speaker = (newHost.userId,liveInfoMap(newHost.userId).liveId)), liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+            } else {
+              ProcessorClient.updateRoomInfo(roomId, List((hostLiveId, -1)), liveInfoMap.keys.toList.length, wholeRoomInfo.speaker._2)
+              idle(roomId, subscribers,newRoomInfo, liveInfoMap, startTime, Some(userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId)))
+            }
           } else {
             log.info("主持人离开，房间内无人委派，房间废弃")
             if(wholeRoomInfo.isStart == 1)
@@ -377,8 +391,8 @@ object RoomActor {
       case StartMeetingReq(`userId`,token) =>
         log.info(s"${ctx.self.path} 开始会议，roomId=$roomId")
         val userIdList = subscribers.keys.toList
-        //todo 发言人
-        var speaker = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
+        // 发言人默认为主持人
+        val speaker = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
         userIdList.foreach{ id =>
           val liveIdList = liveInfoMap.map(r => (r._1, r._2.liveId)).toList.filter(_._1 != id)
           if(liveInfoMap.get(id).nonEmpty)
@@ -387,31 +401,31 @@ object RoomActor {
             dispatchTo(List(id), StartMeetingRsp(None, liveIdList, 100002, "无liveInfo"))
         }
         dispatch(RcvComment(-1, "", s"会议开始了~"))
+        //fixme 开始录像
+        for {
+          data <- RtpClient.getLiveInfoFunc()
+        } yield {
+          data match {
+            case Right(rsp) =>
+              ProcessorClient.newConnect(roomId, liveInfoMap.values.map(_.liveId).toList, liveInfoMap.values.toList.length,
+                speaker, rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+                case Right(r) =>
+                  val startTimeNew = r.startTime
+                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTimeNew, userInfoListOpt))
+                case Left(e) =>
+                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+              }
 
-//        for {
-//          data <- RtpClient.getLiveInfoFunc()
-//        } yield {
-//          data match {
-//            case Right(rsp) =>
-//              ProcessorClient.newConnect(roomId, liveInfoMap.values.map(_.liveId).toList, liveInfoMap.values.toList.length,
-//                speaker, rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
-//                case Right(r) =>
-//                  val startTime = r.startTime
-//                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo.copy(isStart = 1),liveInfoMap, startTime, userInfoListOpt))
-//                case Left(e) =>
-//                  ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
-//              }
-//
-//            case Left(str) =>
-//              log.info(s"${ctx.self.path} 请求processor录像失败=$str")
-//              ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
-//          }
-//        }
-//        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
+            case Left(str) =>
+              log.info(s"${ctx.self.path} 请求processor录像失败=$str")
+              ctx.self ! SwitchBehavior("idle", idle(roomId,subscribers,wholeRoomInfo,liveInfoMap, startTime, userInfoListOpt))
+          }
+        }
+        switchBehavior(ctx, "busy", busy(), InitTime, TimeOut("busy"))
 
-        val newRoom = WholeRoomInfo(wholeRoomInfo.roomInfo, 1)
-        log.info(s"开始会议后新的房间$newRoom")
-        idle(roomId,subscribers,newRoom,liveInfoMap, startTime, userInfoListOpt)
+//        val newRoom = WholeRoomInfo(wholeRoomInfo.roomInfo, 1)
+//        log.info(s"开始会议后新的房间$newRoom")
+//        idle(roomId,subscribers,newRoom,liveInfoMap, startTime, userInfoListOpt)
 
       case GetLiveInfoReq(userId) =>
         RtpClient.getLiveInfoFunc().map {
@@ -454,6 +468,8 @@ object RoomActor {
       //todo processor update
       case ApplySpeakAccept(userId, userName, accept) =>
         if(accept) {
+          val speakerNew = liveInfoMap(userId).liveId
+          ProcessorClient.updateRoomInfo(roomId, List[(String, Int)](), liveInfoMap.keys.toList.length, speakerNew)
           dispatch(RcvComment(-1,"",s"主持人${wholeRoomInfo.roomInfo.userName}同意了 $userName 的发言请求"))
           dispatchTo(List(userId), ApplySpeakRsp())
           dispatchTo(subscribers.filter( r => r._1 != userId && r._1 != wholeRoomInfo.roomInfo.userId).keys.toList, CloseSoundFrame2Client(-1))
@@ -467,6 +483,8 @@ object RoomActor {
 
       //todo processor update
       case AppointSpeak(userId) =>
+        val speakerNew = liveInfoMap(userId).liveId
+        ProcessorClient.updateRoomInfo(roomId, List[(String, Int)](), liveInfoMap.keys.toList.length, speakerNew)
         var userName = "参会者"
         if(userInfoListOpt.get.exists(p = _.userId == userId))
           userName = userInfoListOpt.get.filter(_.userId == userId).head.userName
