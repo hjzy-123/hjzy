@@ -326,7 +326,7 @@ object RmManager {
 
       case TurnToAudience(newHostId, audSpeakApplyMap) =>
         log.info(s"rcv TurnToAudience in host: newHostId = $newHostId")
-        sender.foreach(_ ! ChangeHost(newHostId, audSpeakApplyMap))
+        sender.foreach(_ ! ChangeHost(newHostId, audSpeakApplyMap.toMap))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = newHostId))
         Boot.addToPlatform{
           meetingScene.refreshScene(false)

@@ -2,7 +2,7 @@ package com.sk.hjzy.protocol.ptcl.client2Manager.websocket
 
 import com.sk.hjzy.protocol.ptcl.CommonProtocol.LiveInfo
 
-import scala.collection.mutable
+//import scala.collection.mutable
 
 object WsProtocol {
 
@@ -79,7 +79,7 @@ object WsProtocol {
   /*指派主持人*/
   case class ChangeHost(
                          newHostId: Long,
-                         audSpeakApplyMap: mutable.HashMap[Long, String]  // userId -> userName
+                         audSpeakApplyMap: Map[Long, String]  // userId -> userName
                        ) extends WsMsgHost
 
   case class ChangeHostRsp(userId: Long, userName: String,errCode: Int = 0, msg: String = "ok") extends WsMsgRm2Host
@@ -161,7 +161,7 @@ object WsProtocol {
   case class ChangeHost2Client(
                                  userId: Long,
                                  userName: String,
-                                 audSpeakApplyMap: mutable.HashMap[Long, String]
+                                 audSpeakApplyMap: Map[Long, String]
                                ) extends WsMsgRm2Audience
 
   case class CloseSoundFrame2Client(
