@@ -87,6 +87,8 @@ object RmManager {
 
   final case class ControlSelfImageAndSound(image: Int = 0, sound: Int = 0) extends RmCommand // 1->打开, -1->关闭
 
+  final case class GetInfo(userId: Long) extends RmCommand
+
   /*主持人*/
   final case object HostWsEstablish extends RmCommand
 
@@ -116,10 +118,6 @@ object RmManager {
   final case object AudienceWsEstablish extends RmCommand
 
   final case object ApplyForSpeak extends RmCommand
-
-
-
-  //  final case object HostClosedRoom extends RmCommand
 
   final case class RoomModified(newName: String, newDes: String) extends RmCommand
 
@@ -291,6 +289,7 @@ object RmManager {
         Behaviors.same
 
       case ModifyRoomFailed(previousName, previousDes) =>
+        log.info(s"rcv ModifyRoomFailed in host: previousName = $previousName, previousDes = $previousDes")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = previousName))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = previousDes))
         Behaviors.same
@@ -347,7 +346,7 @@ object RmManager {
         Behaviors.same
 
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
-        log.info(s"rcv StartMeeting from meetingScene: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
+        log.info(s"rcv StartMeeting in host: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
         assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
         //to push
         if(pushLiveInfo.nonEmpty){
@@ -367,13 +366,13 @@ object RmManager {
           MeetingStatus.LIVE, Some(audInfo))
 
       case ToPush(pushLiveInfo) =>
-        log.info(s"rcv ToPush from meetingScene: pushLiveInfo = $pushLiveInfo")
+        log.info(s"rcv ToPush in host: pushLiveInfo = $pushLiveInfo")
         assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
         liveManager ! LiveManager.PushStream(pushLiveInfo.liveId, pushLiveInfo.liveCode)
         Behaviors.same
 
       case ToPull(userId, liveId) =>
-        log.info(s"rcv ToPull from meetingScene: userId = $userId, liveId = $liveId")
+        log.info(s"rcv ToPull in host: userId = $userId, liveId = $liveId")
         assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
         val canvasIdOpt = meetingController.partUserMap.find(user => user._2 == userId).map(_._1)
         if(canvasIdOpt.nonEmpty){
@@ -389,6 +388,7 @@ object RmManager {
           MeetingStatus.LIVE, Some(audienceList))
 
       case GetLiveInfoReq =>
+        log.info(s"rcv GetLiveInfoReq in host.")
         assert(userInfo.nonEmpty && meetingRoomInfo.nonEmpty)
         sender.foreach(_ ! WsProtocol.GetLiveInfoReq(this.userInfo.get.userId))
         Behaviors.same
@@ -399,6 +399,7 @@ object RmManager {
         Behaviors.same
 
       case SomeoneLeave(userId, canvasId) =>
+        log.info(s"rcv SomeoneLeave in host: userId = $userId, canvasId = $canvasId")
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
@@ -422,7 +423,7 @@ object RmManager {
         Behaviors.same
 
       case ControlSelfImageAndSound(image, sound) =>
-        log.info(s"rcv ControlSelfImageAndSound in host: image: $image, sound: $sound")
+        log.info(s"rcv ControlSelfImageAndSound in host: image = $image, sound = $sound")
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
         Behaviors.same
 
@@ -448,6 +449,11 @@ object RmManager {
       case StopSbSpeak(userId) =>
         log.info(s"rcv StopSbSpeak in host: userId = $userId")
         sender.foreach(_ ! WsProtocol.StopSpeak(userId))
+        Behaviors.same
+
+      case GetInfo(userId) =>
+        log.info(s"rcv GetInfo in host: userId = $userId")
+        sender.foreach(_ ! WsProtocol.GetUserInfo(userId))
         Behaviors.same
 
       case x =>
@@ -562,18 +568,19 @@ object RmManager {
 
 
       case RoomModified(newName, newDes) =>
+        log.info(s"rcv RoomModified in audience: newName: $newName, newDes: $newDes")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomName = newName))
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = newDes))
         Behaviors.same
 
       case TurnToHost =>
-        log.info(s"rcv TurnToHost from meetingScene")
+        log.info(s"rcv TurnToHost in audience")
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(userId = userInfo.get.userId))
         switchBehavior(ctx, "hostBehavior", hostBehavior(stageCtx, homeController, meetingScene, meetingController, liveManager, mediaPlayer, sender, meetingStatus, joinAudienceList))
 
 
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
-        log.info(s"rcv StartMeeting from meetingScene: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
+        log.info(s"rcv StartMeeting in audience: pushLiveInfo = $pushLiveInfo, pullLiveIdList = $pullLiveIdList")
         //to push
         if(pushLiveInfo.nonEmpty){
           liveManager ! LiveManager.PushStream(pushLiveInfo.get.liveId, pushLiveInfo.get.liveCode)
@@ -593,12 +600,12 @@ object RmManager {
 
 
       case ToPush(pushLiveInfo) =>
-        log.info(s"rcv ToPush from meetingScene: pushLiveInfo = $pushLiveInfo")
+        log.info(s"rcv ToPush in audience: pushLiveInfo = $pushLiveInfo")
         liveManager ! LiveManager.PushStream(pushLiveInfo.liveId, pushLiveInfo.liveCode)
         Behaviors.same
 
       case ToPull(userId, liveId) =>
-        log.info(s"rcv ToPull from meetingScene: userId = $userId, liveId = $liveId")
+        log.info(s"rcv ToPull in audience: userId = $userId, liveId = $liveId")
         assert(this.meetingRoomInfo.nonEmpty && this.userInfo.nonEmpty)
         val canvasIdOpt = meetingController.partUserMap.find(user => user._2 == userId).map(_._1)
         if(canvasIdOpt.nonEmpty){
@@ -614,6 +621,7 @@ object RmManager {
           MeetingStatus.LIVE, Some(audienceList))
 
       case SomeoneLeave(userId, canvasId) =>
+        log.info(s"rcv SomeoneLeave in audience: userId = $userId, canvasId = $canvasId")
         if(joinAudienceList.isEmpty) {
           Behaviors.same
         } else if(joinAudienceList.get.exists(l => l.userId == userId)) {
@@ -632,7 +640,7 @@ object RmManager {
         }
 
       case ControlSelfImageAndSound(image, sound) =>
-        log.info(s"rcv ControlSelfImageAndSound in audience: image: $image, sound: $sound")
+        log.info(s"rcv ControlSelfImageAndSound in audience: image = $image, sound = $sound")
         assert(this.userInfo.nonEmpty)
         liveManager ! LiveManager.ControlSelfSoundAndImage(image, sound)
         sender.foreach(_ ! WsProtocol.CloseOwnSoundFrame(this.userInfo.get.userId, sound, image))
@@ -647,6 +655,11 @@ object RmManager {
       case StopSelf =>
         log.info(s"rmManager stopped in audience.")
         Behaviors.stopped
+
+      case GetInfo(userId) =>
+        log.info(s"rcv GetInfo in audience: userId = $userId")
+        sender.foreach(_ ! WsProtocol.GetUserInfo(userId))
+        Behaviors.same
 
       case x =>
         log.warn(s"unknown msg in audience Behavior: $x")

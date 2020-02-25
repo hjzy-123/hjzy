@@ -231,6 +231,10 @@ object WsProtocol {
                          extension: Option[String] = None
                        ) extends WsMsgRm
 
+  case class GetUserInfo(userId: Long) extends WsMsgClient
+
+  case class RcvUserInfo(userId: Long, userName: String, email: String, header: String) extends WsMsgRm
+
   case class StartMeetingRsp(
                               pushLiveInfo: Option[LiveInfo] = None,
                               pullLiveIdList: List[(Long, String)], //(userId, liveId)
