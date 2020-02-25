@@ -72,7 +72,7 @@ object RoomActor {
 
   private final val InitTime = Some(5.minutes)
 
-  private var SpeakApplyMap: mutable.HashMap[Long, String] = mutable.HashMap.empty[Long, String]
+  private var SpeakApplyMap = Map[Long, String]()
 
   def create(roomId: Long): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>
