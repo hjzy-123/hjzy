@@ -31,6 +31,7 @@ object UserActor {
   import scala.language.implicitConversions
   import org.seekloud.byteobject.ByteObject._
   import org.seekloud.byteobject.decoder.{BytesDecoder, DecoderFailure}
+  import org.seekloud.byteobject.encoder.BytesEncoder
 
   private val log = LoggerFactory.getLogger(this.getClass)
   private final val InitTime = Some(5.minutes)

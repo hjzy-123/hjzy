@@ -11,6 +11,7 @@ import com.sk.hjzy.processor.Boot.{executor, roomManager, scheduler, showStreamL
 import io.circe.Error
 import io.circe.generic.auto._
 import com.sk.hjzy.processor.core.RoomManager
+import com.sk.hjzy.processor.common.AppSettings.debugPath
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.http.scaladsl.model.ContentTypes
@@ -19,7 +20,6 @@ import cats.instances.duration
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
-import com.sk.hjzy.processor.common.AppSettings.recordLocation
 import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, RecordInfoRsp, SeekRecord, UpdateRoomInfo, UpdateRsp}
 import org.bytedeco.javacpp.Loader
 import org.slf4j.LoggerFactory
@@ -108,7 +108,7 @@ trait ProcessorService extends ServiceUtils {
   val getRecord: Route = (path("getRecord" / Segments(3)) & get & pathEndOrSingleSlash & cors(settings)){
     case roomId :: startTime :: file :: Nil =>
       println(s"getRecord req for $roomId/$startTime/$file.")
-      val f = new File(s"$recordLocation$roomId/$startTime/$file").getAbsoluteFile
+      val f = new File(s"$debugPath$roomId/$startTime/$file").getAbsoluteFile
       getFromFile(f,ContentTypes.`application/octet-stream`)
 
     case x =>
@@ -120,7 +120,7 @@ trait ProcessorService extends ServiceUtils {
     entity(as[Either[Error, SeekRecord]]) {
       case Right(req) =>
         log.info("seekRecord.")
-        val file = new File(s"$recordLocation${req.roomId}/${req.roomId}/record.mp4")
+        val file = new File(s"$debugPath${req.roomId}/${req.roomId}/record.mp4")
         if(file.exists()){
           val d = getVideoDuration(req.roomId,req.roomId)
           log.info(s"duration:$d")
@@ -139,7 +139,7 @@ trait ProcessorService extends ServiceUtils {
   private def getVideoDuration(roomId:Long,startTime:Long) ={
     val ffprobe = Loader.load(classOf[org.bytedeco.ffmpeg.ffprobe])
     //容器时长（container duration）
-    val pb = new ProcessBuilder(ffprobe,"-v","error","-show_entries","format=duration", "-of","csv=\"p=0\"","-i", s"$recordLocation$roomId/$startTime/record.mp4")
+    val pb = new ProcessBuilder(ffprobe,"-v","error","-show_entries","format=duration", "-of","csv=\"p=0\"","-i", s"$debugPath$roomId/$startTime/record.mp4")
     val processor = pb.start()
     val br = new BufferedReader(new InputStreamReader(processor.getInputStream))
     val s = br.readLine()
