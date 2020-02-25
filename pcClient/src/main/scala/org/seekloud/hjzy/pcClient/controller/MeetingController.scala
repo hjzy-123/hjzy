@@ -7,6 +7,7 @@ import javafx.scene.Group
 import javafx.scene.control.ButtonBar.ButtonData
 import javafx.scene.control._
 import javafx.scene.image.{Image, ImageView}
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.{GridPane, HBox, VBox}
 import javafx.scene.text.{Font, Text}
 import org.seekloud.hjzy.pcClient.Boot
@@ -19,7 +20,6 @@ import org.seekloud.hjzy.pcClient.scene.MeetingScene
 import org.seekloud.hjzy.pcClient.scene.MeetingScene.{ApplySpeakListInfo, MeetingSceneListener}
 import org.slf4j.LoggerFactory
 import org.seekloud.hjzy.pcClient.Boot.executor
-
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -223,6 +223,12 @@ class MeetingController(
       partUserMap = partUserMap.updated(canvasId, userId)
       Boot.addToPlatform{
         meetingScene.nameLabelMap(canvasId).setText(userName)
+        meetingScene.nameLabelMap(canvasId).addEventHandler(MouseEvent.MOUSE_CLICKED,(_: MouseEvent) => {
+          val clickUserId = partUserMap.get(canvasId)
+          if(clickUserId.nonEmpty){
+            rmManager ! GetInfo(clickUserId.get)
+          }
+        })
         meetingScene.addLiveBarToCanvas(canvasId, userId)
 
       }
@@ -594,6 +600,7 @@ class MeetingController(
 
         //通知主持人：邀请某用户的反馈
       case msg: InviteOthersRsp =>
+        log.info(s"rcv InviteOthersRsp from rm: $msg")
         if(isHost){
           if(msg.errCode == 0) {
             Boot.addToPlatform{
@@ -605,6 +612,10 @@ class MeetingController(
             }
           }
         }
+
+      case msg: RcvUserInfo =>
+        log.info(s"rcv RcvUserInfo from rm: $msg")
+
 
       case x =>
         log.warn(s"host recv unknown msg from rm: $x")
