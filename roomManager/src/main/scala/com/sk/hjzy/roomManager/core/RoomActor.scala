@@ -72,6 +72,8 @@ object RoomActor {
 
   private final val InitTime = Some(5.minutes)
 
+  private var SpeakApplyMap: mutable.HashMap[Long, String] = mutable.HashMap.empty[Long, String]
+
   def create(roomId: Long): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>
       implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
@@ -248,7 +250,7 @@ object RoomActor {
             val newHost = userInfoListOpt.get.filter(_.userId != wholeRoomInfo.roomInfo.userId).head
 
             //todo  要把申请表储存下来吗？
-            dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName, mutable.HashMap.empty[Long, String]))
+            dispatch(subscribers)(ChangeHost2Client(newHost.userId, newHost.userName, SpeakApplyMap))
             dispatchTo(subscribers)(subscribers.filter(r => r._1 != newHost.userId).keys.toList,RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，${newHost.userName}被指派为新的主持人"))
             dispatchTo(subscribers)(List(newHost.userId),RcvComment(-1, "", s"主持人${wholeRoomInfo.roomInfo.userName}离开会议室，您被指派为新的主持人"))
             userManager ! ActorProtocol.ChangeBehaviorToHost(newHost.userId, newHost.userId)
@@ -366,6 +368,7 @@ object RoomActor {
       case ChangeHost(newHost, audSpeakApplyMap)  =>
         log.info(s"${ctx.self.path} 指派新的主持人$newHost")
         val oldHost = wholeRoomInfo.roomInfo.userId
+        SpeakApplyMap = audSpeakApplyMap
         UserInfoDao.searchById(newHost).onComplete {
           case Success(value) =>
             value match {
