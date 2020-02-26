@@ -265,8 +265,11 @@ object RoomActor {
             }
           } else {
             log.info("主持人离开，房间内无人委派，房间废弃")
-            if(wholeRoomInfo.isStart == 1)
+            if(wholeRoomInfo.isStart == 1) {
               ProcessorClient.closeRoom(roomId)
+              if(userInfoListOpt.get.nonEmpty)
+                roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
+            }
             timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
             idle(roomId, subscribers,WholeRoomInfo(wholeRoomInfo.roomInfo.copy(userId = -1, userName = "", headImgUrl = "")), liveInfoMap, startTime)
           }
@@ -510,7 +513,7 @@ object RoomActor {
       case StopMeetingReq(userId) =>
         ProcessorClient.closeRoom(roomId)
         if(userInfoListOpt.get.nonEmpty)
-        roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
+          roomManager ! RoomManager.DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoListOpt.get)
         dispatch(RcvComment(-1,"","会议结束了~"))
         dispatch(StopMeetingRsp())
         timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
