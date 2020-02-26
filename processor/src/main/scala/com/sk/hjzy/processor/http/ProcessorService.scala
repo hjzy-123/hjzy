@@ -126,7 +126,7 @@ trait ProcessorService extends ServiceUtils {
           log.info(s"duration:$d")
           complete(RecordInfoRsp(duration = d))
         }else{
-          log.info(s"no record for roomId:${req.roomId} and startTime:${req.roomId}")
+          log.info(s"no record for roomId:${req.roomId} and startTime:${req.startTime}")
           complete(RecordInfoRsp(1000100,"record file not exist.",""))
         }
 
