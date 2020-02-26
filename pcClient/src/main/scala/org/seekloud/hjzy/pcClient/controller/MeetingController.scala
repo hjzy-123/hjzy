@@ -196,7 +196,7 @@ class MeetingController(
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
-      rmManager ! LeaveRoom(false)
+      rmManager ! LeaveRoom()
 
     }
 
@@ -501,7 +501,7 @@ class MeetingController(
         //通知某观众：你被主持人踢出房间
       case msg: ForceOut2Client =>
         log.info(s"rcv ForceOut2Client from rm: $msg")
-        rmManager ! LeaveRoom(true)
+        rmManager ! LeaveRoom(isKicked = true)
 
         //通知某观众：你被关闭/打开了声音/画面
       case msg: CloseSoundFrame2Client =>
@@ -615,6 +615,10 @@ class MeetingController(
 
       case msg: RcvUserInfo =>
         log.info(s"rcv RcvUserInfo from rm: $msg")
+
+      case msg: StopMeetingRsp =>
+        log.info(s"rcv StopMeetingRsp from rm: $msg")
+        rmManager ! LeaveRoom(meetingStopped = true)
 
 
       case x =>

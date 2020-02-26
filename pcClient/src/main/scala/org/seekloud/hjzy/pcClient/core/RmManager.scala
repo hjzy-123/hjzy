@@ -65,7 +65,7 @@ object RmManager {
 
   final case object StopSelf extends RmCommand
 
-  final case class LeaveRoom(isKicked: Boolean) extends RmCommand
+  final case class LeaveRoom(isKicked: Boolean = false, meetingStopped: Boolean = false) extends RmCommand
 
   final case class SendComment(userId: Long, roomId: Long, comment: String) extends RmCommand
 
@@ -294,8 +294,8 @@ object RmManager {
         this.meetingRoomInfo = meetingRoomInfo.map(_.copy(roomDes = previousDes))
         Behaviors.same
 
-      case LeaveRoom(isKicked) =>
-        log.info(s"rcv LeaveRoom in host: isKicked = $isKicked")
+      case LeaveRoom(isKicked, meetingStopped) =>
+        log.info(s"rcv LeaveRoom in host: isKicked = $isKicked, meetingStopped: $meetingStopped")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -314,6 +314,9 @@ object RmManager {
         Boot.addToPlatform {
 //          meetingScene.stopPackageLoss()
           homeController.foreach(_.showScene())
+          if(meetingStopped){
+            WarningDialog.initWarningDialog(s"会议已结束！")
+          }
         }
 //        meetingScene.stopPackageLoss()
         System.gc()
@@ -341,8 +344,8 @@ object RmManager {
 
       case StopMeetingReq =>
         log.info(s"rcv StopMeetingReq in host.")
-
-        //todo
+        assert(userInfo.nonEmpty)
+        sender.foreach(_ ! WsProtocol.StopMeetingReq(userInfo.get.userId))
         Behaviors.same
 
       case StartMeeting(pushLiveInfo, pullLiveIdList) =>
@@ -523,8 +526,8 @@ object RmManager {
         }
         Behaviors.same
 
-      case LeaveRoom(isKicked) =>
-        log.info(s"rcv LeaveRoom in audience: isKicked = $isKicked")
+      case LeaveRoom(isKicked, meetingStopped) =>
+        log.info(s"rcv LeaveRoom in audience: isKicked = $isKicked, meetingStopped: $meetingStopped")
         timer.cancel(HeartBeat)
         timer.cancel(PingTimeOut)
         sender.foreach(_ ! CompleteMsgClient)
@@ -553,6 +556,9 @@ object RmManager {
           }
           if(isKicked){
             WarningDialog.initWarningDialog(s"你被主持人踢出房间！")
+          }
+          if(meetingStopped){
+            WarningDialog.initWarningDialog(s"会议已结束！")
           }
         }
 //        meetingScene.stopPackageLoss()
