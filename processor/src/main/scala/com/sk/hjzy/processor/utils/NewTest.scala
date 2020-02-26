@@ -19,7 +19,7 @@ object ProcessorClient extends HttpUtil{
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  val processorBaseUrl = "http://127.0.0.1:30388/hjzy/processor"
+  val processorBaseUrl = "http://127.0.0.1:42041/hjzy/processor"
 
   def newConnect(roomId: Long, liveIdList: List[String], num: Int, speaker: String, pushLiveId:String, pushLiveCode:String):Future[Either[String,NewConnectRsp]] = {
     val url = processorBaseUrl + "/newConnect"

@@ -32,7 +32,7 @@ object RecorderActor {
   val sampleFormat = 1 //todo 待议
   var frameRate = 30
 
-  val CanvasSize: (Int, Int) = (512, 288)  // todo   这个size由什么决定
+  val CanvasSize: (Int, Int) = (640, 480)  // todo   这个size由什么决定
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
@@ -314,6 +314,7 @@ object RecorderActor {
               convert1.remove(l._1)
             }
           }
+          graph.clearRect(0, 0, canvasSize._1, canvasSize._2)
           draw(canvas, graph, lastTime, clientFrame, recorder4ts, convert1 ,convert, num, speaker, bgImg, roomId, canvasSize)
 
         case Close =>

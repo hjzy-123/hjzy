@@ -82,7 +82,7 @@ object TestPushClient1 extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(499, srcList(1),portList(1))
+    single(504, srcList(1),portList(1))
 
     Thread.sleep(1200000)
 
