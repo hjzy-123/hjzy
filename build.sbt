@@ -1,7 +1,7 @@
 val scalaV = "2.12.8"
 
 val projectName = "hjzy"
-val projectVersion = "2019.3.23"
+val projectVersion = "2019.3.24"
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
@@ -226,7 +226,7 @@ lazy val processor = (project in file("processor")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
     mainClass in reStart := Some(processorMain),
-    javaOptions in reStart += "-Xmx3g"
+    javaOptions in reStart += "-Xmx2g"
   )
   .settings(name := "processor")
   .settings(
@@ -235,7 +235,7 @@ lazy val processor = (project in file("processor")).enablePlugins(PackPlugin)
     //packSettings,
     // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
     packMain := Map("processor" -> processorMain),
-    packJvmOpts := Map("processor" -> Seq("-Xmx6g", "-Xms3g")),
+    packJvmOpts := Map("processor" -> Seq("-Xmx4g", "-Xms2g")),
     packExtraClasspath := Map("processor" -> Seq("."))
   )
   .settings(
