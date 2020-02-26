@@ -170,7 +170,6 @@ class MeetingController(
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
       selfImageStatus = targetStatus
       rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
-
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
@@ -191,16 +190,12 @@ class MeetingController(
           WarningDialog.initWarningDialog("当前会议人数已满！")
         }
       }
-
     }
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom()
-
     }
-
-
 
   })
 
