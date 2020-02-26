@@ -108,7 +108,7 @@ trait ProcessorService extends ServiceUtils {
   val getRecord: Route = (path("getRecord" / Segments(3)) & get & pathEndOrSingleSlash & cors(settings)){
     case roomId :: startTime :: file :: Nil =>
       println(s"getRecord req for $roomId/$startTime/$file.")
-      val f = new File(s"$debugPath$roomId/$startTime/$file").getAbsoluteFile
+      val f = new File(s"$debugPath$roomId/${startTime}_$file").getAbsoluteFile
       getFromFile(f,ContentTypes.`application/octet-stream`)
 
     case x =>
@@ -120,7 +120,7 @@ trait ProcessorService extends ServiceUtils {
     entity(as[Either[Error, SeekRecord]]) {
       case Right(req) =>
         log.info("seekRecord.")
-        val file = new File(s"$debugPath${req.roomId}/${req.startTime}/record.mp4")
+        val file = new File(s"$debugPath${req.roomId}/${req.startTime}_record.mp4")
         if(file.exists()){
           val d = getVideoDuration(req.roomId,req.roomId)
           log.info(s"duration:$d")
@@ -139,7 +139,7 @@ trait ProcessorService extends ServiceUtils {
   private def getVideoDuration(roomId:Long,startTime:Long) ={
     val ffprobe = Loader.load(classOf[org.bytedeco.ffmpeg.ffprobe])
     //容器时长（container duration）
-    val pb = new ProcessBuilder(ffprobe,"-v","error","-show_entries","format=duration", "-of","csv=\"p=0\"","-i", s"$debugPath$roomId/$startTime/record.mp4")
+    val pb = new ProcessBuilder(ffprobe,"-v","error","-show_entries","format=duration", "-of","csv=\"p=0\"","-i", s"$debugPath$roomId/${startTime}_record.mp4")
     val processor = pb.start()
     val br = new BufferedReader(new InputStreamReader(processor.getInputStream))
     val s = br.readLine()

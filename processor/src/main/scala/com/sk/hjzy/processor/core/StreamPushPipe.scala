@@ -50,7 +50,7 @@ object StreamPushPipe {
           log.info(s"${ctx.self} init ----")
           ctx.self ! NewLive(startTime)
           val out = if(isDebug){
-            val file = new File(s"$debugPath$roomId/${startTime}_out.mp4")
+            val file = new File(s"$debugPath$roomId/${startTime}_record.mp4")
             Some(new FileOutputStream(file))
           }else{
             None

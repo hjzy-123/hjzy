@@ -52,7 +52,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                   RecordDao.getRecordByRoomId(roomId, pageNum, pageSize).map{ rst1 =>
                     val total = rst1._1
                     val rsp = rst1._2.sortBy(_.starttime).map{ t =>
-                      val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${roomId}/${t.starttime}/record.mp4"
+                      val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${roomId}/${t.starttime}/record.mp4"
                       Record(
                         t.id,
                         t.coverImg,
@@ -83,7 +83,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
               val total = des.length
               val rsp = des.drop((pageNum - 1) * pageSize).take(pageSize).map{ t =>
-                val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${t.roomid}/${t.starttime}/record.mp4"
+                val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${t.roomid}/${t.starttime}/record.mp4"
                 Record(
                   t.id,
                   t.coverImg,
@@ -135,12 +135,12 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                       val otherRecord =
                         if(owner){
                           records.filterNot(_.id == recordId).filter(_.roomid == userOpt.get.roomid).map{record =>
-                            val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
                             Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }else{
                           records.filterNot(_.id == recordId).filter(record => record.allowUser.split("@").contains(user.playerName)).map{record =>
-                            val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
                             Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }
@@ -222,7 +222,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               dealFutureResult {
                   RecordDao.updateViewNum(req.roomId, req.startTime, recordInfo.observeNum + 1).map{ r =>
                     //todo  processorDomain
-                    val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
+                    val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
                     complete(SearchRecordRsp(url, recordInfo))
                   }
               }
