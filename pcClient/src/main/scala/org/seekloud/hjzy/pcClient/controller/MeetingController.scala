@@ -170,7 +170,6 @@ class MeetingController(
       log.info(s"点击控制自己画面，targetStatus: $targetStatus")
       selfImageStatus = targetStatus
       rmManager ! RmManager.ControlSelfImageAndSound(image = targetStatus)
-
     }
 
     override def controlSelfSound(targetStatus: Int): Unit = {
@@ -191,16 +190,12 @@ class MeetingController(
           WarningDialog.initWarningDialog("当前会议人数已满！")
         }
       }
-
     }
 
     override def leaveRoom(): Unit = {
       log.info(s"点击离开房间")
       rmManager ! LeaveRoom()
-
     }
-
-
 
   })
 
@@ -215,11 +210,10 @@ class MeetingController(
   }
 
   def addPartUser(userId: Long, userName: String): Unit = {
-//    log.info(s"addPartUser !!!")
     if(partUserMap.keys.toList.length < 6){
       partInfoMap.put(userId, PartInfo(userName, 1, 1))
       val canvasId = List(1,2,3,4,5,6).filterNot(i => partUserMap.keys.toList.contains(i)).min
-      log.info(s"为新用户分配canvas，id= $canvasId")
+      log.info(s"为新用户分配canvas: $canvasId -- $userId -- $userName")
       partUserMap = partUserMap.updated(canvasId, userId)
       Boot.addToPlatform{
         meetingScene.nameLabelMap(canvasId).setText(userName)
@@ -242,7 +236,7 @@ class MeetingController(
       partInfoMap.remove(userId)
       val canvasId = userReduced.get._1
       partUserMap = partUserMap - canvasId
-      log.info(s"回收离开用户canvas，id = $canvasId")
+      log.info(s"回收离开用户canvas: $canvasId -- $userId")
       val imageCanvasBg = new Image("img/picture/background.jpg")
       meetingScene.canvasMap(canvasId)._2.drawImage(
         imageCanvasBg, 0, 0, Constants.DefaultPlayer.width/3, Constants.DefaultPlayer.height/3)
