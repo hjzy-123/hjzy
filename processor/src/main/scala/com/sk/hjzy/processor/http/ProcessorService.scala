@@ -120,7 +120,7 @@ trait ProcessorService extends ServiceUtils {
     entity(as[Either[Error, SeekRecord]]) {
       case Right(req) =>
         log.info("seekRecord.")
-        val file = new File(s"$debugPath${req.roomId}/${req.roomId}/record.mp4")
+        val file = new File(s"$debugPath${req.roomId}/${req.startTime}/record.mp4")
         if(file.exists()){
           val d = getVideoDuration(req.roomId,req.roomId)
           log.info(s"duration:$d")
