@@ -52,11 +52,12 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                   RecordDao.getRecordByRoomId(roomId, pageNum, pageSize).map{ rst1 =>
                     val total = rst1._1
                     val rsp = rst1._2.sortBy(_.starttime).map{ t =>
+                      val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${roomId}/${t.starttime}/record.mp4"
                       Record(
                         t.id,
                         t.coverImg,
                         t.recordname,
-                        t.recordAddr,
+                        url,
                         t.allowUser
                       )
                     }.toList
@@ -82,11 +83,12 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
               val total = des.length
               val rsp = des.drop((pageNum - 1) * pageSize).take(pageSize).map{ t =>
+                val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${t.roomid}/${t.starttime}/record.mp4"
                 Record(
                   t.id,
                   t.coverImg,
                   t.recordname,
-                  t.recordAddr,
+                  url,
                   t.allowUser
                 )
               }.toList
@@ -133,11 +135,13 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                       val otherRecord =
                         if(owner){
                           records.filterNot(_.id == recordId).filter(_.roomid == userOpt.get.roomid).map{record =>
-                            Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
+                            val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }else{
                           records.filterNot(_.id == recordId).filter(record => record.allowUser.split("@").contains(user.playerName)).map{record =>
-                            Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
+                            val url = s"https://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }
                       complete(GetRecordInfoRsp(owner, record1, otherRecord, 0, "ok"))
