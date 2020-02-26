@@ -115,21 +115,25 @@ object RoomManager {
             case Success(v) =>
               v match{
                 case Right(rsp) =>
-                  log.debug(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
+                  log.info(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
                   var userNameList = ""
                   userInfoList.foreach{ u =>
-                    userNameList = userNameList + "@" + u.userName
+                    if(userInfoList.last != u)
+                      userNameList = userNameList + u.userName +  "@"
+                    else
+                      userNameList = userNameList + u.userName
                   }
+                  log.info("可观看录像的用户名称", userNameList)
                   RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
                     wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
                     UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, rsp.duration, userNameList)
 
                 case Left(err) =>
-                  log.debug(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
+                  log.info(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
               }
 
             case Failure(error) =>
-              log.debug(s"${ctx.self.path} 查询录像文件失败,error:$error")
+              log.info(s"${ctx.self.path} 查询录像文件失败,error:$error")
           }
           timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
           Behaviors.same
