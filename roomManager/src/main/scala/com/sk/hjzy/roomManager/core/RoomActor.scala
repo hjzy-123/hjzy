@@ -219,6 +219,7 @@ object RoomActor {
           }else if(join == Common.Subscriber.left){
             log.info(s"${ctx.self.path}新用户离开房间roomId=$roomId,userId=$userId")
             val otherUserList = subscribers.filter(r => r._1 != userId).keys.toList
+            val leaveLiveId = liveInfoMap(userId).liveId
             dispatchTo(subscribers)(otherUserList,LeftUserRsp(userId))
             dispatchTo(subscribers)(otherUserList,RcvComment(-1l, "", s"${userInfoListOpt.get.filter(_.userId == userId).head.userName}离开房间"))
             subscribers.remove(userId)
@@ -226,10 +227,10 @@ object RoomActor {
             if(userId == wholeRoomInfo.speaker._1) {
               dispatchTo(subscribers)(otherUserList,StopSpeakingUser(userId, userInfoListOpt.get.filter(_.userId == userId).head.userName))
               val speakerNew = liveInfoMap(wholeRoomInfo.roomInfo.userId).liveId
-              ProcessorClient.updateRoomInfo(roomId, List((liveInfoMap(userId).liveId, -1)), liveInfoMap.keys.toList.length, speakerNew)
+              ProcessorClient.updateRoomInfo(roomId, List((leaveLiveId, -1)), liveInfoMap.keys.toList.length, speakerNew)
               ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo.copy(speaker = (wholeRoomInfo.roomInfo.userId, speakerNew)), liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
             }else{
-              ProcessorClient.updateRoomInfo(roomId, List((liveInfoMap(userId).liveId, -1)), liveInfoMap.keys.toList.length, wholeRoomInfo.speaker._2)
+              ProcessorClient.updateRoomInfo(roomId, List((leaveLiveId, -1)), liveInfoMap.keys.toList.length, wholeRoomInfo.speaker._2)
               ctx.self ! SwitchBehavior("idle", idle(roomId, subscribers,wholeRoomInfo, liveInfoMap,startTime, Some(userInfoListOpt.get.filter(_.userId != userId))))
             }
           }
