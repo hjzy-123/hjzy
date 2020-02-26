@@ -376,8 +376,8 @@ object RoomActor {
           case Success(value) =>
             value match {
               case Some(v) =>
-                val roomInfo = wholeRoomInfo.roomInfo.copy(userId = newHost ,userName = v.userName, headImgUrl = v.headImg, coverImgUrl = v.coverImg)
-                val info = WholeRoomInfo(roomInfo)
+                val info = wholeRoomInfo.copy(roomInfo = wholeRoomInfo.roomInfo.copy(userId = newHost ,userName = v.userName, headImgUrl = v.headImg, coverImgUrl = v.coverImg))
+                log.info("指派新的主持人时，新的房间信息如下————", info)
                 userManager ! ActorProtocol.ChangeBehaviorToParticipant(oldHost, newHost)
                 userManager ! ActorProtocol.ChangeBehaviorToHost(newHost, newHost)
                 dispatchTo(subscribers.filter(r => r._1 != oldHost).keys.toList, ChangeHost2Client(newHost, v.userName, audSpeakApplyMap))
