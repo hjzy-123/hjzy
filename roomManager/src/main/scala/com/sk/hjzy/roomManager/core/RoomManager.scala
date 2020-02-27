@@ -116,6 +116,8 @@ object RoomManager {
               v match{
                 case Right(rsp) =>
                   log.info(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
+
+                  //todo  1  可能没变化，已经添加进去， 改到传参之前
                   var userNameList = ""
                   userInfoList.foreach{ u =>
                     if(userInfoList.last != u)
