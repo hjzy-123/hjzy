@@ -124,7 +124,9 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               complete(ErrorRsp(100001, "无录像"))
             }else{
               val record = recordOpt.get
-              val record1 = Record(record.id, record.coverImg, record.recordname, record.recordAddr, record.allowUser)
+              val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}" +
+                        s"/${record.starttime}/record.mp4"
+              val record1 = Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
               dealFutureResult{
                 UserInfoDao.searchById(user.playerId.toLong).map{ userOpt =>
                   val owner =
@@ -135,7 +137,8 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                       val otherRecord =
                         if(owner){
                           records.filterNot(_.id == recordId).filter(_.roomid == userOpt.get.roomid).map{record =>
-                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}" +
+                                      s"/${record.starttime}/record.mp4"
                             Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }else{
