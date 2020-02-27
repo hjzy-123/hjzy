@@ -101,6 +101,7 @@ object PlayerGrabber {
       avutil.av_log_set_level(avutil.AV_LOG_QUIET)
       val grabber = input match {
         case Left(rtmpString) =>
+          log.info(s"input string:${rtmpString}")
           //          new FFmpegFrameGrabber1("D:\\视频\\1.mp4")
           new FFmpegFrameGrabber1(rtmpString)
         case Right(inputStream) =>
