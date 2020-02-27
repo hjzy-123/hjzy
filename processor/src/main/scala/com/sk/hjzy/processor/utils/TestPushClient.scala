@@ -24,6 +24,7 @@ import io.circe.syntax._
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ActorRef, DispatcherSelector}
 import akka.actor.ActorSystem
+import org.bytedeco.javacpp.Loader
 import org.slf4j.LoggerFactory
 object TestPushClient extends HttpUtil {
 
@@ -36,9 +37,9 @@ object TestPushClient extends HttpUtil {
   val liveId = "liveIdTest-1580"
 
   /** super5 内网 */
-  val pushStreamDst = new InetSocketAddress("10.1.29.247", 42043)
-  val pullStreamDst = new InetSocketAddress("10.1.29.247", 42044)
-  val httpDst = "http://10.1.29.247:42040"
+  val pushStreamDst = new InetSocketAddress("47.92.170.2", 42043)
+  val pullStreamDst = new InetSocketAddress("47.92.170.2", 42044)
+  val httpDst = "http://47.92.170.2:42040"
 
   val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
   val portList = List(1234, 2345, 3456)
@@ -98,29 +99,40 @@ object TestPushClient extends HttpUtil {
     }
   }
 
+  def hls2Mp4():Unit = {
+    val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
+    val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i", s"${debugPath}2.mp4","-b:v","1M","-c:v","libx264",
+      s"${debugPath}5.mp4")
+    val processor = pb.inheritIO().start()
+    Thread.sleep(100000)
+
+  }
+
   def main(args: Array[String]): Unit = {
 
     println("testPushClient start...")
 
-    single(503, srcList(1),portList(2))
+    single(503, srcList(0),portList(2))
 //    single(423, srcList(1),portList(1))
 
     Thread.sleep(2000)
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(755, List( "liveIdTest-503", "liveIdTest-504"), 2, "liveIdTest-503", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(902, List( "liveIdTest-503", "liveIdTest-504"), 2, "liveIdTest-503", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
-            Thread.sleep(90000)
+//            Thread.sleep(90000)
 
-            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
-              println(r)
-            }
+//            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
+//              println(r)
+//            }
         }
       case Left(value) =>
         println("error", value)
     }
+
+
 
     Thread.sleep(1200000)
 

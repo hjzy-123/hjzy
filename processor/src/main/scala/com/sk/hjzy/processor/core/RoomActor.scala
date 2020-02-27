@@ -67,12 +67,14 @@ object RoomActor {
       Behaviors.withTimers[Command] {
         implicit timer =>
           log.info(s"grabberManager start----")
-          work(LiveIdList,mutable.Map[Long, List[(String,ActorRef[GrabberActor.Command])]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
+          val port = getFreePort
+          val fFmpeg = new CreateFFmpeg(roomId, port, startTime)
+          work(port,fFmpeg ,LiveIdList,mutable.Map[Long, List[(String,ActorRef[GrabberActor.Command])]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
       }
     }
   }
 
-  def work(
+  def work(port:Int,fFmpeg:CreateFFmpeg,
             LiveIdList: List[String],
     grabberMap: mutable.Map[Long, List[(String, ActorRef[GrabberActor.Command])]],
     recorderMap: mutable.Map[Long,ActorRef[RecorderActor.Command]],
@@ -103,8 +105,6 @@ object RoomActor {
 
           val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
 
-          val port = getFreePort
-          val fFmpeg = new CreateFFmpeg(msg.roomId, port, msg.startTime)
           fFmpeg.start()
 
           liveIdList.foreach{ liveId =>
@@ -127,7 +127,7 @@ object RoomActor {
             pullPipeMap.put(liveId, pullPipe4live)
           }
 
-          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime)
+          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime, port)
           pushPipeMap.put(msg.pushLiveId, pushPipe4recorder)
           recorderMap.put(msg.roomId, recorderActor)
 
@@ -218,6 +218,7 @@ object RoomActor {
           } else {
             log.info(s"${roomId}  pipe not exist when closeRoom")
           }
+          fFmpeg.close()
           timer.startSingleTimer(Timer4Stop, Stop, 1500.milli)
           Behaviors.same
 
@@ -283,10 +284,10 @@ object RoomActor {
     }.unsafeUpcast[StreamPullPipe.Command]
   }
 
-  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel, startTime:Long): ActorRef[StreamPushPipe.Command] = {
+  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel, startTime:Long, port:Int): ActorRef[StreamPushPipe.Command] = {
     val childName = s"pushPipeActor_$pushLiveId"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,startTime), childName)
+      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,startTime, port), childName)
       ctx.watchWith(actor, ChildDead4PushPipe(pushLiveId, childName, actor) )
       actor
     }.unsafeUpcast[StreamPushPipe.Command]
@@ -306,7 +307,7 @@ object RoomActor {
       val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
 
       //todo   转码命令
-      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts","-i",s"udp://127.0.0.1:$port","-b:v","1M","-bufsize","1M","-f","dash","-window_size","20","-extra_window_size","20","-hls_playlist","1","/Users/litianyu/Downloads/dash/index.mpd")
+      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i",s"udp://127.0.0.1:$port","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
       val process = pb.inheritIO().start()
       this.process = process
     }
