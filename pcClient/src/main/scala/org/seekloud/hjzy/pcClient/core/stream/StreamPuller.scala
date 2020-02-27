@@ -1,6 +1,7 @@
 package org.seekloud.hjzy.pcClient.core.stream
 
 import java.io.FileOutputStream
+import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{Channels, Pipe}
 
@@ -9,6 +10,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.core.stream.LiveManager.VideoInfo
+import org.seekloud.hjzy.pcClient.utils.NetUtil
 //import org.seekloud.hjzy.pcClient.common.Constants.AudienceStatus
 //import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.component.WarningDialog
@@ -57,6 +59,9 @@ object StreamPuller {
 
   private final case object BehaviorChangeKey
 
+  private val port = NetUtil.getFreePort
+  private val addr = InetAddress.getByName("127.0.0.1")
+  private val socket = new DatagramSocket()
 
   private final case class SwitchBehavior(
     name: String,
@@ -145,19 +150,19 @@ object StreamPuller {
         case msg: PullStreamReqSuccess =>
           log.info(s"StreamPuller-$liveId PullStream-${msg.liveIds} success.")
           timer.cancel(PullTimeOut)
-          val mediaPipe = Pipe.open() // server -> sink -> source -> client
-          val sink = mediaPipe.sink()
-          val source = mediaPipe.source()
-          sink.configureBlocking(false)
-
-          val inputStream = Channels.newInputStream(source)
-
+//          val mediaPipe = Pipe.open() // server -> sink -> source -> client
+//          val sink = mediaPipe.sink()
+//          val source = mediaPipe.source()
+//          sink.configureBlocking(false)
+//
+//          val inputStream = Channels.newInputStream(source)
+          val inputStream = s"udp://127.0.0.1:$port"
           //todo
 //          meetingScene.foreach(_.autoReset())
           val playId = Ids.getPlayId(videoInfo.roomId, videoInfo.pusherId)
           mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
           val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer-$playId")
-          mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(videoInfo.gc), None)
+          mediaPlayer.start(playId, videoPlayer, Left(inputStream), Some(videoInfo.gc), None)
 
 //          if (joinInfo.nonEmpty) {
 //            audienceScene.foreach(_.autoReset())
@@ -176,7 +181,7 @@ object StreamPuller {
 //            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
 //
 //          }
-          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, sink, meetingScene))
+          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, meetingScene))
 
         case GetLossAndBand =>
           pullClient.foreach{ p =>
@@ -227,7 +232,6 @@ object StreamPuller {
     pullClient: PullStreamClient,
     mediaPlayer: MediaPlayer,
     //    joinInfo: Option[JoinInfo],
-    mediaSink: Pipe.SinkChannel,
     meetingScene: Option[MeetingScene],
 //    audienceScene: Option[AudienceScene],
 //    hostScene: Option[HostScene]
@@ -242,9 +246,12 @@ object StreamPuller {
             try {
 //              log.debug(s"StreamPuller-$liveId pull-${msg.data.length}.")
 //              outStream.write(msg.data)
-              mediaSink.write(ByteBuffer.wrap(msg.data))
+              val s = msg.data
+              val datagramPacket = new DatagramPacket(s, s.length, addr, port)
+              if(!socket.isClosed || !socket.isBound)socket.send(datagramPacket)
+//              mediaSink.write(ByteBuffer.wrap(msg.data))
               //              log.debug(s"StreamPuller-$liveId  write success.")
-              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
+              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, meetingScene))
             } catch {
               case ex: Exception =>
                 log.warn(s"sink write pulled data error: $ex. Stop StreamPuller-$liveId")
@@ -252,7 +259,7 @@ object StreamPuller {
             }
           } else {
             log.debug(s"StreamPuller-$liveId pull null.")
-            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
+            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer,  meetingScene))
           }
           busy(liveId, parent, pullClient)
 

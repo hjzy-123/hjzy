@@ -363,3 +363,8 @@ reStart
 clean
 reStart
 reStop
+reStart
+reStop
+exit
+pack
+packArchive

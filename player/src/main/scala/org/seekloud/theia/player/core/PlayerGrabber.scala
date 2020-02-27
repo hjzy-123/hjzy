@@ -7,13 +7,14 @@ import java.util.concurrent.LinkedBlockingDeque
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import javafx.scene.canvas.GraphicsContext
-import org.bytedeco.javacv.{FFmpegFrameGrabber, Frame}
 import org.seekloud.hjzy.player.core.PlayerManager.MediaSettings
 import org.seekloud.hjzy.player.processor.ImageConverter
 import org.seekloud.hjzy.player.protocol.Messages
 import org.seekloud.hjzy.player.protocol.Messages.{AddPicture, AddSamples, PictureFinish, SoundFinish}
 import org.seekloud.hjzy.player.sdk.MediaPlayer
 import org.seekloud.hjzy.player.sdk.MediaPlayer.executor
+import org.bytedeco.ffmpeg.global.avutil
+import org.bytedeco.javacv.{FFmpegFrameGrabber, FFmpegFrameGrabber1, Frame}
 import org.slf4j.LoggerFactory
 
 import concurrent.duration._
@@ -50,9 +51,9 @@ object PlayerGrabber {
   /*monitor*/
   sealed trait MonitorCmd
 
-  final case class StartedGrabber(grabber: FFmpegFrameGrabber, replyTo: ActorRef[Messages.RTCommand], graphContext: Option[GraphicsContext]) extends MonitorCmd
+  final case class StartedGrabber(grabber: FFmpegFrameGrabber1, replyTo: ActorRef[Messages.RTCommand], graphContext: Option[GraphicsContext]) extends MonitorCmd
 
-  final case class FailedStartGrabber(grabber: FFmpegFrameGrabber, replyTo: ActorRef[Messages.RTCommand], ex: Throwable) extends MonitorCmd
+  final case class FailedStartGrabber(grabber: FFmpegFrameGrabber1, replyTo: ActorRef[Messages.RTCommand], ex: Throwable) extends MonitorCmd
 
   final case object StartGrab extends MonitorCmd with WorkCmd
 
@@ -97,16 +98,20 @@ object PlayerGrabber {
       log.info(s"PlayerGrabber-$id is starting...")
       debug = isDebug
       needTime = needTimestamp
+      avutil.av_log_set_level(avutil.AV_LOG_QUIET)
       val grabber = input match {
         case Left(rtmpString) =>
-          new FFmpegFrameGrabber(rtmpString)
+          //          new FFmpegFrameGrabber1("D:\\视频\\1.mp4")
+          new FFmpegFrameGrabber1(rtmpString)
         case Right(inputStream) =>
-          new FFmpegFrameGrabber(inputStream)
+          new FFmpegFrameGrabber1(inputStream)
       }
       grabber.setFrameRate(settings.frameRate)
 //      grabber.setOption("fflags", "nobuffer")
       Future {
         log.info(s"grabber-$id is starting...")
+        grabber.setOption("--fflags","nobuffer")
+        grabber.setOption("-analyzeduration","10000")
         grabber.start()
         grabber
       }.onComplete {
@@ -123,7 +128,7 @@ object PlayerGrabber {
 
   private def init(
     id: String,
-    grabber: FFmpegFrameGrabber,
+    grabber: FFmpegFrameGrabber1,
     supervisor: ActorRef[PlayerManager.SupervisorCmd],
   ): Behavior[MonitorCmd] =
     Behaviors.receive[MonitorCmd] { (ctx, msg) =>
@@ -184,7 +189,7 @@ object PlayerGrabber {
 
   private def grabbing(
     id: String,
-    grabber: FFmpegFrameGrabber,
+    grabber: FFmpegFrameGrabber1,
     supervisor: ActorRef[PlayerManager.SupervisorCmd],
     workActor: ActorRef[WorkCmd],
     pictureQueue: LinkedBlockingDeque[AddPicture],
@@ -367,7 +372,7 @@ object PlayerGrabber {
   private def worker(
     id: String,
     monitor: ActorRef[MonitorCmd],
-    grabber: FFmpegFrameGrabber,
+    grabber: FFmpegFrameGrabber1,
     pictureQueue: LinkedBlockingDeque[AddPicture],
     samplesQueue: LinkedBlockingDeque[AddSamples],
     isWorking: Boolean = true
@@ -384,7 +389,7 @@ object PlayerGrabber {
 
     println(s"has video: $hasVideo , has audio: $hasAudio")
 
-    var dataBuf = ByteBuffer.allocateDirect(4096) //init 4096
+    var dataBuf = ByteBuffer.allocate(4096) //init 4096
     var shortView = dataBuf.asShortBuffer() //4096 byte => 2048 short
     var dst = new Array[Byte](4096)
     var nowLength = 4096
@@ -401,7 +406,7 @@ object PlayerGrabber {
       val byteDataLength = sampleBuf.remaining() * 2
       if (byteDataLength > dataBuf.capacity()) {
         println("dataBuf allocateDirect expand")
-        dataBuf = ByteBuffer.allocateDirect(byteDataLength)
+        dataBuf = ByteBuffer.allocate(byteDataLength)
         shortView = dataBuf.asShortBuffer()
       }
 
