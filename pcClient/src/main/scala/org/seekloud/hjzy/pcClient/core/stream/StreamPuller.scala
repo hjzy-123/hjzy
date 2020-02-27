@@ -59,9 +59,7 @@ object StreamPuller {
 
   private final case object BehaviorChangeKey
 
-  private val port = NetUtil.getFreePort
   private val addr = InetAddress.getByName("127.0.0.1")
-  private val socket = new DatagramSocket()
 
   private final case class SwitchBehavior(
     name: String,
@@ -95,7 +93,9 @@ object StreamPuller {
       log.info(s"StreamPuller-$liveId is starting.")
       implicit val stashBuffer: StashBuffer[PullCommand] = StashBuffer[PullCommand](Int.MaxValue)
       Behaviors.withTimers[PullCommand] { implicit timer =>
-        init(liveId, parent, mediaPlayer, videoInfo, meetingScene, None)
+        val port = NetUtil.getFreePort
+        val socket = new DatagramSocket()
+        init(liveId, parent, mediaPlayer, videoInfo, meetingScene, None, socket, port)
       }
 
     }
@@ -110,7 +110,9 @@ object StreamPuller {
     meetingScene: Option[MeetingScene],
 //    audienceScene: Option[AudienceScene],
 //    hostScene: Option[HostScene],
-    pullClient: Option[PullStreamClient]
+    pullClient: Option[PullStreamClient],
+    socket: DatagramSocket,
+    port: Int
   )(
     implicit timer: TimerScheduler[PullCommand],
     stashBuffer: StashBuffer[PullCommand]
@@ -123,7 +125,7 @@ object StreamPuller {
           timer.startSingleTimer(PullStartTimeOut, PullStartTimeOut, 5.seconds)
           //todo
 //          meetingScene.foreach(_.startPackageLoss())
-          init(liveId, parent, mediaPlayer, videoInfo, meetingScene, Some(msg.pullClient))
+          init(liveId, parent, mediaPlayer, videoInfo, meetingScene, Some(msg.pullClient), socket, port)
 
         case PullStreamReady =>
           log.info(s"StreamPuller-$liveId ready for pull.")
@@ -181,7 +183,7 @@ object StreamPuller {
 //            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
 //
 //          }
-          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, meetingScene))
+          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, meetingScene, socket, port))
 
         case GetLossAndBand =>
           pullClient.foreach{ p =>
@@ -235,6 +237,8 @@ object StreamPuller {
     meetingScene: Option[MeetingScene],
 //    audienceScene: Option[AudienceScene],
 //    hostScene: Option[HostScene]
+    socket: DatagramSocket,
+    port: Int
   )(
     implicit timer: TimerScheduler[PullCommand],
     stashBuffer: StashBuffer[PullCommand]
@@ -251,7 +255,7 @@ object StreamPuller {
               if(!socket.isClosed || !socket.isBound)socket.send(datagramPacket)
 //              mediaSink.write(ByteBuffer.wrap(msg.data))
               //              log.debug(s"StreamPuller-$liveId  write success.")
-              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, meetingScene))
+              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, meetingScene, socket, port))
             } catch {
               case ex: Exception =>
                 log.warn(s"sink write pulled data error: $ex. Stop StreamPuller-$liveId")
@@ -259,7 +263,7 @@ object StreamPuller {
             }
           } else {
             log.debug(s"StreamPuller-$liveId pull null.")
-            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer,  meetingScene))
+            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer,  meetingScene, socket, port))
           }
           busy(liveId, parent, pullClient)
 
