@@ -1,6 +1,7 @@
 package com.sk.hjzy.processor.core
 
 import java.io.{File, InputStream, OutputStream}
+import java.net.ServerSocket
 import java.nio.channels.Channels
 import java.nio.channels.Pipe.{SinkChannel, SourceChannel}
 
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 import com.sk.hjzy.processor.Boot.{streamPullActor, streamPushActor}
+import org.bytedeco.javacpp.Loader
 
 import scala.collection.mutable
 
@@ -100,6 +102,10 @@ object RoomActor {
           val liveIdList = msg.liveIdList
 
           val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
+
+          val port = getFreePort
+          val fFmpeg = new CreateFFmpeg(msg.roomId, port, msg.startTime)
+          fFmpeg.start()
 
           liveIdList.foreach{ liveId =>
             val pullPipe4Live = new PipeStream
@@ -286,7 +292,32 @@ object RoomActor {
     }.unsafeUpcast[StreamPushPipe.Command]
   }
 
+  private def getFreePort: Int = {
+    val serverSocket =  new ServerSocket(0) //读取空闲的可用端口
+    val port = serverSocket.getLocalPort
+    serverSocket.close()
+    port
+  }
 
+  class CreateFFmpeg(roomId: Long, port: Int, startTime:Long){
+    private var process: Process = _
+
+    def start(): Unit = {
+      val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
+
+      //todo   转码命令
+      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts","-i",s"udp://127.0.0.1:$port","-b:v","1M","-bufsize","1M","-f","dash","-window_size","20","-extra_window_size","20","-hls_playlist","1","/Users/litianyu/Downloads/dash/index.mpd")
+      val process = pb.inheritIO().start()
+      this.process = process
+    }
+
+    def close(): Unit ={
+      if(this.process != null){
+        this.process.destroyForcibly()
+      }
+      log.info(s"ffmpeg close successfully---")
+    }
+  }
 
 
 
