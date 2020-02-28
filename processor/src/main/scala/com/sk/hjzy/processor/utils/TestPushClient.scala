@@ -130,14 +130,14 @@ object TestPushClient extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(506, srcList(0),portList(2))
+    single(508, srcList(0),portList(2))
 //    single(423, srcList(1),portList(1))
 
     Thread.sleep(2000)
     RtpClient.getLiveInfoFunc().map {
       case Right(rsp) =>
         println("获得push的live", rsp)
-        newConnect(907, List( "liveIdTest-506"), 1, "liveIdTest-506", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+        newConnect(909, List( "liveIdTest-507","liveIdTest-508"), 2, "liveIdTest-507", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
           r =>
             println("-----------------------------------------------------------------------------------", r)
             Thread.sleep(90000)
@@ -146,7 +146,7 @@ object TestPushClient extends HttpUtil {
 //              println(r)
 //            }
 
-            closeRoom(907).map{ r=>
+            closeRoom(909).map{ r=>
               println("-----------------", r)
             }
         }

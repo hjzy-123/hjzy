@@ -1,6 +1,9 @@
 package com.sk.hjzy.processor.core
 
-import java.io.{File, FileOutputStream, OutputStream}
+import java.io.{File, FileOutputStream, InputStream, OutputStream}
+import java.net.InetSocketAddress
+import java.nio.ByteBuffer
+import java.nio.channels.DatagramChannel
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, StashBuffer, TimerScheduler}
@@ -35,7 +38,9 @@ object StreamPullPipe {
 
   val log = LoggerFactory.getLogger(this.getClass)
 
-  def create(roomId: Long, liveId: String, out: OutputStream): Behavior[Command] = {
+  private val sendChannel =  DatagramChannel.open()
+
+  def create(roomId: Long, liveId: String, port:Int): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>
       implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
       Behaviors.withTimers[Command] {
@@ -45,12 +50,14 @@ object StreamPullPipe {
             val file = new File(s"$debugPath$roomId/${liveId}_in.mp4")
             Some(new FileOutputStream(file))
           } else None
-          work(roomId, liveId, out, output)
+
+          val udp =  new InetSocketAddress("127.0.0.1", port)
+          work(roomId, liveId, udp, output)
       }
     }
   }
 
-  def work(roomId: Long, liveId: String, out: OutputStream, fileOut:Option[FileOutputStream])(implicit timer: TimerScheduler[Command],
+  def work(roomId: Long, liveId: String, udp:InetSocketAddress, fileOut:Option[FileOutputStream])(implicit timer: TimerScheduler[Command],
                                                                                    stashBuffer: StashBuffer[Command]): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
@@ -59,7 +66,8 @@ object StreamPullPipe {
             log.info(s"NewBuffer $liveId ${data.length}")
           }
           fileOut.foreach(_.write(data))
-          out.write(data)
+          sendChannel.send(ByteBuffer.wrap(data),udp)
+          //          out.write(data)
           Behaviors.same
 
         case ClosePipe =>
@@ -69,7 +77,7 @@ object StreamPullPipe {
         case Stop =>
           log.info(s"$liveId pullPipe stopped ----")
           fileOut.foreach(_.close())
-          out.close()
+//          out.close()
           Behaviors.stopped
 
         case x =>

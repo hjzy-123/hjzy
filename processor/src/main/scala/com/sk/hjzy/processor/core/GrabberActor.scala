@@ -40,7 +40,7 @@ object GrabberActor {
 
   case object TimerKey4Close
 
-  def create(roomId: Long, liveId: String, buf: InputStream, recorderRef: ActorRef[RecorderActor.Command]): Behavior[Command]= {
+  def create(roomId: Long, liveId: String, buf: Either[String, InputStream], recorderRef: ActorRef[RecorderActor.Command]): Behavior[Command]= {
     Behaviors.setup[Command]{ ctx =>
       implicit val stashBuffer: StashBuffer[Command] = StashBuffer[Command](Int.MaxValue)
       Behaviors.withTimers[Command] {
@@ -51,7 +51,7 @@ object GrabberActor {
     }
   }
 
-  def init(roomId: Long, liveId: String, buf: InputStream,
+  def init(roomId: Long, liveId: String, buf: Either[String, InputStream],
       recorderRef:ActorRef[RecorderActor.Command]
     )(implicit timer: TimerScheduler[Command],
       stashBuffer: StashBuffer[Command]):Behavior[Command] = {
@@ -60,7 +60,13 @@ object GrabberActor {
         msg match {
           case t: Recorder =>
             log.info(s"${ctx.self} receive a msg $t")
-            val grabber = new FFmpegFrameGrabber1(buf)
+            val grabber = buf match {
+              case Left(rtmpString) =>
+                log.info(s"input string:${rtmpString}")
+                new FFmpegFrameGrabber1(rtmpString)
+              case Right(inputStream) =>
+                new FFmpegFrameGrabber1(inputStream)
+            }
             try {
               log.info(s"$liveId grabber start 1111111111111111111111")
               grabber.start()
@@ -87,7 +93,7 @@ object GrabberActor {
     liveId: String,
     grabber: FFmpegFrameGrabber1,
     recorder: ActorRef[RecorderActor.Command],
-    buf: InputStream
+    buf: Either[String, InputStream]
   )(implicit stashBuffer: StashBuffer[Command],
     timer: TimerScheduler[Command]): Behavior[Command] = {
     Behaviors.receive[Command] {(ctx, msg) =>
@@ -150,7 +156,7 @@ object GrabberActor {
             log.info(s"${ctx.self} stop ----")
             grabber.release()
             grabber.close()
-            buf.close()
+//            buf.close()
           }catch {
             case e:Exception =>
               log.error(s"${ctx.self} close error:$e")

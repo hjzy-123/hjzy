@@ -48,7 +48,7 @@ object StreamPushPipe {
 
   private val liveCountMap = mutable.Map[String, Int]()
 
-  private val sendChannel =  DatagramChannel.open()
+//  private val sendChannel =  DatagramChannel.open()
 
   def create(roomId: Long, liveId: String, liveCode:String, source: SourceChannel, startTime: Long, port: Int): Behavior[Command] = {
     Behaviors.setup[Command] { ctx =>

@@ -226,7 +226,7 @@ lazy val processor = (project in file("processor")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
     mainClass in reStart := Some(processorMain),
-    javaOptions in reStart += "-Xmx2g"
+    javaOptions in reStart += "-Xmx3g"
   )
   .settings(name := "processor")
   .settings(

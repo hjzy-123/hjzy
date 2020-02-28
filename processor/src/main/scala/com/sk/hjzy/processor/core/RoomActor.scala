@@ -108,22 +108,23 @@ object RoomActor {
 //          fFmpeg.start()
 
           liveIdList.foreach{ liveId =>
-            val pullPipe4Live = new PipeStream
-            val pullSink4Live = pullPipe4Live.getSink
-            val pullSource4Live= pullPipe4Live.getSource
-            val pullInput4Live = Channels.newInputStream(pullSource4Live)
-            val pullOut4Live = Channels.newOutputStream(pullSink4Live)
+//            val pullPipe4Live = new PipeStream
+//            val pullSink4Live = pullPipe4Live.getSink
+//            val pullSource4Live= pullPipe4Live.getSource
+//            val pullInput4Live = Channels.newInputStream(pullSource4Live)
+//            val pullOut4Live = Channels.newOutputStream(pullSink4Live)
 
-            pipeMap.put(liveId, pullPipe4Live)
-
-            val grabber4Live = getGrabberActor(ctx, msg.roomId, liveId, pullInput4Live, recorderActor)
+//            pipeMap.put(liveId, pullPipe4Live)
+            val grabPort = getFreePort
+            val inputStream = s"udp://127.0.0.1:$grabPort"
+            val grabber4Live = getGrabberActor(ctx, msg.roomId, liveId, Left(inputStream), recorderActor)
 
             if(grabberMap.get(msg.roomId).nonEmpty)
               grabberMap(msg.roomId) = grabberMap(msg.roomId) ::: List((liveId, grabber4Live))
             else
               grabberMap.put(msg.roomId, List((liveId,grabber4Live)))
 
-            val pullPipe4live = getPullPipe(ctx, msg.roomId,liveId, pullOut4Live)
+            val pullPipe4live = getPullPipe(ctx, msg.roomId,liveId, grabPort)
             pullPipeMap.put(liveId, pullPipe4live)
           }
 
@@ -145,20 +146,22 @@ object RoomActor {
 
           liveIdList.foreach{ id =>
             if(id._2 == 1){
-              val pullPipe4Live = new PipeStream
-              val pullSink4Live = pullPipe4Live.getSink
-              val pullSource4Live= pullPipe4Live.getSource
-              val pullInput4Live = Channels.newInputStream(pullSource4Live)
-              val pullOut4Live = Channels.newOutputStream(pullSink4Live)
-              pipeMap.put(id._1, pullPipe4Live)
+//              val pullPipe4Live = new PipeStream
+//              val pullSink4Live = pullPipe4Live.getSink
+//              val pullSource4Live= pullPipe4Live.getSource
+//              val pullInput4Live = Channels.newInputStream(pullSource4Live)
+//              val pullOut4Live = Channels.newOutputStream(pullSink4Live)
+//              pipeMap.put(id._1, pullPipe4Live)
 
-              val grabber4Live = getGrabberActor(ctx,roomId, id._1, pullInput4Live, recorderMap(roomId))
+              val grabPort = getFreePort
+              val inputStream = s"udp://127.0.0.1:$grabPort"
+              val grabber4Live = getGrabberActor(ctx,roomId, id._1, Left(inputStream), recorderMap(roomId))
 
               if(grabberMap.get(roomId).nonEmpty)
                 grabberMap(roomId) = grabberMap(roomId) ::: List((id._1, grabber4Live))
               else
                 grabberMap.put(roomId, List((id._1,grabber4Live)))
-              val pullPipe4live = getPullPipe(ctx, roomId,id._1, pullOut4Live)
+              val pullPipe4live = getPullPipe(ctx, roomId,id._1, grabPort)
               pullPipeMap.put(id._1, pullPipe4live)
               //fixme 能否开始拉流
               grabber4Live ! GrabberActor.Recorder(recorderMap(roomId))
@@ -260,7 +263,7 @@ object RoomActor {
     }
   }
 
-  def getGrabberActor(ctx: ActorContext[Command], roomId: Long, liveId: String, source: InputStream, recorderRef: ActorRef[RecorderActor.Command]): ActorRef[GrabberActor.Command] = {
+  def getGrabberActor(ctx: ActorContext[Command], roomId: Long, liveId: String, source:Either[String, InputStream], recorderRef: ActorRef[RecorderActor.Command]): ActorRef[GrabberActor.Command] = {
     val childName = s"grabberActor_$liveId"
     ctx.child(childName).getOrElse{
       val actor = ctx.spawn(GrabberActor.create(roomId, liveId, source, recorderRef), childName)
@@ -278,10 +281,10 @@ object RoomActor {
     }.unsafeUpcast[RecorderActor.Command]
   }
 
-  def getPullPipe(ctx: ActorContext[Command], roomId: Long, liveId: String, out: OutputStream): ActorRef[StreamPullPipe.Command] = {
+  def getPullPipe(ctx: ActorContext[Command], roomId: Long, liveId: String, port:Int): ActorRef[StreamPullPipe.Command] = {
     val childName = s"pullPipeActor_$liveId"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(StreamPullPipe.create(roomId: Long, liveId: String, out), childName)
+      val actor = ctx.spawn(StreamPullPipe.create(roomId: Long, liveId: String, port), childName)
       ctx.watchWith(actor, ChildDead4PullPipe(liveId, childName, actor))
       actor
     }.unsafeUpcast[StreamPullPipe.Command]
