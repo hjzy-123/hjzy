@@ -11,8 +11,6 @@ import scala.language.implicitConversions
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.Pipe.SourceChannel
-
-import com.sk.hjzy.processor.Boot.streamPushActor
 import com.sk.hjzy.processor.common.AppSettings._
 
 import scala.concurrent.duration._
@@ -94,7 +92,7 @@ object StreamPushPipe {
             val data = dataBuf.array().clone()
             out.foreach(_.write(data))
 //            sendChannel.send(ByteBuffer.wrap(data), udp)
-            streamPushActor ! StreamPushActor.PushData(liveId,  data.take(r))
+//            streamPushActor ! StreamPushActor.PushData(liveId,  data.take(r))
             if (liveCountMap.getOrElse(liveId, 0) < 5) {
               log.info(s"$liveId send data --")
               liveCountMap.update(liveId, liveCountMap(liveId) + 1)

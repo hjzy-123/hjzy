@@ -40,7 +40,7 @@ object Boot extends HttpService {
 
   val roomManager:ActorRef[RoomManager.Command] = system.spawn(RoomManager.create(),"roomManager")
 
-  val streamPushActor:ActorRef[Command]=system.spawn(StreamPushActor.create(),"streamPushActor")
+//  val streamPushActor:ActorRef[Command]=system.spawn(StreamPushActor.create(),"streamPushActor")
 
   val streamPullActor:ActorRef[Command] = system.spawn(StreamPullActor.create(), "streamPullActor")
 

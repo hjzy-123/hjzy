@@ -41,7 +41,7 @@ object StreamPullPipe {
       Behaviors.withTimers[Command] {
         implicit timer =>
           streamPullActor ! NewLive(liveId, roomId, ctx.self)
-          val output = if (isDebug) {
+          val output = if (false) {
             val file = new File(s"$debugPath$roomId/${liveId}_in.mp4")
             Some(new FileOutputStream(file))
           } else None
@@ -58,7 +58,7 @@ object StreamPullPipe {
           if (Boot.showStreamLog) {
             log.info(s"NewBuffer $liveId ${data.length}")
           }
-          fileOut.foreach(_.write(data))
+//          fileOut.foreach(_.write(data))
           out.write(data)
           Behaviors.same
 
@@ -68,7 +68,7 @@ object StreamPullPipe {
 
         case Stop =>
           log.info(s"$liveId pullPipe stopped ----")
-          fileOut.foreach(_.close())
+//          fileOut.foreach(_.close())
           out.close()
           Behaviors.stopped
 

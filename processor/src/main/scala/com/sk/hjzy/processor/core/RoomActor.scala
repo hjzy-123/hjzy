@@ -12,7 +12,7 @@ import com.sk.hjzy.processor.stream.PipeStream
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
-import com.sk.hjzy.processor.Boot.{streamPullActor, streamPushActor}
+import com.sk.hjzy.processor.Boot.streamPullActor
 import org.bytedeco.javacpp.Loader
 
 import scala.collection.mutable
@@ -132,7 +132,7 @@ object RoomActor {
           recorderMap.put(msg.roomId, recorderActor)
 
           roomLiveMap.put(msg.roomId,List(msg.pushLiveId) ::: liveIdList)
-          streamPushActor ! StreamPushActor.NewLive(msg.pushLiveId, msg.pushLiveCode)
+//          streamPushActor ! StreamPushActor.NewLive(msg.pushLiveId, msg.pushLiveCode)
           Behaviors.same
 
         case UpdateRoomInfo(roomId, liveIdList, num, speaker) =>
