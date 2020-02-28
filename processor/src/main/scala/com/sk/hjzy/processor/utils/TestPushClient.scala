@@ -12,7 +12,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import com.sk.hjzy.processor.Boot.executor
 import akka.actor.typed.scaladsl.adapter._
 import com.sk.hjzy.processor.utils.ProcessorClient.{log, postJsonRequestSend, processorBaseUrl}
-import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
+import com.sk.hjzy.protocol.ptcl.processer2Manager.ProcessorProtocol.{CloseRoom, CloseRoomRsp, NewConnect, NewConnectRsp, UpdateRoomInfo, UpdateRsp}
 import com.sk.hjzy.rtpClient.PushStreamClient
 import com.sk.hjzy.processor.common.AppSettings._
 
@@ -99,6 +99,24 @@ object TestPushClient extends HttpUtil {
     }
   }
 
+  def closeRoom(roomId:Long):Future[Either[String,CloseRoomRsp]] = {
+    val url = processorBaseUrl + "/closeRoom"
+    val jsonString = CloseRoom(roomId).asJson.noSpaces
+    postJsonRequestSend("closeRoom",url,List(),jsonString,timeOut = 60 * 1000,needLogRsp = false).map{
+      case Right(v) =>
+        decode[CloseRoomRsp](v) match{
+          case Right(value) =>
+            Right(value)
+          case Left(e) =>
+            log.error(s"closeRoom decode error : $e")
+            Left("Error")
+        }
+      case Left(error) =>
+        log.error(s"closeRoom postJsonRequestSend error : $error")
+        Left("Error")
+    }
+  }
+
   def hls2Mp4():Unit = {
     val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
     val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i", s"${debugPath}222.mp4","-b:v","1M","-c:v","libx264",
@@ -110,29 +128,33 @@ object TestPushClient extends HttpUtil {
 
   def main(args: Array[String]): Unit = {
 
-//    println("testPushClient start...")
-//
-//    single(505, srcList(0),portList(2))
-////    single(423, srcList(1),portList(1))
-//
-//    Thread.sleep(2000)
-//    RtpClient.getLiveInfoFunc().map {
-//      case Right(rsp) =>
-//        println("获得push的live", rsp)
-//        newConnect(904, List( "liveIdTest-505", "liveIdTest-504"), 2, "liveIdTest-503", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
-//          r =>
-//            println("-----------------------------------------------------------------------------------", r)
-////            Thread.sleep(90000)
-//
-////            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
-////              println(r)
-////            }
-//        }
-//      case Left(value) =>
-//        println("error", value)
-//    }
-//
-    hls2Mp4()
+    println("testPushClient start...")
+
+    single(506, srcList(0),portList(2))
+//    single(423, srcList(1),portList(1))
+
+    Thread.sleep(2000)
+    RtpClient.getLiveInfoFunc().map {
+      case Right(rsp) =>
+        println("获得push的live", rsp)
+        newConnect(907, List( "liveIdTest-506"), 1, "liveIdTest-506", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+          r =>
+            println("-----------------------------------------------------------------------------------", r)
+            Thread.sleep(90000)
+
+//            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
+//              println(r)
+//            }
+
+            closeRoom(907).map{ r=>
+              println("-----------------", r)
+            }
+        }
+      case Left(value) =>
+        println("error", value)
+    }
+
+
     Thread.sleep(1200000)
 
   }

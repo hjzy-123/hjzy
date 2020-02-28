@@ -93,7 +93,7 @@ object StreamPushPipe {
           if (r > 0) {
             val data = dataBuf.array().clone()
             out.foreach(_.write(data))
-            sendChannel.send(ByteBuffer.wrap(data), udp)
+//            sendChannel.send(ByteBuffer.wrap(data), udp)
             streamPushActor ! StreamPushActor.PushData(liveId,  data.take(r))
             if (liveCountMap.getOrElse(liveId, 0) < 5) {
               log.info(s"$liveId send data --")

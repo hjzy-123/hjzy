@@ -105,7 +105,7 @@ object RoomActor {
 
           val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
 
-          fFmpeg.start()
+//          fFmpeg.start()
 
           liveIdList.foreach{ liveId =>
             val pullPipe4Live = new PipeStream
@@ -218,8 +218,10 @@ object RoomActor {
           } else {
             log.info(s"${roomId}  pipe not exist when closeRoom")
           }
-          fFmpeg.close()
-          timer.startSingleTimer(Timer4Stop, Stop, 1500.milli)
+//          fFmpeg.close()
+          fFmpeg.start()
+          //todo
+          timer.startSingleTimer(Timer4Stop, Stop, 3.minutes)
           Behaviors.same
 
         case ClosePipe(liveId) =>
@@ -231,6 +233,7 @@ object RoomActor {
 
         case Stop =>
           log.info(s"${ctx.self} stopped ------")
+          fFmpeg.close()
           Behaviors.stopped
 
         case ChildDead4Grabber(roomId, childName, value) =>
@@ -307,7 +310,8 @@ object RoomActor {
       val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
 
       //todo   转码命令
-      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i",s"udp://127.0.0.1:$port","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
+//      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i",s"udp://127.0.0.1:$port","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
+      val pb = new ProcessBuilder(ffmpeg,"-i",s"$debugPath$roomId/${startTime}_testRecord.mp4","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
       val process = pb.inheritIO().start()
       this.process = process
     }
