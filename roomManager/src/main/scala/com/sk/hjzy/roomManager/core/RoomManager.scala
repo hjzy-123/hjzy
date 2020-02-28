@@ -119,24 +119,27 @@ object RoomManager {
         //延时请求获取录像
         case OnSeekRecord(wholeRoomInfo, roomId, startTime, userNameList) =>
           timer.cancel(DelaySeekRecordKey + roomId.toString + startTime)
-          ProcessorClient.seekRecord(roomId,startTime).onComplete{
-            case Success(v) =>
-              v match{
-                case Right(rsp) =>
-                  log.info(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
-                  //todo  1  可能没变化，已经添加进去， 改到传参之前
-                  RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
-                    wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
-                    UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, rsp.duration, userNameList)
-
-                case Left(err) =>
-                  log.info(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
-              }
-
-            case Failure(error) =>
-              log.info(s"${ctx.self.path} 查询录像文件失败,error:$error")
-          }
-          timer.startSingleTimer(Timer4Stop, Stop(roomId), 1500.milli)
+//          ProcessorClient.seekRecord(roomId,startTime).onComplete{
+//            case Success(v) =>
+//              v match{
+//                case Right(rsp) =>
+//                  log.info(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
+//                  //todo  1  可能没变化，已经添加进去， 改到传参之前
+//                  RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
+//                    wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
+//                    UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, rsp.duration, userNameList)
+//
+//                case Left(err) =>
+//                  log.info(s"${ctx.self.path} 查询录像文件信息失败,error:$err")
+//              }
+//
+//            case Failure(error) =>
+//              log.info(s"${ctx.self.path} 查询录像文件失败,error:$error")
+//          }
+          RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
+                                wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
+                                UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, "00:00:00", userNameList)
+          timer.startSingleTimer(Timer4Stop, Stop(roomId), 2000.milli)
           Behaviors.same
 
         case r@Stop(roomId) =>
