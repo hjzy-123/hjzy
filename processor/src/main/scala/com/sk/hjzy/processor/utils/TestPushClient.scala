@@ -101,8 +101,8 @@ object TestPushClient extends HttpUtil {
 
   def hls2Mp4():Unit = {
     val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
-    val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i", s"${debugPath}2.mp4","-b:v","1M","-c:v","libx264",
-      s"${debugPath}5.mp4")
+    val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i", s"${debugPath}222.mp4","-b:v","1M","-c:v","libx264",
+      s"${debugPath}233.mp4")
     val processor = pb.inheritIO().start()
     Thread.sleep(100000)
 
@@ -110,30 +110,29 @@ object TestPushClient extends HttpUtil {
 
   def main(args: Array[String]): Unit = {
 
-    println("testPushClient start...")
-
-    single(503, srcList(0),portList(2))
-//    single(423, srcList(1),portList(1))
-
-    Thread.sleep(2000)
-    RtpClient.getLiveInfoFunc().map {
-      case Right(rsp) =>
-        println("获得push的live", rsp)
-        newConnect(902, List( "liveIdTest-503", "liveIdTest-504"), 2, "liveIdTest-503", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
-          r =>
-            println("-----------------------------------------------------------------------------------", r)
-//            Thread.sleep(90000)
-
-//            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
-//              println(r)
-//            }
-        }
-      case Left(value) =>
-        println("error", value)
-    }
-
-
-
+//    println("testPushClient start...")
+//
+//    single(505, srcList(0),portList(2))
+////    single(423, srcList(1),portList(1))
+//
+//    Thread.sleep(2000)
+//    RtpClient.getLiveInfoFunc().map {
+//      case Right(rsp) =>
+//        println("获得push的live", rsp)
+//        newConnect(904, List( "liveIdTest-505", "liveIdTest-504"), 2, "liveIdTest-503", rsp.liveInfo.liveId, rsp.liveInfo.liveCode).map{
+//          r =>
+//            println("-----------------------------------------------------------------------------------", r)
+////            Thread.sleep(90000)
+//
+////            updateRoomInfo(755, List(("liveIdTest-505", 1)), 3, "liveIdTest-504").map{ r =>
+////              println(r)
+////            }
+//        }
+//      case Left(value) =>
+//        println("error", value)
+//    }
+//
+    hls2Mp4()
     Thread.sleep(1200000)
 
   }
