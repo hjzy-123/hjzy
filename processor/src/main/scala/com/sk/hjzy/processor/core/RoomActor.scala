@@ -1,6 +1,7 @@
 package com.sk.hjzy.processor.core
 
 import java.io.{File, InputStream, OutputStream}
+import java.net.ServerSocket
 import java.nio.channels.Channels
 import java.nio.channels.Pipe.{SinkChannel, SourceChannel}
 
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 import com.sk.hjzy.processor.Boot.{streamPullActor, streamPushActor}
+import org.bytedeco.javacpp.Loader
 
 import scala.collection.mutable
 
@@ -65,12 +67,14 @@ object RoomActor {
       Behaviors.withTimers[Command] {
         implicit timer =>
           log.info(s"grabberManager start----")
-          work(LiveIdList,mutable.Map[Long, List[(String,ActorRef[GrabberActor.Command])]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
+          val port = getFreePort
+          val fFmpeg = new CreateFFmpeg(roomId, port, startTime)
+          work(port,fFmpeg ,LiveIdList,mutable.Map[Long, List[(String,ActorRef[GrabberActor.Command])]](), mutable.Map[Long,ActorRef[RecorderActor.Command]](), mutable.Map[Long, List[String]]())
       }
     }
   }
 
-  def work(
+  def work(port:Int,fFmpeg:CreateFFmpeg,
             LiveIdList: List[String],
     grabberMap: mutable.Map[Long, List[(String, ActorRef[GrabberActor.Command])]],
     recorderMap: mutable.Map[Long,ActorRef[RecorderActor.Command]],
@@ -101,6 +105,8 @@ object RoomActor {
 
           val recorderActor = getRecorderActor(ctx, msg.roomId, msg.liveIdList ,msg.num, msg.speaker, msg.pushLiveId, msg.pushLiveCode,  pushOut)
 
+//          fFmpeg.start()
+
           liveIdList.foreach{ liveId =>
             val pullPipe4Live = new PipeStream
             val pullSink4Live = pullPipe4Live.getSink
@@ -121,7 +127,7 @@ object RoomActor {
             pullPipeMap.put(liveId, pullPipe4live)
           }
 
-          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime)
+          val pushPipe4recorder = getPushPipe(ctx, msg.roomId, msg.pushLiveId, msg.pushLiveCode, pushSource,msg.startTime, port)
           pushPipeMap.put(msg.pushLiveId, pushPipe4recorder)
           recorderMap.put(msg.roomId, recorderActor)
 
@@ -212,7 +218,10 @@ object RoomActor {
           } else {
             log.info(s"${roomId}  pipe not exist when closeRoom")
           }
-          timer.startSingleTimer(Timer4Stop, Stop, 1500.milli)
+//          fFmpeg.close()
+          fFmpeg.start()
+          //todo
+          timer.startSingleTimer(Timer4Stop, Stop, 3.minutes)
           Behaviors.same
 
         case ClosePipe(liveId) =>
@@ -224,6 +233,7 @@ object RoomActor {
 
         case Stop =>
           log.info(s"${ctx.self} stopped ------")
+          fFmpeg.close()
           Behaviors.stopped
 
         case ChildDead4Grabber(roomId, childName, value) =>
@@ -277,16 +287,42 @@ object RoomActor {
     }.unsafeUpcast[StreamPullPipe.Command]
   }
 
-  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel, startTime:Long): ActorRef[StreamPushPipe.Command] = {
+  def getPushPipe(ctx: ActorContext[Command], roomId: Long, pushLiveId: String, pushLiveCode: String, source: SourceChannel, startTime:Long, port:Int): ActorRef[StreamPushPipe.Command] = {
     val childName = s"pushPipeActor_$pushLiveId"
     ctx.child(childName).getOrElse{
-      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,startTime), childName)
+      val actor = ctx.spawn(StreamPushPipe.create(roomId, pushLiveId, pushLiveCode, source,startTime, port), childName)
       ctx.watchWith(actor, ChildDead4PushPipe(pushLiveId, childName, actor) )
       actor
     }.unsafeUpcast[StreamPushPipe.Command]
   }
 
+  private def getFreePort: Int = {
+    val serverSocket =  new ServerSocket(0) //读取空闲的可用端口
+    val port = serverSocket.getLocalPort
+    serverSocket.close()
+    port
+  }
 
+  class CreateFFmpeg(roomId: Long, port: Int, startTime:Long){
+    private var process: Process = _
+
+    def start(): Unit = {
+      val ffmpeg = Loader.load(classOf[org.bytedeco.ffmpeg.ffmpeg])
+
+      //todo   转码命令
+//      val pb = new ProcessBuilder(ffmpeg,"-f","mpegts", "-i",s"udp://127.0.0.1:$port","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
+      val pb = new ProcessBuilder(ffmpeg,"-i",s"$debugPath$roomId/${startTime}_testRecord.mp4","-c:v","libx264",s"$debugPath$roomId/${startTime}_record.mp4")
+      val process = pb.inheritIO().start()
+      this.process = process
+    }
+
+    def close(): Unit ={
+      if(this.process != null){
+        this.process.destroyForcibly()
+      }
+      log.info(s"ffmpeg close successfully---")
+    }
+  }
 
 
 

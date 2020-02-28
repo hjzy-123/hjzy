@@ -30,7 +30,7 @@ object RoomManager {
 
   case class DelaySeekRecord(wholeRoomInfo:WholeRoomInfo,  roomId:Long, startTime:Long , userInfoList: List[PartUserInfo]) extends Command
 
-  case class OnSeekRecord(wholeRoomInfo:WholeRoomInfo,  roomId:Long, startTime:Long , userInfoList: List[PartUserInfo]) extends Command
+  case class OnSeekRecord(wholeRoomInfo:WholeRoomInfo,  roomId:Long, startTime:Long , userNameList: String) extends Command
 
   private final case object DelaySeekRecordKey
 
@@ -105,25 +105,26 @@ object RoomManager {
 
         case DelaySeekRecord(wholeRoomInfo, roomId, startTime, userInfoList) =>
           log.info("---- wait seconds to seek record ----")
-          timer.startSingleTimer(DelaySeekRecordKey + roomId.toString + startTime, OnSeekRecord(wholeRoomInfo, roomId, startTime, userInfoList), 5.seconds)
+          var userNameList = ""
+          userInfoList.foreach{ u =>
+            if(userInfoList.last != u)
+              userNameList = userNameList + u.userName +  "@"
+            else
+              userNameList = userNameList + u.userName
+          }
+          log.info("可观看录像的用户名称", userNameList)
+          timer.startSingleTimer(DelaySeekRecordKey + roomId.toString + startTime, OnSeekRecord(wholeRoomInfo, roomId, startTime, userNameList), 5.seconds)
           Behaviors.same
 
         //延时请求获取录像
-        case OnSeekRecord(wholeRoomInfo, roomId, startTime, userInfoList) =>
+        case OnSeekRecord(wholeRoomInfo, roomId, startTime, userNameList) =>
           timer.cancel(DelaySeekRecordKey + roomId.toString + startTime)
           ProcessorClient.seekRecord(roomId,startTime).onComplete{
             case Success(v) =>
               v match{
                 case Right(rsp) =>
                   log.info(s"${ctx.self.path}获取录像id${roomId}时长为duration=${rsp.duration}")
-                  var userNameList = ""
-                  userInfoList.foreach{ u =>
-                    if(userInfoList.last != u)
-                      userNameList = userNameList + u.userName +  "@"
-                    else
-                      userNameList = userNameList + u.userName
-                  }
-                  log.info("可观看录像的用户名称", userNameList)
+                  //todo  1  可能没变化，已经添加进去， 改到传参之前
                   RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
                     wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
                     UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, rsp.duration, userNameList)

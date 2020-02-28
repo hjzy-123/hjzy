@@ -34,9 +34,9 @@ object TestPushClient1 extends HttpUtil {
   val liveId = "liveIdTest-1580"
 
   /** super5 内网 */
-  val pushStreamDst = new InetSocketAddress("10.1.29.247", 42043)
-  val pullStreamDst = new InetSocketAddress("10.1.29.247", 42044)
-  val httpDst = "http://10.1.29.247:42040"
+  val pushStreamDst = new InetSocketAddress("47.92.170.2", 42043)
+  val pullStreamDst = new InetSocketAddress("47.92.170.2", 42044)
+  val httpDst = "http://47.92.170.2:42040"
 
   val srcList = List("D:\\videos\\爱宠大机密.ts", "D:\\videos\\超能陆战队1.ts")
   val portList = List(1234, 1235, 3456)
@@ -82,7 +82,7 @@ object TestPushClient1 extends HttpUtil {
 
     println("testPushClient start...")
 
-    single(504, srcList(1),portList(1))
+    single(506, srcList(0),portList(1))
 
     Thread.sleep(1200000)
 
