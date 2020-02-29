@@ -1,6 +1,7 @@
 package org.seekloud.hjzy.pcClient.core.stream
 
 import java.io.FileOutputStream
+import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{Channels, Pipe}
 
@@ -9,6 +10,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import org.seekloud.hjzy.pcClient.Boot
 import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.core.stream.LiveManager.VideoInfo
+import org.seekloud.hjzy.pcClient.utils.NetUtil
 //import org.seekloud.hjzy.pcClient.common.Constants.AudienceStatus
 //import org.seekloud.hjzy.pcClient.common.Ids
 import org.seekloud.hjzy.pcClient.component.WarningDialog
@@ -31,7 +33,7 @@ object StreamPuller {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-//  val outStream = new FileOutputStream(s"video-${System.currentTimeMillis()}.mp4")
+  //  val outStream = new FileOutputStream(s"video-${System.currentTimeMillis()}.mp4")
 
   type PullCommand = Protocol.Command
 
@@ -57,6 +59,7 @@ object StreamPuller {
 
   private final case object BehaviorChangeKey
 
+  private val addr = InetAddress.getByName("127.0.0.1")
 
   private final case class SwitchBehavior(
     name: String,
@@ -80,17 +83,19 @@ object StreamPuller {
     parent: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     videoInfo: VideoInfo,
-//    joinInfo: Option[JoinInfo],
-//    watchInfo: Option[WatchInfo],
+    //    joinInfo: Option[JoinInfo],
+    //    watchInfo: Option[WatchInfo],
     meetingScene: Option[MeetingScene],
-//    audienceScene: Option[AudienceScene],
-//    hostScene: Option[HostScene]
+    //    audienceScene: Option[AudienceScene],
+    //    hostScene: Option[HostScene]
   ): Behavior[PullCommand] =
     Behaviors.setup[PullCommand] { ctx =>
       log.info(s"StreamPuller-$liveId is starting.")
       implicit val stashBuffer: StashBuffer[PullCommand] = StashBuffer[PullCommand](Int.MaxValue)
       Behaviors.withTimers[PullCommand] { implicit timer =>
-        init(liveId, parent, mediaPlayer, videoInfo, meetingScene, None)
+        val port = NetUtil.getFreePort
+        val socket = new DatagramSocket()
+        init(liveId, parent, mediaPlayer, videoInfo, meetingScene, None, socket, port)
       }
 
     }
@@ -100,12 +105,14 @@ object StreamPuller {
     parent: ActorRef[LiveManager.LiveCommand],
     mediaPlayer: MediaPlayer,
     videoInfo: VideoInfo,
-//    joinInfo: Option[JoinInfo],
-//    watchInfo: Option[WatchInfo],
+    //    joinInfo: Option[JoinInfo],
+    //    watchInfo: Option[WatchInfo],
     meetingScene: Option[MeetingScene],
-//    audienceScene: Option[AudienceScene],
-//    hostScene: Option[HostScene],
-    pullClient: Option[PullStreamClient]
+    //    audienceScene: Option[AudienceScene],
+    //    hostScene: Option[HostScene],
+    pullClient: Option[PullStreamClient],
+    socket: DatagramSocket,
+    port: Int
   )(
     implicit timer: TimerScheduler[PullCommand],
     stashBuffer: StashBuffer[PullCommand]
@@ -117,8 +124,8 @@ object StreamPuller {
           msg.pullClient.pullStreamStart()
           timer.startSingleTimer(PullStartTimeOut, PullStartTimeOut, 5.seconds)
           //todo
-//          meetingScene.foreach(_.startPackageLoss())
-          init(liveId, parent, mediaPlayer, videoInfo, meetingScene, Some(msg.pullClient))
+          //          meetingScene.foreach(_.startPackageLoss())
+          init(liveId, parent, mediaPlayer, videoInfo, meetingScene, Some(msg.pullClient), socket, port)
 
         case PullStreamReady =>
           log.info(s"StreamPuller-$liveId ready for pull.")
@@ -145,38 +152,38 @@ object StreamPuller {
         case msg: PullStreamReqSuccess =>
           log.info(s"StreamPuller-$liveId PullStream-${msg.liveIds} success.")
           timer.cancel(PullTimeOut)
-          val mediaPipe = Pipe.open() // server -> sink -> source -> client
-          val sink = mediaPipe.sink()
-          val source = mediaPipe.source()
-          sink.configureBlocking(false)
-
-          val inputStream = Channels.newInputStream(source)
-
+          //          val mediaPipe = Pipe.open() // server -> sink -> source -> client
+          //          val sink = mediaPipe.sink()
+          //          val source = mediaPipe.source()
+          //          sink.configureBlocking(false)
+          //
+          //          val inputStream = Channels.newInputStream(source)
+          val inputStream = s"udp://127.0.0.1:$port"
           //todo
-//          meetingScene.foreach(_.autoReset())
+          //          meetingScene.foreach(_.autoReset())
           val playId = Ids.getPlayId(videoInfo.roomId, videoInfo.pusherId)
           mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
           val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer-$playId")
-          mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(videoInfo.gc), None)
+          mediaPlayer.start(playId, videoPlayer, Left(inputStream), Some(videoInfo.gc), None)
 
-//          if (joinInfo.nonEmpty) {
-//            audienceScene.foreach(_.autoReset())
-//            hostScene.foreach(_.resetBack())
-//            val playId = Ids.getPlayId(AudienceStatus.CONNECT, roomId = Some(joinInfo.get.roomId), audienceId = Some(joinInfo.get.audienceId))
-//            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
-//            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
-//            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(joinInfo.get.gc), None)
-//          }
-//
-//          if (watchInfo.nonEmpty) {
-//            audienceScene.foreach(_.autoReset())
-//            val playId = Ids.getPlayId(AudienceStatus.LIVE, roomId = Some(watchInfo.get.roomId))
-//            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
-//            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
-//            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
-//
-//          }
-          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, sink, meetingScene))
+          //          if (joinInfo.nonEmpty) {
+          //            audienceScene.foreach(_.autoReset())
+          //            hostScene.foreach(_.resetBack())
+          //            val playId = Ids.getPlayId(AudienceStatus.CONNECT, roomId = Some(joinInfo.get.roomId), audienceId = Some(joinInfo.get.audienceId))
+          //            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
+          //            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
+          //            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(joinInfo.get.gc), None)
+          //          }
+          //
+          //          if (watchInfo.nonEmpty) {
+          //            audienceScene.foreach(_.autoReset())
+          //            val playId = Ids.getPlayId(AudienceStatus.LIVE, roomId = Some(watchInfo.get.roomId))
+          //            mediaPlayer.setTimeGetter(playId, pullClient.get.getServerTimestamp)
+          //            val videoPlayer = ctx.spawn(VideoPlayer.create(playId, meetingScene, None, None), s"videoPlayer$playId")
+          //            mediaPlayer.start(playId, videoPlayer, Right(inputStream), Some(watchInfo.get.gc), None)
+          //
+          //          }
+          stashBuffer.unstashAll(ctx, pulling(liveId, parent, pullClient.get, mediaPlayer, meetingScene, socket, port))
 
         case GetLossAndBand =>
           pullClient.foreach{ p =>
@@ -186,7 +193,7 @@ object StreamPuller {
 
             val bandInfo = p.getBandWidth().map(i => i._1 -> BandWidthInfo(i._2.bandWidth60s, i._2.bandWidth10s, i._2.bandWidth2s))
             //todo
-//            meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
+            //            meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
           }
           Behaviors.same
 
@@ -227,10 +234,11 @@ object StreamPuller {
     pullClient: PullStreamClient,
     mediaPlayer: MediaPlayer,
     //    joinInfo: Option[JoinInfo],
-    mediaSink: Pipe.SinkChannel,
     meetingScene: Option[MeetingScene],
-//    audienceScene: Option[AudienceScene],
-//    hostScene: Option[HostScene]
+    //    audienceScene: Option[AudienceScene],
+    //    hostScene: Option[HostScene]
+    socket: DatagramSocket,
+    port: Int
   )(
     implicit timer: TimerScheduler[PullCommand],
     stashBuffer: StashBuffer[PullCommand]
@@ -240,11 +248,14 @@ object StreamPuller {
         case msg: PullStreamData =>
           if (msg.data.nonEmpty) {
             try {
-//              log.debug(s"StreamPuller-$liveId pull-${msg.data.length}.")
-//              outStream.write(msg.data)
-              mediaSink.write(ByteBuffer.wrap(msg.data))
+              //              log.debug(s"StreamPuller-$liveId pull-${msg.data.length}.")
+              //              outStream.write(msg.data)
+              val s = msg.data
+              val datagramPacket = new DatagramPacket(s, s.length, addr, port)
+              if(!socket.isClosed || !socket.isBound)socket.send(datagramPacket)
+              //              mediaSink.write(ByteBuffer.wrap(msg.data))
               //              log.debug(s"StreamPuller-$liveId  write success.")
-              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
+              ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, meetingScene, socket, port))
             } catch {
               case ex: Exception =>
                 log.warn(s"sink write pulled data error: $ex. Stop StreamPuller-$liveId")
@@ -252,7 +263,7 @@ object StreamPuller {
             }
           } else {
             log.debug(s"StreamPuller-$liveId pull null.")
-            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer, mediaSink, meetingScene))
+            ctx.self ! SwitchBehavior("pulling", pulling(liveId, parent, pullClient, mediaPlayer,  meetingScene, socket, port))
           }
           busy(liveId, parent, pullClient)
 
@@ -261,7 +272,7 @@ object StreamPuller {
           val bandInfo = pullClient.getBandWidth().map(i => i._1 -> BandWidthInfo(i._2.bandWidth60s, i._2.bandWidth10s, i._2.bandWidth2s))
 
           //todo
-//          meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
+          //          meetingScene.foreach(_.drawPackageLoss(info, bandInfo))
           Behaviors.same
 
         case StopPull =>
@@ -276,8 +287,8 @@ object StreamPuller {
 
         case CloseSuccess =>
           log.info(s"StreamPuller-$liveId stopped.")
-//          outStream.flush()
-//          outStream.close()
+          //          outStream.flush()
+          //          outStream.close()
           parent ! LiveManager.PullerStopped
           timer.cancel(ENSURE_STOP_PULL)
           Behaviors.stopped
@@ -288,8 +299,8 @@ object StreamPuller {
           Boot.addToPlatform {
             WarningDialog.initWarningDialog("播放中的流已被关闭!")
             //todo
-//            hostScene.foreach(_.listener.shutJoin())
-//            audienceScene.foreach(a => a.listener.quitJoin(a.getRoomInfo.roomId))
+            //            hostScene.foreach(_.listener.shutJoin())
+            //            audienceScene.foreach(a => a.listener.quitJoin(a.getRoomInfo.roomId))
           }
           Behaviors.stopped
 
