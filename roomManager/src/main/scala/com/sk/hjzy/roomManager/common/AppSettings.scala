@@ -83,12 +83,15 @@ object AppSettings {
   val tokenExistTime = rmConfig.getInt("tokenExistTime")
   val guestTokenExistTime = rmConfig.getInt("guestTokenExistTime")
 
-  val emailConfig = dependenceConfig.getConfig("email.config")
-  val emailHost = emailConfig.getString("host")
-  val emailPort = emailConfig.getString("port")
-  val emailDomain = emailConfig.getString("domain")
-  val emailAddresserEmail = emailConfig.getString("addresserEmail")
-  val emailAddresserPwd = emailConfig.getString("addresserPwd")
+  object mailConf {
+    val mailConfig = config.getConfig("mail.conf")
+    val EMAIL_ADDRESS = mailConfig.getString("EMAIL_ADDRESS")
+    val EMAIL_PASSWORD = mailConfig.getString("EMAIL_PASSWORD")
+    val SMTPHOST = mailConfig.getString("SMTPHOST")
+    val SMTPPORT = mailConfig.getString("SMTPPORT")
+    val IMAP_SERVER = mailConfig.getString("IMAP_SERVER")
+    val IMAP_PROTOCOL = mailConfig.getString("IMAP_PROTOCOL")
+  }
 
   val slickConfig = config.getConfig("slick.db")
   val slickUrl = slickConfig.getString("url")
