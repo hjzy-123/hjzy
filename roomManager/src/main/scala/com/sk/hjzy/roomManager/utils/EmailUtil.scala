@@ -2,7 +2,7 @@ package com.sk.hjzy.roomManager.utils
 
 import java.util.{Date, Properties}
 
-import com.sk.hjzy.roomManager.common.AppSettings._
+import com.sk.hjzy.roomManager.common.AppSettings.mailConf
 import javax.mail.Message.RecipientType
 import javax.mail.{Address, Authenticator, PasswordAuthentication, Session, Transport}
 import org.slf4j.LoggerFactory
@@ -16,21 +16,32 @@ object EmailUtil {
 
   def getProperties: Properties = {
     val p = new Properties
-    p.put("mail.smtp.host", emailHost)
-    p.put("mail.smtp.port", emailPort)
+
+    val SSL_FACTORY:String = "javax.net.ssl.SSLSocketFactory"
+
+    p.put("mail.smtp.socketFactory.class", SSL_FACTORY)
+    p.put("mail.smtp.socketFactory.fallback", "false")
+    p.put("mail.smtp.socketFactory.port", "465")
+
+    p.put("mail.smtp.host", mailConf.SMTPHOST)
+    p.put("mail.smtp.port", mailConf.SMTPPORT)
     p.put("mail.transport.protocol", "smtp")
     p.put("mail.smtp.auth", "true")
+    p.put("mail.smtp.ssl.enable", "true")
+    p.put("mail.imaps.partialfetch", "false")
+    p.put("mail.store.protocol", mailConf.IMAP_PROTOCOL)
+    p.put("mail.imap.host", mailConf.IMAP_SERVER)
     p
   }
 
   private val session = Session.getInstance(props,
-    new MyAuthenticator(emailAddresserEmail, emailAddresserPwd))
+    new MyAuthenticator(mailConf.EMAIL_ADDRESS, mailConf.EMAIL_PASSWORD))
 
   def send(subject: String, content: String, to: List[String], cc: List[String] = Nil, bcc: List[String] = Nil, contentType: String = "text/html; charset=utf-8"): Unit = {
     log.debug(s"EmailUtil.sendString subject: $subject, content: $content, to: $to, cc: $cc, bcc: $bcc")
 
     val message = new MimeMessage(session)
-    message.setFrom(new InternetAddress(emailAddresserEmail))
+    message.setFrom(new InternetAddress(mailConf.EMAIL_ADDRESS))
 
     val toAddresses = to.map { email =>
       new InternetAddress(email).asInstanceOf[Address]
@@ -93,7 +104,7 @@ object EmailUtil {
   }*/
 
   def main(args: Array[String]): Unit = {
-    send("注册验证码", "你的验证码：1024562", List("284660487@qq.com"), List())
+    send("test", "test\ntest", List("284660487@qq.com"), List(), List())
   }
 
 }
