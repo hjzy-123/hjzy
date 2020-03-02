@@ -154,7 +154,7 @@ object RecorderActor {
                 clientFrameMap.put(id, Image())
                 Java2DFrameConverterMap.put(id, new Java2DFrameConverter())
               }
-              val drawerNew = ctx.spawn(draw(canvas, canvas.getGraphics, Ts4LastImage(), clientFrameMap, recorder4ts, Java2DFrameConverterMap,new Java2DFrameConverter,
+              val drawerNew = ctx.spawn(draw(liveIdList, ffFilterN,canvas, canvas.getGraphics, Ts4LastImage(), clientFrameMap, recorder4ts, Java2DFrameConverterMap,new Java2DFrameConverter,
                 num, speaker, "defaultImg.jpg", roomId, canvasSize), s"drawer_$roomId")
               work(roomId,  liveIdList, num, speaker, recorder4ts, ffFilterN, drawerNew, ts4Host, ts4Client, out, tsDiffer, canvasSize)
             }else
@@ -191,59 +191,61 @@ object RecorderActor {
                 log.info(s"wrong, liveId, work got wrong img")
               }
             }
-            if (frame.samples != null) {
-              try {
+//            if (frame.samples != null) {
+//              try {
 //                ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-
-                if(liveId==liveIdList.head){
-                  println(s"++++++++++++++++++++++++++++++++++++++++++++++$liveId",(frame.timestamp-ts4Host.time> tsDiffer))
-                  if((frame.timestamp-ts4Host.time> tsDiffer) && ts4Host.time != -1) {
-                    println(s"$liveId ooooooooooooooooooooooooooooooooooooooooo-- ${((frame.timestamp - ts4Host.time) / 22000l).toInt}")
-                    (2 to ((frame.timestamp - ts4Host.time) / 23000l).toInt).foreach { i =>
-                      log.info(s"$liveId loss sample-- $i")
-                      if (frame.audioChannels == 2) {
-                        ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio)
-                      } else {
-                        ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio4one)
-                      }
-                    }
-                  }
-                  ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-                  if(frame.timestamp > ts4Host.time) {
-                    println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                    ts4Host.time = frame.timestamp
-                  }
-                }else{
-                  println(s"++++++++++++++++++++++++++++++++++++++++++++++$liveId",(frame.timestamp-ts4Client(liveId).time> tsDiffer))
-                  if((frame.timestamp-ts4Client(liveId).time> tsDiffer) && ts4Client(liveId).time != 0) {
-                    println(s"$liveId kkkkkkkkkkkkkkkkkkkkkkkkkkkkk-- ${((frame.timestamp - ts4Client(liveId).time) / 22000l).toInt}")
-                    (2 to ((frame.timestamp - ts4Client(liveId).time) / 22000l).toInt).foreach { i =>
-                      log.info(s"$liveId loss sample-- $i")
-
-                      if (frame.audioChannels == 2) {
-                        ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio)
-                      } else {
-                        ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio4one)
-                      }
-                    }
-                  }
-                  ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
-                  if(frame.timestamp > ts4Client(liveId).time) {
-                    println("bbbbbbbbbbbbbbbbbbbbbbbbb")
-                    ts4Client(liveId).time = frame.timestamp
-                  }
-                }
-
-                val f = ffFilter.pullSamples().clone()
-                if (f != null) {
-                  println(s"!!!!!!!!!!!!!!!!!   have sound2222222222  $liveId    $f")
-                  recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
-                }
-              } catch {
-                case ex: Exception =>
-                  log.debug(s"$liveId record sample error system: $ex")
-              }
-            }
+////                if(liveId==liveIdList.head){
+////                  println(s"++++++++++++++++++++++++++++++++++++++++++++++$liveId",(frame.timestamp-ts4Host.time> tsDiffer))
+////                  if((frame.timestamp-ts4Host.time> tsDiffer) && ts4Host.time != -1) {
+////                    println(s"$liveId ooooooooooooooooooooooooooooooooooooooooo-- ${((frame.timestamp - ts4Host.time) / 22000l).toInt}")
+////                    (2 to ((frame.timestamp - ts4Host.time) / 23000l).toInt).foreach { i =>
+////                      log.info(s"$liveId loss sample-- $i")
+////                      if (frame.audioChannels == 2) {
+////                        ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio)
+////                      } else {
+////                        ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio4one)
+////                      }
+////                    }
+////                  }
+////                  ffFilter.pushSamples(0, frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
+////                  if(frame.timestamp > ts4Host.time) {
+////                    println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+////                    ts4Host.time = frame.timestamp
+////                  }
+////                }else{
+////                  println(s"++++++++++++++++++++++++++++++++++++++++++++++$liveId",(frame.timestamp-ts4Client(liveId).time> tsDiffer))
+////                  if((frame.timestamp-ts4Client(liveId).time> tsDiffer) && ts4Client(liveId).time != 0) {
+////                    println(s"$liveId kkkkkkkkkkkkkkkkkkkkkkkkkkkkk-- ${((frame.timestamp - ts4Client(liveId).time) / 22000l).toInt}")
+////                    (2 to ((frame.timestamp - ts4Client(liveId).time) / 22000l).toInt).foreach { i =>
+////                      log.info(s"$liveId loss sample-- $i")
+////
+////                      if (frame.audioChannels == 2) {
+////                        ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio)
+////                      } else {
+////                        ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, emptyAudio4one)
+////                      }
+////                    }
+////                  }
+////                  ffFilter.pushSamples(liveIdList.indexOf(liveId), frame.audioChannels, frame.sampleRate, ffFilter.getSampleFormat, frame.samples: _*)
+////                  if(frame.timestamp > ts4Client(liveId).time) {
+////                    println("bbbbbbbbbbbbbbbbbbbbbbbbb")
+////                    ts4Client(liveId).time = frame.timestamp
+////                  }
+////                }
+//
+//                val f = ffFilter.pullSamples().clone()
+//                if (f != null) {
+//                  println(s"!!!!!!!!!!!!!!!!!   have sound2222222222  $liveId    $f")
+//                  if((f.timestamp - frame.timestamp) < 30000){
+//                    println("qqqqqqqqqqqqqqqqqqqqqqqqqq",(f.timestamp - frame.timestamp))
+//                    recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
+//                  }
+//                }
+//              } catch {
+//                case ex: Exception =>
+//                  log.debug(s"$liveId record sample error system: $ex")
+//              }
+//            }
           }
           Behaviors.same
 
@@ -285,12 +287,21 @@ object RecorderActor {
     }
   }
 
-  def draw(canvas: BufferedImage, graph: Graphics, lastTime: Ts4LastImage, clientFrame: mutable.Map[String, Image] ,
+  def draw(liveList: List[String], ffFilter: FFmpegFrameFilter,canvas: BufferedImage, graph: Graphics, lastTime: Ts4LastImage, clientFrame: mutable.Map[String, Image] ,
            recorder4ts: FFmpegFrameRecorder, convert1:mutable.Map[String, Java2DFrameConverter] ,convert:Java2DFrameConverter,
            num: Int, speaker:String ,bgImg: String, roomId: Long, canvasSize: (Int, Int)): Behavior[VideoCommand] = {
     Behaviors.setup[VideoCommand] { ctx =>
       Behaviors.receiveMessage[VideoCommand] {
         case t: Image4Host =>
+          if(t.frame.samples != null) {
+            try{
+              println("push sample", t.liveIdList.head, "index", 0)
+              ffFilter.pushSamples(0, t.frame.audioChannels, t.frame.sampleRate, ffFilter.getSampleFormat, t.frame.samples: _*)
+            }catch {
+              case ex: Exception =>
+                log.debug(s"${t.liveIdList.head} record sample error system: $ex")
+            }
+          }
           val time = t.frame.timestamp
           log.info("host frame")
           var row = 0
@@ -334,15 +345,36 @@ object RecorderActor {
           //fixme 此处为何不直接recordImage
           val frame = convert.convert(canvas)
           recorder4ts.record(frame.clone())
+
+          if(t.frame.samples !=null){
+            println("pulllllllll sample")
+            val f = ffFilter.pullSamples().clone()
+            if (f != null) {
+              println(s"!!!!!!!!!!!!!!!!!   have sound2222222222  ${t.liveIdList.head}    $f")
+              if((f.timestamp - frame.timestamp) < 30000){
+                println("qqqqqqqqqqqqqqqqqqqqqqqqqq",(f.timestamp - frame.timestamp))
+                recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
+              }
+            }
+          }
           Behaviors.same
 
         case t: Image4Client =>
           clientFrame(t.liveId).frame = t.frame
+          if(t.frame.samples != null) {
+            try{
+              println("push sample", t.liveId, "index", liveList.indexOf(t.liveId))
+              ffFilter.pushSamples(liveList.indexOf(t.liveId), t.frame.audioChannels, t.frame.sampleRate, ffFilter.getSampleFormat, t.frame.samples: _*)
+            }catch {
+              case ex: Exception =>
+                log.debug(s"${t.liveId} record sample error system: $ex")
+            }
+          }
           Behaviors.same
 
         case m@NewRecord4Ts(recorder4ts) =>
           log.info(s"got msg: $m")
-          draw(canvas, graph, lastTime, clientFrame, recorder4ts, convert1 ,convert, num, speaker, bgImg, roomId, canvasSize)
+          draw(liveList, ffFilter,canvas, graph, lastTime, clientFrame, recorder4ts, convert1 ,convert, num, speaker, bgImg, roomId, canvasSize)
 
         case m@UpdateDrawer(liveIdList, num, speaker) =>
           log.info(s"got msg: $m")
@@ -356,7 +388,7 @@ object RecorderActor {
             }
           }
           graph.clearRect(0, 0, canvasSize._1, canvasSize._2)
-          draw(canvas, graph, lastTime, clientFrame, recorder4ts, convert1 ,convert, num, speaker, bgImg, roomId, canvasSize)
+          draw(liveList, ffFilter,canvas, graph, lastTime, clientFrame, recorder4ts, convert1 ,convert, num, speaker, bgImg, roomId, canvasSize)
 
         case Close =>
           log.info(s"drawer stopped")
