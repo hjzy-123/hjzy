@@ -57,7 +57,7 @@ object UserInfoDao {
   }
 
   def checkUser(email: String, name: String) = {
-    db.run(tUserInfo.filter(user => user.email === email && user.userName === name).result.headOption)
+    db.run(tUserInfo.filter(user => user.email === email || user.userName === name).result.headOption)
   }
 
   def searchByName(name:String) = {
