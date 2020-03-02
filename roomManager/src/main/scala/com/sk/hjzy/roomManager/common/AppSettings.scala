@@ -75,6 +75,7 @@ object AppSettings {
   val distributorDomain = appConfig.getString("distributor.domain")
   val rtpIp = appConfig.getString("rtp.ip")
   val rtpPort = appConfig.getInt("rtp.port")
+  val debugPath = appConfig.getString("debugPath")
 
 
   val dependenceConfig = config.getConfig("dependence")

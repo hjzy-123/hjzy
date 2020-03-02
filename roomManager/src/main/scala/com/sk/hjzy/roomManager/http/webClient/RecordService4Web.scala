@@ -1,15 +1,11 @@
 package com.sk.hjzy.roomManager.http.webClient
 
-import com.sk.hjzy.roomManager.http.{ServiceUtils, SessionBase}
-import com.sk.hjzy.roomManager.utils.CirceSupport
+import java.io.File
+
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
-import com.sk.hjzy.roomManager.Boot.{emailManager4Web, executor, roomManager, scheduler, timeout, userManager}
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.ws.Message
-import akka.stream.scaladsl.{FileIO, Flow, Source}
-import akka.util.ByteString
+import com.sk.hjzy.roomManager.Boot.{emailManager4Web, executor, roomManager, scheduler, timeout}
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import com.sk.hjzy.protocol.ptcl.webClientManager.Common.{ErrorRsp, SuccessRsp}
 import com.sk.hjzy.protocol.ptcl.webClientManager.UserProtocol.{GetUserInfoRsp, LoginByEmailReq, LoginReq, RegisterReq, ResetPassword, UpdateNameReq}
 import com.sk.hjzy.roomManager.common.AppSettings
@@ -22,10 +18,14 @@ import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import akka.stream.Materializer
-import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{Comment, GetCommentsRsp, GetRecordInfoRsp, GetRecordsRsp, Record,SearchRecord, SearchRecordRsp, SendCommentReq, UpdateAllowUserReq}
+import com.sk.hjzy.protocol.ptcl.webClientManager.RecordProtocol.{Comment, GetCommentsRsp, GetRecordInfoRsp, GetRecordsRsp, Record, SearchRecord, SearchRecordRsp, SendCommentReq, UpdateAllowUserReq}
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import com.sk.hjzy.roomManager.common.AppSettings.debugPath
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
+import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.sk.hjzy.protocol.ptcl.CommonRsp
 
 import scala.concurrent.Future
@@ -40,6 +40,10 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
   implicit val materializer: Materializer
 
+  private val settings = CorsSettings.defaultSettings.withAllowedOrigins(
+    HttpOriginMatcher.*
+  )
+
   private val getMyRecords = (path("getMyRecords") & get){
     parameters('pageNum.as[Int], 'pageSize.as[Int]){
       (pageNum, pageSize) =>
@@ -52,7 +56,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                   RecordDao.getRecordByRoomId(roomId, pageNum, pageSize).map{ rst1 =>
                     val total = rst1._1
                     val rsp = rst1._2.sortBy(_.starttime).map{ t =>
-                      val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${roomId}/${t.starttime}/record.mp4"
+                      val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${roomId}/${t.starttime}/record.mp4"
                       Record(
                         t.id,
                         t.coverImg,
@@ -83,7 +87,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
 
               val total = des.length
               val rsp = des.drop((pageNum - 1) * pageSize).take(pageSize).map{ t =>
-                val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${t.roomid}/${t.starttime}/record.mp4"
+                val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${t.roomid}/${t.starttime}/record.mp4"
                 Record(
                   t.id,
                   t.coverImg,
@@ -124,7 +128,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               complete(ErrorRsp(100001, "无录像"))
             }else{
               val record = recordOpt.get
-              val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}" +
+              val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${record.roomid}" +
                         s"/${record.starttime}/record.mp4"
               val record1 = Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
               dealFutureResult{
@@ -137,13 +141,13 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
                       val otherRecord =
                         if(owner){
                           records.filterNot(_.id == recordId).filter(_.roomid == userOpt.get.roomid).map{record =>
-                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}" +
+                            val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${record.roomid}" +
                                       s"/${record.starttime}/record.mp4"
                             Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }else{
                           records.filterNot(_.id == recordId).filter(record => record.allowUser.split("@").contains(user.playerName)).map{record =>
-                            val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${record.roomid}/${record.starttime}/record.mp4"
+                            val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${record.roomid}/${record.starttime}/record.mp4"
                             Record(record.id, record.coverImg, record.recordname, url, record.allowUser)
                           }.toList
                         }
@@ -225,7 +229,7 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
               dealFutureResult {
                   RecordDao.updateViewNum(req.roomId, req.startTime, recordInfo.observeNum + 1).map{ r =>
                     //todo  processorDomain
-                    val url = s"http://${AppSettings.processorDomain}/hjzy/processor/getRecord/${req.roomId}/${req.startTime}/record.mp4"
+                    val url = s"http://${AppSettings.processorDomain}/hjzy/roomManager/webRecords/getRecord/${req.roomId}/${req.startTime}/record.mp4"
                     complete(SearchRecordRsp(url, recordInfo))
                   }
               }
@@ -238,8 +242,17 @@ trait RecordService4Web extends CirceSupport with ServiceUtils with SessionBase{
     }
   }
 
+  val getRecord: Route = (path("getRecord" / Segments(3)) & get & pathEndOrSingleSlash & cors(settings)){
+    case roomId :: startTime :: file :: Nil =>
+      println(s"getRecord req for $roomId/$startTime/$file.")
+      val f = new File(s"$debugPath$roomId/${startTime}_$file").getAbsoluteFile
+      getFromFile(f,ContentTypes.`application/octet-stream`)
+
+    case x =>
+      complete(ErrorRsp(1000008, "file does not exist"))
+  }
 
   val webRecordsRoute = pathPrefix("webRecords"){
-    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo ~ getComments ~ sendComment ~ deleteComment ~ searchRecord
+    getMyRecords ~ updateAllowUser ~ getOtherRecords ~ getRecordInfo ~ getComments ~ sendComment ~ deleteComment ~ searchRecord ~ getRecord
   }
 }

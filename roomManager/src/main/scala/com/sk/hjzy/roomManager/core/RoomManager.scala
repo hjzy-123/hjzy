@@ -138,7 +138,7 @@ object RoomManager {
 //          }
           RecordDao.addRecord(wholeRoomInfo.roomInfo.roomId,
                                 wholeRoomInfo.roomInfo.roomName,wholeRoomInfo.roomInfo.roomDes,startTime,
-                                UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, "00:00:00", userNameList)
+                                UserInfoDao.getVideoImg(wholeRoomInfo.roomInfo.coverImgUrl),0, 0, "00:00:00", "",userNameList)
           timer.startSingleTimer(Timer4Stop, Stop(roomId), 2000.milli)
           Behaviors.same
 
