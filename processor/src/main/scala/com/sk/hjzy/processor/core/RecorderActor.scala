@@ -119,7 +119,7 @@ object RecorderActor {
   ts4Host: Ts4Host,
   ts4Client: mutable.Map[String, Ts4Client],
   out: OutputStream,
-  tsDiffer: Int = 2000, canvasSize: (Int, Int))(implicit timer: TimerScheduler[Command],
+  tsDiffer: Int = 30000, canvasSize: (Int, Int))(implicit timer: TimerScheduler[Command],
   stashBuffer: StashBuffer[Command]): Behavior[Command] = {
     Behaviors.receive[Command] { (ctx, msg) =>
       msg match {
@@ -236,7 +236,7 @@ object RecorderActor {
                 if (f != null) {
                   println(s"!!!!!!!!!!!!!!!!!   have sound2222222222  $liveId    $f")
 //                  if((frame.timestamp - f.timestamp) < 30000){
-                    println("qqqqqqqqqqqqqqqqqqqqqqqqqq",(f.timestamp - frame.timestamp))
+//                    println("qqqqqqqqqqqqqqqqqqqqqqqqqq",(f.timestamp - frame.timestamp))
                     recorder4ts.recordSamples(f.sampleRate, f.audioChannels, f.samples: _*)
                  // }
                 }
